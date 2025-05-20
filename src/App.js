@@ -13,5 +13,16 @@ function App() {
 
       {/* Uncomment and test one at a time to verify */}
       <AuthScreen />
-      <hr style={{ margin: "2rem 0", borderColor: "#444" }} /
+      <hr style={{ margin: "2rem 0", borderColor: "#444" }} />
+      <SwipeScreen />
+      <hr style={{ margin: "2rem 0", borderColor: "#444" }} />
+      <JamStackView />
+      <hr style={{ margin: "2rem 0", borderColor: "#444" }} />
+      <UploadScreen />
+    </div>
+  );
+}
+
+export default App;
+
 
