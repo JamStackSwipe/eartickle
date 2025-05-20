@@ -1,3 +1,6 @@
+console.log("✅ React index.js is executing");
+
+
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App"; // Must match case
