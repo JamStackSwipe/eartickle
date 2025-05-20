@@ -1,22 +1,16 @@
 import React from "react";
+import AuthScreen from "./screens/AuthScreen"; // Adjust path if needed
 
 function App() {
-  return React.createElement(
-    "div",
-    {
-      style: {
-        height: "100vh",
-        backgroundColor: "black",
-        color: "lime",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        fontSize: "32px",
-        fontWeight: "bold",
-      },
-    },
-    "🚨 IT WORKS — PURE REACT"
+  // 👇 Mocked user state logic — not used yet
+  // const [user, setUser] = useState(null);
+
+  return (
+    <div>
+      <AuthScreen />
+    </div>
   );
 }
 
 export default App;
+
