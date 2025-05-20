@@ -1,87 +1,74 @@
-
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
-import { collection, addDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import React, { useState } from "react";
 
 const UploadScreen = () => {
-  const [title, setTitle] = useState('');
-  const [artist, setArtist] = useState('');
-  const [cover, setCover] = useState('');
+  const [title, setTitle] = useState("");
+  const [artist, setArtist] = useState("");
+  const [cover, setCover] = useState("");
+  const [message, setMessage] = useState("");
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     if (!title || !artist || !cover) {
-      Alert.alert('Missing Fields', 'Please fill in all fields');
+      setMessage("Please fill in all fields.");
       return;
     }
 
     try {
-      await addDoc(collection(db, 'songs'), {
-        title,
-        artist,
-        cover
-      });
-      Alert.alert('Success', 'Song uploaded to Firestore!');
-      setTitle('');
-      setArtist('');
-      setCover('');
-    } catch (error) {
-      console.error('Error adding song:', error);
-      Alert.alert('Error', 'Could not upload song');
+      // TODO: Replace with API call to upload song
+      console.log("Uploading:", { title, artist, cover });
+
+      setMessage("✅ Song uploaded!");
+      setTitle("");
+      setArtist("");
+      setCover("");
+    } catch (err) {
+      console.error("Upload error:", err);
+      setMessage("❌ Failed to upload song.");
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Upload a Song</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Song Title"
-        placeholderTextColor="#888"
-        value={title}
-        onChangeText={setTitle}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Artist Name"
-        placeholderTextColor="#888"
-        value={artist}
-        onChangeText={setArtist}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Cover Image URL"
-        placeholderTextColor="#888"
-        value={cover}
-        onChangeText={setCover}
-      />
-      <Button title="Upload Song" onPress={handleSubmit} color="#1e90ff" />
-    </View>
+    <div className="min-h-screen bg-black flex items-center justify-center px-4">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-gray-900 p-8 rounded-lg max-w-md w-full shadow-xl"
+      >
+        <h1 className="text-2xl text-white font-bold text-center mb-6">
+          Upload a Song
+        </h1>
+        <input
+          type="text"
+          placeholder="Song Title"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full mb-4 px-4 py-2 rounded bg-gray-800 text-white border border-gray-600"
+        />
+        <input
+          type="text"
+          placeholder="Artist Name"
+          value={artist}
+          onChange={(e) => setArtist(e.target.value)}
+          className="w-full mb-4 px-4 py-2 rounded bg-gray-800 text-white border border-gray-600"
+        />
+        <input
+          type="text"
+          placeholder="Cover Image URL"
+          value={cover}
+          onChange={(e) => setCover(e.target.value)}
+          className="w-full mb-6 px-4 py-2 rounded bg-gray-800 text-white border border-gray-600"
+        />
+        <button
+          type="submit"
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-semibold"
+        >
+          Upload Song
+        </button>
+        {message && (
+          <p className="text-center text-sm text-white mt-4">{message}</p>
+        )}
+      </form>
+    </div>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#121212',
-    padding: 20,
-    justifyContent: 'center',
-  },
-  title: {
-    color: '#fff',
-    fontSize: 22,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  input: {
-    backgroundColor: '#1e1e1e',
-    color: '#fff',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-    borderColor: '#444',
-    borderWidth: 1,
-  },
-});
 
 export default UploadScreen;
