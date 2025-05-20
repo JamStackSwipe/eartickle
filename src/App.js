@@ -1,27 +1,33 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import Header from "./components/Header";
+// src/App.js
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import LoginScreen from './screens/LoginScreen';
 
-import AuthScreen from "./screens/AuthScreen";
-import SwipeScreen from "./screens/SwipeScreen";
-import JamStackView from "./screens/JamStackView";
-import UploadScreen from "./screens/UploadScreen";
+const Home = () => (
+  <div>
+    <h2>Welcome to EarTickle™</h2>
+    <p>Choose a screen:</p>
+    <ul>
+      <li><Link to="/login">Login</Link></li>
+      <li><Link to="/profile">Profile</Link></li>
+      <li><Link to="/upload">Upload Song</Link></li>
+    </ul>
+  </div>
+);
+
+const ProfileScreen = () => <div><h2>Profile (Coming Soon)</h2></div>;
+const UploadScreen = () => <div><h2>Upload (Coming Soon)</h2></div>;
 
 function App() {
   return (
     <Router>
-      <div className="bg-black min-h-screen text-white">
-        <Header />
-        <main className="p-6">
-          <Routes>
-            <Route path="/" element={<Navigate to="/swipe" />} />
-            <Route path="/auth" element={<AuthScreen />} />
-            <Route path="/swipe" element={<SwipeScreen />} />
-            <Route path="/jamstack" element={<JamStackView />} />
-            <Route path="/upload" element={<UploadScreen />} />
-            <Route path="*" element={<p className="text-red-500">404 - Not Found</p>} />
-          </Routes>
-        </main>
+      <div style={{ padding: '1rem' }}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<LoginScreen />} />
+          <Route path="/profile" element={<ProfileScreen />} />
+          <Route path="/upload" element={<UploadScreen />} />
+        </Routes>
       </div>
     </Router>
   );
