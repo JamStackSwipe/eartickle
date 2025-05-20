@@ -1,25 +1,32 @@
-
-import React, { useEffect, useState } from 'react';
-import { View, Text, Image, FlatList, StyleSheet } from 'react-native';
-import { collection, getDocs } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import React, { useEffect, useState } from "react";
 
 const JamStackView = () => {
   const [jamstack, setJamstack] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // TODO: Replace with real API or localStorage call
     const fetchJamstack = async () => {
-      if (!auth.currentUser) return;
-
       try {
-        const jamRef = collection(db, "users", auth.currentUser.uid, "jamstack");
-        const snapshot = await getDocs(jamRef);
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setJamstack(data);
+        const mockData = [
+          {
+            id: "1",
+            title: "My Best Friend Is Jesus",
+            artist: "Jolie Grace",
+            cover: "https://via.placeholder.com/240", // Replace with actual URL
+          },
+          {
+            id: "2",
+            title: "Child of God",
+            artist: "Jolie Grace",
+            cover: "https://via.placeholder.com/240",
+          },
+        ];
+        setJamstack(mockData);
+      } catch (err) {
+        console.error("Error loading JamStack:", err);
+      } finally {
         setLoading(false);
-      } catch (error) {
-        console.error("Error loading JamStack:", error);
       }
     };
 
@@ -28,73 +35,28 @@ const JamStackView = () => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Loading your JamStack...</Text>
-      </View>
+      <div className="min-h-screen bg-black flex items-center justify-center text-white text-xl">
+        Loading your JamStack...
+      </div>
     );
   }
 
   if (!jamstack.length) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Your JamStack is empty. Start swiping!</Text>
-      </View>
+      <div className="min-h-screen bg-black flex items-center justify-center text-white text-xl">
+        Your JamStack is empty. Start swiping!
+      </div>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Your JamStack</Text>
-      <FlatList
-        data={jamstack}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Image source={{ uri: item.cover }} style={styles.image} />
-            <Text style={styles.songTitle}>{item.title}</Text>
-            <Text style={styles.artist}>by {item.artist}</Text>
-          </View>
-        )}
-      />
-    </View>
-  );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#121212',
-    padding: 20,
-    paddingTop: 60,
-  },
-  title: {
-    color: '#fff',
-    fontSize: 24,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  card: {
-    backgroundColor: '#1e1e1e',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    alignItems: 'center',
-  },
-  image: {
-    width: 240,
-    height: 240,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  songTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  artist: {
-    color: '#aaa',
-    fontSize: 14,
-  },
-});
-
-export default JamStackView;
+    <div className="min-h-screen bg-black text-white px-4 py-8">
+      <h1 className="text-3xl font-bold text-center mb-6">Your JamStack</h1>
+      <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        {jamstack.map((item) => (
+          <div
+            key={item.id}
+            className="bg-gray-900 rounded-xl p-4 flex flex-col items-center shadow-lg"
+          >
+            <img
+              src={item.cover}
