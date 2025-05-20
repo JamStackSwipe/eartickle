@@ -1,69 +1,64 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
-import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
-import { auth } from '../firebase';
 
-const AuthScreen = ({ navigation }) => {
-  const [user, setUser] = useState(null);
+import React, { useState } from "react";
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        navigation.replace('Swipe');
-      }
-    });
-    return () => unsubscribe();
-  }, []);
+const AuthScreen = () => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const handleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Sign-in error:", error);
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (isLogin) {
+      // TODO: Replace with API login
+      console.log("Logging in with:", email, password);
+    } else {
+      // TODO: Replace with API signup
+      console.log("Signing up with:", email, password);
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut(auth);
-    setUser(null);
-  };
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome to EarTickle</Text>
-      {user ? (
-        <>
-          <Text style={styles.userText}>Logged in as: {user.displayName}</Text>
-          <Button title="Sign Out" onPress={handleSignOut} />
-        </>
-      ) : (
-        <Button title="Sign In with Google" onPress={handleSignIn} />
-      )}
-    </View>
+    <div className="min-h-screen flex items-center justify-center bg-black text-white px-4">
+      <div className="w-full max-w-md space-y-6">
+        <h1 className="text-3xl font-bold text-center">
+          {isLogin ? "Login to EarTickle" : "Create an Account"}
+        </h1>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            className="w-full px-4 py-2 rounded bg-gray-800 text-white"
+            required
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            className="w-full px-4 py-2 rounded bg-gray-800 text-white"
+            required
+          />
+          <button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded text-white font-semibold"
+          >
+            {isLogin ? "Login" : "Sign Up"}
+          </button>
+        </form>
+        <p className="text-center text-sm text-gray-400">
+          {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+          <button
+            className="underline text-blue-400"
+            onClick={() => setIsLogin(!isLogin)}
+          >
+            {isLogin ? "Sign Up" : "Login"}
+          </button>
+        </p>
+      </div>
+    </div>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#121212',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    color: '#fff',
-    marginBottom: 20,
-  },
-  userText: {
-    fontSize: 16,
-    color: '#ccc',
-    marginBottom: 10,
-  },
-});
-
 export default AuthScreen;
-
