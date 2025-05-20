@@ -5,48 +5,24 @@ const JamStackView = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Replace with real API or localStorage call
     const fetchJamstack = async () => {
-      try {
-        const mockData = [
-          {
-            id: "1",
-            title: "My Best Friend Is Jesus",
-            artist: "Jolie Grace",
-            cover: "https://via.placeholder.com/240", // Replace with actual URL
-          },
-          {
-            id: "2",
-            title: "Child of God",
-            artist: "Jolie Grace",
-            cover: "https://via.placeholder.com/240",
-          },
-        ];
-        setJamstack(mockData);
-      } catch (err) {
-        console.error("Error loading JamStack:", err);
-      } finally {
-        setLoading(false);
-      }
+      const mockData = [
+        { id: "1", title: "Bow My Head", artist: "Jolie Grace", cover: "https://via.placeholder.com/240" },
+        { id: "2", title: "Child of God", artist: "Jolie Grace", cover: "https://via.placeholder.com/240" },
+      ];
+      setJamstack(mockData);
+      setLoading(false);
     };
 
     fetchJamstack();
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center text-white text-xl">
-        Loading your JamStack...
-      </div>
-    );
+    return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading your JamStack...</div>;
   }
 
   if (!jamstack.length) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center text-white text-xl">
-        Your JamStack is empty. Start swiping!
-      </div>
-    );
+    return <div className="min-h-screen bg-black text-white flex items-center justify-center">Your JamStack is empty. Start swiping!</div>;
   }
 
   return (
@@ -54,9 +30,15 @@ const JamStackView = () => {
       <h1 className="text-3xl font-bold text-center mb-6">Your JamStack</h1>
       <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {jamstack.map((item) => (
-          <div
-            key={item.id}
-            className="bg-gray-900 rounded-xl p-4 flex flex-col items-center shadow-lg"
-          >
-            <img
-              src={item.cover}
+          <div key={item.id} className="bg-gray-900 rounded-xl p-4 flex flex-col items-center shadow-lg">
+            <img src={item.cover} alt={item.title} className="w-60 h-60 rounded-lg object-cover mb-4" />
+            <h2 className="text-lg font-semibold">{item.title}</h2>
+            <p className="text-sm text-gray-400">by {item.artist}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default JamStackView;

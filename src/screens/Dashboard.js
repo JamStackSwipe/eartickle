@@ -5,33 +5,14 @@ const Dashboard = () => {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    // TODO: Replace with your authentication logic
     const fetchUser = async () => {
-      try {
-        // Placeholder for fetching authenticated user data
-        const userData = {
-          name: 'John Doe',
-          email: 'john.doe@example.com',
-        };
-        setUser(userData);
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      }
+      const userData = { name: 'John Doe', email: 'john@example.com' };
+      setUser(userData);
     };
 
-    // TODO: Replace with your data fetching logic
     const fetchStats = async () => {
-      try {
-        // Placeholder for fetching dashboard statistics
-        const statsData = {
-          totalUsers: 150,
-          activeSessions: 45,
-          newSignups: 10,
-        };
-        setStats(statsData);
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-      }
+      const statsData = { totalUsers: 150, activeSessions: 37 };
+      setStats(statsData);
     };
 
     fetchUser();
@@ -39,7 +20,22 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <header className="mb-8">
-        <h1 className="text-4xl font-bold">Da
+    <div className="min-h-screen bg-black text-white px-6 py-10">
+      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+      {user && (
+        <div className="mb-4">
+          <p className="text-lg">Welcome, {user.name}</p>
+          <p className="text-sm text-gray-400">{user.email}</p>
+        </div>
+      )}
+      {stats && (
+        <div className="mt-6">
+          <p>Total Users: {stats.totalUsers}</p>
+          <p>Active Sessions: {stats.activeSessions}</p>
+        </div>
+      )}
+    </div>
+  );
+};
 
+export default Dashboard;

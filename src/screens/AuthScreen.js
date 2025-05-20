@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 
 const AuthScreen = () => {
@@ -9,10 +8,8 @@ const AuthScreen = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isLogin) {
-      // TODO: Replace with API login
       console.log("Logging in with:", email, password);
     } else {
-      // TODO: Replace with API signup
       console.log("Signing up with:", email, password);
     }
   };
