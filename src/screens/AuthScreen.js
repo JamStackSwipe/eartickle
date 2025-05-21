@@ -1,37 +1,33 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../components/AuthProvider';
+import React, { useState } from 'react';
 import { supabase } from '../supabase';
 
 const AuthScreen = () => {
-  const { user, loading } = useAuth();
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    if (!loading && user) {
-      // Dynamically import navigate only when Router is mounted
-      import('react-router-dom').then(({ useNavigate }) => {
-        const nav = useNavigate(); // still safe inside this dynamic block
-        nav('/profile');
-      });
+  const handleMagicLink = async () => {
+    setMessage('Sending magic link...');
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) {
+      setMessage(`Error: ${error.message}`);
+    } else {
+      setMessage('✅ Magic link sent! Check your email.');
     }
-  }, [user, loading]);
+  };
 
-  const handleLogin = async (provider) => {
-    await supabase.auth.signInWithOAuth({ provider });
+  const handleGitHubLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({ provider: 'github' });
+    if (error) {
+      setMessage(`Error: ${error.message}`);
+    }
   };
 
   return (
-    <div className="text-white p-6 text-center">
-      <h1 className="text-2xl font-bold mb-4">Login to EarTickle</h1>
-      <button onClick={() => handleLogin('github')} className="bg-gray-700 px-4 py-2 rounded mb-2 block">
-        Sign in with GitHub
-      </button>
-      <button onClick={() => handleLogin('spotify')} className="bg-green-600 px-4 py-2 rounded block">
-        Sign in with Spotify
-      </button>
-    </div>
-  );
-};
+    <div className="flex flex-col items-center justify-center min-h-screen p-4">
+      <h1 className="text-3xl font-bold mb-6">Sign In to EarTickle</h1>
 
-export default AuthScreen;
-
+      <div className="w-full max-w-sm space-y-4">
+        <input
+          type="email"
+          placeholder="Enter your email"
+          valu
