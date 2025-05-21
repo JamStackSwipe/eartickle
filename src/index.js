@@ -1,11 +1,21 @@
 console.log("✅ React index.js is executing");
 
-
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App"; // Must match case
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import { AuthProvider } from "./components/AuthProvider"; // ✅
 
 import "./index.css"; // optional, if using Tailwind
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App />);
+root.render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </BrowserRouter>
+  </React.StrictMode>
+);
+
