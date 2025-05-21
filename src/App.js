@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom'; // ✅ No "as Router"
 import Header from './components/Header';
 import { AuthProvider } from './components/AuthProvider';
 
@@ -15,23 +15,21 @@ import SettingsScreen from './screens/SettingsScreen';
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <Header />
-        <Routes>
-          <Route path="/" element={<AuthScreen />} />
-          <Route path="/auth" element={<AuthScreen />} />
-          <Route path="/login" element={<LoginScreen />} />
-          <Route path="/profile" element={<ProfileScreen />} />
-          <Route path="/upload" element={<UploadScreen />} />
-          <Route path="/swipe" element={<SwipeScreen />} />
-          <Route path="/jamstack" element={<JamStackScreen />} />
-          <Route path="/rewards" element={<RewardsScreen />} />
-          <Route path="/myjams" element={<MyJamsScreen />} />
-          <Route path="/settings" element={<SettingsScreen />} />
-        </Routes>
-      </AuthProvider>
-    </Router>
+    <AuthProvider>
+      <Header />
+      <Routes>
+        <Route path="/" element={<AuthScreen />} />
+        <Route path="/auth" element={<AuthScreen />} />
+        <Route path="/login" element={<LoginScreen />} />
+        <Route path="/profile" element={<ProfileScreen />} />
+        <Route path="/upload" element={<UploadScreen />} />
+        <Route path="/swipe" element={<SwipeScreen />} />
+        <Route path="/jamstack" element={<JamStackScreen />} />
+        <Route path="/rewards" element={<RewardsScreen />} />
+        <Route path="/myjams" element={<MyJamsScreen />} />
+        <Route path="/settings" element={<SettingsScreen />} />
+      </Routes>
+    </AuthProvider>
   );
 }
 
