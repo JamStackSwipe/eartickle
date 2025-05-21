@@ -71,4 +71,7 @@ A new way to discover and license music.
 ---
 
 Built with 💛 by Eric Preston Binkley  
-[OKMusicWriters.com](https://okmusicwriters.com) · [NoFreon.com](https://nofreon.com)
+[OKMusicWriters.com](https://okmusicwriters.com) · [NoFreon.com](https://eartickle.com)
+
+PS: I may do rewards using and old Algorand Token I built years ago.... Drawing out the plans... We may go traditonal Gifts and Gamification. But If I Can Tie The Albums Into NFT's somehow and let users gift directly to artists to stream or download or license music and do it on chain and cut out the big players so artists can earn a living, I'll try it. Much Love Guys. 
+
