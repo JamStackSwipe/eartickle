@@ -1,40 +1,99 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
+import { supabase } from '../supabase';
 
 const UploadScreen = () => {
-  const [title, setTitle] = useState("");
-  const [artist, setArtist] = useState("");
-  const [cover, setCover] = useState("");
-  const [message, setMessage] = useState("");
+  const [title, setTitle] = useState('');
+  const [coverFile, setCoverFile] = useState(null);
+  const [mp3File, setMp3File] = useState(null);
+  const [message, setMessage] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!title || !artist || !cover) {
-      setMessage("Please fill in all fields.");
+  const handleUpload = async () => {
+    setMessage('');
+
+    if (!title || !coverFile || !mp3File) {
+      setMessage('Please provide all fields.');
       return;
     }
 
-    try {
-      console.log("Uploading:", { title, artist, cover });
-      setMessage("✅ Song uploaded!");
-      setTitle("");
-      setArtist("");
-      setCover("");
-    } catch (err) {
-      console.error("Upload error:", err);
-      setMessage("❌ Failed to upload song.");
+    // Get the logged-in user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user) {
+      setMessage('User not authenticated.');
+      return;
     }
+
+    const userId = userData.user.id;
+    const timestamp = Date.now();
+
+    // Upload cover image
+    const coverExt = coverFile.name.split('.').pop();
+    const coverPath = `${userId}/covers/${timestamp}.${coverExt}`;
+    const { error: coverError } = await supabase.storage
+      .from('covers')
+      .upload(coverPath, coverFile, { upsert: true });
+
+    if (coverError) {
+      setMessage('Failed to upload cover image.');
+      return;
+    }
+
+    const { data: coverUrlData } = supabase.storage.from('covers').getPublicUrl(coverPath);
+    const coverUrl = coverUrlData?.publicUrl;
+
+    // Upload MP3 file
+    const mp3Ext = mp3File.name.split('.').pop();
+    const mp3Path = `${userId}/songs/${timestamp}.${mp3Ext}`;
+    const { error: mp3Error } = await supabase.storage
+      .from('mp3s')
+      .upload(mp3Path, mp3File, { upsert: true });
+
+    if (mp3Error) {
+      setMessage('Failed to upload MP3 file.');
+      return;
+    }
+
+    const { data: mp3UrlData } = supabase.storage.from('mp3s').getPublicUrl(mp3Path);
+    const mp3Url = mp3UrlData?.publicUrl;
+
+    // Insert into songs table
+    const { error: insertError } = await supabase.from('songs').insert([
+      {
+        user_id: userId,
+        title,
+        cover_url: coverUrl,
+        mp3_url: mp3Url,
+      },
+    ]);
+
+    if (insertError) {
+      setMessage('Failed to save song record.');
+      return;
+    }
+
+    setMessage('Upload successful!');
+    setTitle('');
+    setCoverFile(null);
+    setMp3File(null);
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4">
-      <form onSubmit={handleSubmit} className="bg-gray-900 p-8 rounded-lg max-w-md w-full shadow-xl">
-        <h1 className="text-2xl text-white font-bold text-center mb-6">Upload a Song</h1>
-        <input type="text" placeholder="Song Title" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full mb-4 px-4 py-2 rounded bg-gray-800 text-white border border-gray-600" />
-        <input type="text" placeholder="Artist Name" value={artist} onChange={(e) => setArtist(e.target.value)} className="w-full mb-4 px-4 py-2 rounded bg-gray-800 text-white border border-gray-600" />
-        <input type="text" placeholder="Cover Image URL" value={cover} onChange={(e) => setCover(e.target.value)} className="w-full mb-6 px-4 py-2 rounded bg-gray-800 text-white border border-gray-600" />
-        <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-semibold">Upload Song</button>
-        {message && <p className="text-center text-sm text-white mt-4">{message}</p>}
-      </form>
+    <div style={{ maxWidth: '600px', margin: 'auto', padding: '2rem' }}>
+      <h2>Upload New Song</h2>
+      <input
+        type="text"
+        placeholder="Song Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        style={{ width: '100%', marginBottom: '1rem', padding: '0.5rem' }}
+      />
+      <label>Cover Image (JPG/PNG)</label>
+      <input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files[0])} style={{ marginBottom: '1rem' }} />
+      <label>MP3 File</label>
+      <input type="file" accept="audio/mp3" onChange={(e) => setMp3File(e.target.files[0])} style={{ marginBottom: '1rem' }} />
+      <button onClick={handleUpload} style={{ padding: '0.75rem 1.5rem' }}>
+        Upload
+      </button>
+      {message && <p style={{ marginTop: '1rem', color: 'green' }}>{message}</p>}
     </div>
   );
 };
