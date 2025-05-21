@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
@@ -16,12 +17,6 @@ const UploadScreen = () => {
   const navigate = useNavigate();
 
   const handleUpload = async () => {
-    // 🔎 Debug output
-    console.log("DEBUG — user.id:", user?.id);
-    const { data: sessionCheck, error: sessionError } = await supabase.auth.getSession();
-    console.log("DEBUG — Supabase session:", sessionCheck);
-    console.log("DEBUG — Supabase error:", sessionError);
-
     if (!title || !artist || !genre || !imageFile || !audioFile) {
       alert('Please fill out all fields and select both files.');
       return;
@@ -51,8 +46,6 @@ const UploadScreen = () => {
       .upload(audioFilename, audioFile);
 
     if (imageError || audioError) {
-      console.error('Image error:', imageError);
-      console.error('Audio error:', audioError);
       alert('Upload failed: ' + (audioError?.message || imageError?.message));
       setIsUploading(false);
       return;
@@ -68,12 +61,11 @@ const UploadScreen = () => {
         genre,
         cover: coverUrl,
         audio: audioUrl,
-        user_id: user?.id, // ✅ must match RLS policy
+        user_id: user.id,
       },
     ]);
 
     if (dbError) {
-      console.error('Database insert failed:', dbError.message);
       alert('Song metadata upload failed.');
       setIsUploading(false);
     } else {
@@ -83,7 +75,6 @@ const UploadScreen = () => {
       setGenre('');
       setImageFile(null);
       setAudioFile(null);
-
       setTimeout(() => {
         navigate('/swipe');
       }, 1500);
