@@ -1,21 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthProvider';
 import { supabase } from '../supabase';
 
 const SwipeScreen = () => {
   const { user, loading } = useAuth();
-  const navigate = useNavigate();
-
   const [songs, setSongs] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/auth');
+      window.location.href = '/auth'; // ✅ Safe redirect without crashing
     }
-  }, [user, loading, navigate]);
+  }, [user, loading]);
 
   useEffect(() => {
     const fetchSongs = async () => {
