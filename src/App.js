@@ -15,11 +15,11 @@ import SettingsScreen from './screens/SettingsScreen';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider> {/* ✅ FIXED: Now wrapped correctly */}
         <Header />
         <Routes>
-          <Route path="/" element={<SwipeScreen />} /> {/* 👈 or any public-facing intro */}
+          <Route path="/" element={<SwipeScreen />} />
           <Route path="/login" element={<LoginScreen />} />
           <Route path="/auth" element={<AuthScreen />} />
           <Route path="/profile" element={<ProfileScreen />} />
@@ -30,10 +30,11 @@ function App() {
           <Route path="/myjams" element={<MyJamsScreen />} />
           <Route path="/settings" element={<SettingsScreen />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
 export default App;
+
 
