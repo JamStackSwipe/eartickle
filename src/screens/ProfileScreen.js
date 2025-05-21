@@ -4,7 +4,7 @@ import { useAuth } from '../components/AuthProvider';
 
 const ProfileScreen = () => {
   console.log("✅ ProfileScreen loaded");
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [jamCount, setJamCount] = useState(0);
   const [uploadCount, setUploadCount] = useState(0);
   const [loading, setLoading] = useState(true);
