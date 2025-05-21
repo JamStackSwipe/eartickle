@@ -1,54 +1,54 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../supabase';
 
 const SwipeScreen = () => {
   const [songs, setSongs] = useState([]);
-  const [index, setIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     const fetchSongs = async () => {
-      const mockSongs = [
-        { id: "1", title: "Bow My Head", artist: "Jolie Grace", cover: "https://via.placeholder.com/280" },
-        { id: "2", title: "My Friends Are Ghosts", artist: "Jolie Grace", cover: "https://via.placeholder.com/280" },
-      ];
-      setSongs(mockSongs);
-      setLoading(false);
+      const { data, error } = await supabase
+        .from('songs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error) setSongs(data || []);
     };
 
     fetchSongs();
   }, []);
 
-  const handleSwipeRight = () => {
-    console.log("Liked:", songs[index]?.title);
-    setIndex((prev) => (prev + 1) % songs.length);
-  };
-
-  const handleSwipeLeft = () => {
-    console.log("Skipped:", songs[index]?.title);
-    setIndex((prev) => (prev + 1) % songs.length);
-  };
-
-  const currentSong = songs[index];
-
-  if (loading) {
-    return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading songs...</div>;
-  }
-
-  if (!currentSong) {
-    return <div className="min-h-screen bg-black text-white flex items-center justify-center">No more songs to swipe!</div>;
-  }
+  const current = songs[currentIndex];
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4 py-8 text-white">
-      <div className="bg-gray-900 p-6 rounded-2xl shadow-lg w-full max-w-xs text-center">
-        <img src={currentSong.cover} alt={currentSong.title} className="w-72 h-72 object-cover rounded-lg mb-4" />
-        <h2 className="text-2xl font-bold">{currentSong.title}</h2>
-        <p className="text-gray-400">by {currentSong.artist}</p>
-      </div>
-      <div className="mt-6 flex gap-6">
-        <button onClick={handleSwipeLeft} className="bg-red-600 hover:bg-red-700 px-6 py-2 rounded text-white font-semibold">Skip</button>
-        <button onClick={handleSwipeRight} className="bg-green-600 hover:bg-green-700 px-6 py-2 rounded text-white font-semibold">Add to JamStack</button>
-      </div>
+    <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center">
+      {current ? (
+        <>
+          <img src={current.cover_url} alt={current.title} className="w-60 h-60 object-cover rounded mb-4" />
+          <h2 className="text-xl font-bold">{current.title}</h2>
+          <audio controls src={current.mp3_url} className="my-4" />
+
+          <div className="space-x-6 mt-4">
+            <button
+              onClick={() => setCurrentIndex((i) => i + 1)}
+              className="bg-red-500 px-4 py-2 rounded"
+            >
+              ❌ Skip
+            </button>
+            <button
+              onClick={() => {
+                // In future: Add to JamStack
+                setCurrentIndex((i) => i + 1);
+              }}
+              className="bg-green-400 text-black px-4 py-2 rounded"
+            >
+              ✅ Add to JamStack
+            </button>
+          </div>
+        </>
+      ) : (
+        <p className="text-gray-400">No more songs to swipe.</p>
+      )}
     </div>
   );
 };

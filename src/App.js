@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 
-// Screens
 import LoginScreen from './screens/LoginScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import UploadScreen from './screens/UploadScreen';
@@ -15,7 +14,7 @@ function App() {
     <Router>
       <Header />
       <Routes>
-        <Route path="/" element={<LoginScreen />} />         {/* 👈 default route is login */}
+        <Route path="/" element={<LoginScreen />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/upload" element={<UploadScreen />} />
