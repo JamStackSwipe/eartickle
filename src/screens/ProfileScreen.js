@@ -1,19 +1,16 @@
-
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthProvider';
 import { supabase } from '../supabase';
 
 const ProfileScreen = () => {
   const { user, loading } = useAuth();
-  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/auth');
+      window.location.href = '/auth'; // ✅ Avoid useNavigate during render
     }
-  }, [user, loading, navigate]);
+  }, [user, loading]);
 
   useEffect(() => {
     const fetchProfile = async () => {
