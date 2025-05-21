@@ -1,10 +1,33 @@
-import React, { useEffect, useState } from 'react';
+
+  import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
+import { useNavigate } from 'react-router-dom';
 
 const SwipeScreen = () => {
   const [songs, setSongs] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [message, setMessage] = useState('');
+  const [userReady, setUserReady] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+
+      if (error) {
+        console.error('Auth error:', error);
+        return;
+      }
+
+      if (!user) {
+        navigate('/auth');
+      } else {
+        setUserReady(true);
+      }
+    };
+
+    checkUser();
+  }, [navigate]);
 
   useEffect(() => {
     const fetchSongs = async () => {
@@ -16,8 +39,8 @@ const SwipeScreen = () => {
       if (!error) setSongs(data || []);
     };
 
-    fetchSongs();
-  }, []);
+    if (userReady) fetchSongs();
+  }, [userReady]);
 
   const current = songs[currentIndex];
 
@@ -30,7 +53,6 @@ const SwipeScreen = () => {
       return;
     }
 
-    // Prevent duplicates
     const { data: existingSong } = await supabase
       .from('jamstacksongs')
       .select('id')
@@ -45,7 +67,6 @@ const SwipeScreen = () => {
       return;
     }
 
-    // Get max order
     const { data: existing } = await supabase
       .from('jamstacksongs')
       .select('order')
@@ -73,6 +94,8 @@ const SwipeScreen = () => {
     setTimeout(() => setMessage(''), 2000);
     setCurrentIndex((i) => i + 1);
   };
+
+  if (!userReady) return <div className="p-4 text-center">Checking session...</div>;
 
   return (
     <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center">
