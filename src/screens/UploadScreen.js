@@ -15,13 +15,13 @@ const UploadScreen = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  console.log("DEBUG — user.id:", user?.id);
-const { data: sessionCheck, error } = await supabase.auth.getSession();
-console.log("DEBUG — Supabase session:", sessionCheck);
-console.log("DEBUG — Supabase error:", error);
-
-
   const handleUpload = async () => {
+    // 🔎 Debug output
+    console.log("DEBUG — user.id:", user?.id);
+    const { data: sessionCheck, error: sessionError } = await supabase.auth.getSession();
+    console.log("DEBUG — Supabase session:", sessionCheck);
+    console.log("DEBUG — Supabase error:", sessionError);
+
     if (!title || !artist || !genre || !imageFile || !audioFile) {
       alert('Please fill out all fields and select both files.');
       return;
@@ -68,7 +68,7 @@ console.log("DEBUG — Supabase error:", error);
         genre,
         cover: coverUrl,
         audio: audioUrl,
-        user_id: user.id, // ✅ required for RLS to pass
+        user_id: user?.id, // ✅ must match RLS policy
       },
     ]);
 
