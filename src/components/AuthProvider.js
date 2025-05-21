@@ -1,52 +1,35 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../supabase';
+import { createContext, useContext, useEffect, useState } from "react";
+import { supabase } from "../supabase";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
+  // Load current session on mount
   useEffect(() => {
-    const refreshSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
+    const getSession = async () => {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) console.error("Error loading user:", error.message);
+      setUser(user);
+      setLoading(false);
     };
 
-    refreshSession();
+    getSession();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user || null);
-
-      if (event === 'SIGNED_IN') {
-        checkNewUser(session?.user);
+    // Subscribe to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user || null);
       }
+    );
 
-      if (event === 'SIGNED_OUT') {
-        navigate('/login');
-      }
-    });
-
-    return () => listener.subscription.unsubscribe();
-  }, [navigate]);
-
-  const checkNewUser = async (user) => {
-    const { data } = await supabase
-      .from('jamstacksongs')
-      .select('id')
-      .eq('user_id', user.id)
-      .limit(1);
-
-    if (!data || data.length === 0) {
-      navigate('/profile'); // new user
-    } else {
-      navigate('/jamstack'); // existing user
-    }
-  };
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user }}>
+    <AuthContext.Provider value={{ user, loading }}>
       {children}
     </AuthContext.Provider>
   );
