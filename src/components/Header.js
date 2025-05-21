@@ -1,19 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { supabase } from '../supabase';
 
 const Header = () => {
   const [user, setUser] = useState(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const checkUser = async () => {
-      try {
-        const { data, error } = await supabase.auth.getUser();
-        if (error) throw error;
+      const { data, error } = await supabase.auth.getUser();
+      if (!error) {
         setUser(data?.user ?? null);
-      } catch (err) {
-        console.error('User check failed:', err.message);
       }
     };
 
@@ -21,9 +17,11 @@ const Header = () => {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    navigate('/auth');
+    const { error } = await supabase.auth.signOut();
+    if (!error) {
+      // ✅ This avoids useNavigate, which causes Router context errors during hydration
+      window.location.href = '/auth';
+    }
   };
 
   return (
@@ -59,4 +57,6 @@ const Header = () => {
 };
 
 export default Header;
+
+
 
