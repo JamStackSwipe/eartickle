@@ -9,35 +9,39 @@ export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
+    const refreshSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user || null);
+    };
+
+    refreshSession();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user || null);
+
+      if (event === 'SIGNED_IN') {
+        checkNewUser(session?.user);
+      }
+
+      if (event === 'SIGNED_OUT') {
+        navigate('/login');
+      }
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user || null);
-
-        if (event === 'SIGNED_IN') {
-          checkNewUser(session?.user);
-        }
-      }
-    );
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
+    return () => listener.subscription.unsubscribe();
   }, [navigate]);
 
   const checkNewUser = async (user) => {
     const { data } = await supabase
-      .from('jamstack')
+      .from('jamstacksongs')
       .select('id')
-      .eq('user_id', user.id);
+      .eq('user_id', user.id)
+      .limit(1);
 
     if (!data || data.length === 0) {
-      navigate('/profile');
+      navigate('/profile'); // new user
     } else {
-      navigate('/jamstack');
+      navigate('/jamstack'); // existing user
     }
   };
 
