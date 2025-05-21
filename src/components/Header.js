@@ -8,10 +8,13 @@ const Header = () => {
 
   useEffect(() => {
     const checkUser = async () => {
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
-      setUser(user);
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        setUser(data?.user ?? null);
+      } catch (err) {
+        console.error('User check failed:', err.message);
+      }
     };
 
     checkUser();
@@ -56,3 +59,4 @@ const Header = () => {
 };
 
 export default Header;
+
