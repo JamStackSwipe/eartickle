@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabase';
@@ -7,18 +8,19 @@ const Header = () => {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (!error) {
-        setUser(data?.user ?? null);
-      }
+      const response = await supabase.auth.getUser();
+      const currentUser = response?.data?.user ?? null;
+      setUser(currentUser);
     };
+
     checkUser();
   }, []);
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (!error) {
-      window.location.href = '/auth'; // avoids navigate crash
+      // Avoid useNavigate to prevent Router crashes
+      window.location.href = '/auth';
     }
   };
 
