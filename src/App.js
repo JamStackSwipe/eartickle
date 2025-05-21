@@ -1,57 +1,38 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { supabase } from '../supabase';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Header from './components/Header';
+import { AuthProvider } from './components/AuthProvider';
 
-const Header = () => {
-  const [user, setUser] = useState(null);
+import LoginScreen from './screens/LoginScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import UploadScreen from './screens/UploadScreen';
+import SwipeScreen from './screens/SwipeScreen';
+import JamStackScreen from './screens/JamStackScreen';
+import AuthScreen from './screens/AuthScreen';
+import RewardsScreen from './screens/RewardsScreen';
+import MyJamsScreen from './screens/MyJamsScreen';
+import SettingsScreen from './screens/SettingsScreen';
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (!error) {
-        setUser(data?.user ?? null);
-      }
-    };
-    checkUser();
-  }, []);
-
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (!error) {
-      window.location.href = '/auth'; // avoids navigate crash
-    }
-  };
-
+function App() {
   return (
-    <header className="bg-gray-800 text-white px-6 py-4 shadow-md">
-      <nav className="flex justify-between items-center max-w-6xl mx-auto">
-        <Link to="/" className="text-xl font-bold hover:text-blue-400">
-          EarTickle
-        </Link>
-
-        <div className="flex space-x-6 text-sm font-medium">
-          <Link to="/swipe" className="hover:text-blue-400">Swipe</Link>
-          <Link to="/upload" className="hover:text-blue-400">Upload</Link>
-          <Link to="/myjams" className="hover:text-blue-400">My Jams</Link>
-          <Link to="/rewards" className="hover:text-blue-400">Rewards</Link>
-          <Link to="/profile" className="hover:text-blue-400">Profile</Link>
-
-          {user ? (
-            <button
-              onClick={handleLogout}
-              className="hover:text-red-400 ml-2"
-            >
-              Logout
-            </button>
-          ) : (
-            <Link to="/auth" className="hover:text-green-400">
-              Login
-            </Link>
-          )}
-        </div>
-      </nav>
-    </header>
+    <Router>
+      <AuthProvider>
+        <Header />
+        <Routes>
+          <Route path="/" element={<AuthScreen />} />
+          <Route path="/auth" element={<AuthScreen />} />
+          <Route path="/login" element={<LoginScreen />} />
+          <Route path="/profile" element={<ProfileScreen />} />
+          <Route path="/upload" element={<UploadScreen />} />
+          <Route path="/swipe" element={<SwipeScreen />} />
+          <Route path="/jamstack" element={<JamStackScreen />} />
+          <Route path="/rewards" element={<RewardsScreen />} />
+          <Route path="/myjams" element={<MyJamsScreen />} />
+          <Route path="/settings" element={<SettingsScreen />} />
+        </Routes>
+      </AuthProvider>
+    </Router>
   );
-};
+}
 
-export default Header;
+export default App;
