@@ -5,11 +5,12 @@ const UploadScreen = () => {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [imageFile, setImageFile] = useState(null);
+  const [audioFile, setAudioFile] = useState(null);
   const [message, setMessage] = useState('');
 
   const handleUpload = async () => {
-    if (!title || !artist || !imageFile) {
-      alert('Please fill out all fields and select an image.');
+    if (!title || !artist || !imageFile || !audioFile) {
+      alert('Please fill out all fields and select both files.');
       return;
     }
 
@@ -18,35 +19,49 @@ const UploadScreen = () => {
       return;
     }
 
-    const filename = `${Date.now()}-${imageFile.name}`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('songs')
-      .upload(filename, imageFile);
-
-    if (uploadError) {
-      console.error('Upload failed:', uploadError.message);
-      alert('Image upload failed.');
+    if (audioFile.size > 20 * 1024 * 1024) {
+      alert('Audio file too large. Max size is 20MB.');
       return;
     }
 
-    const imageUrl = supabase.storage.from('songs').getPublicUrl(filename).data.publicUrl;
+    const imageFilename = `${Date.now()}-${imageFile.name}`;
+    const audioFilename = `${Date.now()}-${audioFile.name}`;
 
-    const { error: insertError } = await supabase.from('songs').insert([
+    const { error: imageError } = await supabase.storage
+      .from('songs')
+      .upload(imageFilename, imageFile);
+
+    const { error: audioError } = await supabase.storage
+      .from('audio')
+      .upload(audioFilename, audioFile);
+
+    if (imageError || audioError) {
+      console.error('Upload errors:', imageError || audioError);
+      alert('Upload failed.');
+      return;
+    }
+
+    const coverUrl = supabase.storage.from('songs').getPublicUrl(imageFilename).data.publicUrl;
+    const audioUrl = supabase.storage.from('audio').getPublicUrl(audioFilename).data.publicUrl;
+
+    const { error: dbError } = await supabase.from('songs').insert([
       {
         title,
         artist,
-        cover: imageUrl,
+        cover: coverUrl,
+        audio: audioUrl,
       },
     ]);
 
-    if (insertError) {
-      console.error('Insert failed:', insertError.message);
+    if (dbError) {
+      console.error('Database insert failed:', dbError.message);
       alert('Song metadata upload failed.');
     } else {
       setMessage('✅ Song uploaded!');
       setTitle('');
       setArtist('');
       setImageFile(null);
+      setAudioFile(null);
     }
   };
 
@@ -75,6 +90,14 @@ const UploadScreen = () => {
         type="file"
         accept="image/png, image/jpeg"
         onChange={(e) => setImageFile(e.target.files[0])}
+        className="w-full p-2 border rounded mb-4"
+      />
+
+      <label className="block mb-2 font-medium">Audio File (MP3, Max 20MB)</label>
+      <input
+        type="file"
+        accept="audio/mpeg"
+        onChange={(e) => setAudioFile(e.target.files[0])}
         className="w-full p-2 border rounded mb-4"
       />
 
