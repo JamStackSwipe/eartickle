@@ -3,69 +3,49 @@ import { supabase } from '../supabase';
 import { useAuth } from '../components/AuthProvider';
 
 const MyJamsScreen = () => {
-  const { user, loading: authLoading } = useAuth();
-  const [jams, setJams] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { user } = useAuth();
+  const [mySongs, setMySongs] = useState([]);
 
   useEffect(() => {
-    if (!authLoading && user) {
-      fetchMyJams();
-    }
-  }, [authLoading, user]);
+    if (user?.id) fetchMyJamStack();
+  }, [user]);
 
-  const fetchMyJams = async () => {
-    setLoading(true);
+  const fetchMyJamStack = async () => {
     const { data, error } = await supabase
       .from('jamstacksongs')
-      .select('id, song_id, songs (title, artist, cover)')
+      .select('id, songs ( id, title, artist, genre, cover, audio )')
       .eq('user_id', user.id);
 
     if (error) {
-      console.error(error);
-      setError('Failed to load your JamStack.');
+      console.error('Error loading jamstack:', error.message);
     } else {
-      setJams(data);
+      setMySongs(data);
     }
-
-    setLoading(false);
   };
 
-  if (authLoading || loading) {
-    return <p className="text-center mt-10">Loading your Jams...</p>;
-  }
-
   if (!user) {
-    return <p className="text-center mt-10">Please log in to view your JamStack.</p>;
+    return <div className="text-center mt-10 text-gray-500">Please log in to view your JamStack.</div>;
   }
 
-  if (error) {
-    return <p className="text-center text-red-500 mt-10">{error}</p>;
+  if (mySongs.length === 0) {
+    return <div className="text-center mt-10 text-gray-500">You haven't added any songs yet.</div>;
   }
 
   return (
-    <div className="max-w-2xl mx-auto mt-10 p-4">
-      <h2 className="text-2xl font-bold mb-6 text-center">My JamStack</h2>
-
-      {jams.length === 0 ? (
-        <p className="text-center text-gray-500">You haven't added any jams yet.</p>
-      ) : (
-        <ul className="space-y-4">
-          {jams.map((jam) => (
-            <li key={jam.id} className="p-4 bg-white rounded shadow flex items-center space-x-4">
-              <img
-                src={jam.songs?.cover || '/logo.png'}
-                alt="Cover"
-                className="w-16 h-16 object-cover rounded"
-              />
-              <div>
-                <p className="font-semibold">{jam.songs?.title}</p>
-                <p className="text-sm text-gray-500">{jam.songs?.artist}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+    <div className="max-w-2xl mx-auto mt-10 px-4">
+      <h2 className="text-2xl font-bold mb-6 text-center">🎵 My JamStack</h2>
+      {mySongs.map((entry) => {
+        const song = entry.songs;
+        return (
+          <div key={entry.id} className="bg-white shadow-md rounded p-4 mb-6">
+            <h3 className="text-xl font-bold mb-2">{song.title}</h3>
+            <img src={song.cover} alt="cover" className="w-full h-48 object-cover rounded mb-2" />
+            <p className="text-lg font-medium">{song.artist}</p>
+            <p className="text-sm text-gray-500 italic mb-2">{song.genre}</p>
+            <audio controls src={song.audio} className="w-full" />
+          </div>
+        );
+      })}
     </div>
   );
 };
