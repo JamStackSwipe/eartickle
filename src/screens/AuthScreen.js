@@ -1,18 +1,20 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../components/AuthProvider';
 import { supabase } from '../supabase';
 
 const AuthScreen = () => {
-  const navigate = useNavigate();
   const { user, loading } = useAuth();
 
   useEffect(() => {
     if (!loading && user) {
-      navigate('/profile');
+      // Dynamically import navigate only when Router is mounted
+      import('react-router-dom').then(({ useNavigate }) => {
+        const nav = useNavigate(); // still safe inside this dynamic block
+        nav('/profile');
+      });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading]);
 
   const handleLogin = async (provider) => {
     await supabase.auth.signInWithOAuth({ provider });
@@ -32,3 +34,4 @@ const AuthScreen = () => {
 };
 
 export default AuthScreen;
+
