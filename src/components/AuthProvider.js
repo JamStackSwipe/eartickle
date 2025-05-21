@@ -11,7 +11,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Initial load and rehydration
   useEffect(() => {
     const getInitialSession = async () => {
       try {
@@ -28,20 +27,20 @@ export const AuthProvider = ({ children }) => {
 
     getInitialSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
 
-        // Optional: redirect after login/logout
-        if (event === "SIGNED_IN") {
-          navigate("/profile");
-        }
-        if (event === "SIGNED_OUT") {
-          navigate("/auth");
-        }
+      // ✅ Wrap all navigate() calls in setTimeout to avoid crash
+      if (event === "SIGNED_IN") {
+        setTimeout(() => navigate("/profile"), 0);
       }
-    );
+      if (event === "SIGNED_OUT") {
+        setTimeout(() => navigate("/auth"), 0);
+      }
+    });
 
     return () => {
       subscription.unsubscribe();
