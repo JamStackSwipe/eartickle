@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from '../components/AuthProvider';
@@ -14,10 +15,14 @@ const SwipeScreen = () => {
   }, []);
 
   const fetchSongs = async () => {
-    const { data, error } = await supabase.from('songs').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('songs')
+      .select('*')
+      .order('created_at', { ascending: false });
+
     if (!error) {
       setSongs(data);
-      if (data.length > 0) incrementViews(data[0].id); // view first song
+      if (data.length > 0) incrementViews(data[0].id);
     }
   };
 
@@ -38,6 +43,25 @@ const SwipeScreen = () => {
 
     setAdding(true);
     const currentSong = songs[currentIndex];
+
+    if (!currentSong?.id) {
+      alert("⚠️ Invalid song selected.");
+      setAdding(false);
+      return;
+    }
+
+    const { data: songCheck } = await supabase
+      .from('songs')
+      .select('id')
+      .eq('id', currentSong.id)
+      .maybeSingle();
+
+    if (!songCheck) {
+      alert("⚠️ This song no longer exists in the catalog.");
+      setAdding(false);
+      return;
+    }
+
     const { error } = await supabase.from('jamstacksongs').insert([
       {
         id: uuidv4(),
@@ -46,11 +70,13 @@ const SwipeScreen = () => {
       },
     ]);
 
-    if (!error) {
-      alert('🎵 Added to your JamStack!');
-    } else {
+    if (error) {
+      alert('❌ Failed to add song to your JamStack');
       console.error('JamStack insert error:', error);
+    } else {
+      alert('🎵 Added to your JamStack!');
     }
+
     setAdding(false);
   };
 
@@ -63,7 +89,11 @@ const SwipeScreen = () => {
   return (
     <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow-lg rounded text-center">
       <h2 className="text-2xl font-bold mb-4">{song.title}</h2>
-      <img src={song.cover} alt="cover" className="w-full h-64 object-cover rounded mb-4" />
+      <img
+        src={song.cover}
+        alt="cover"
+        className="w-full h-64 object-cover rounded mb-4"
+      />
       <p className="text-lg font-semibold">{song.artist}</p>
       <p className="text-sm italic text-gray-500">{song.genre}</p>
       <audio controls src={song.audio} className="w-full mt-4 mb-2" />
