@@ -4,32 +4,43 @@ import { useNavigate } from 'react-router-dom';
 
 const ProfileScreen = () => {
   const [profile, setProfile] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // ✅ Rename to avoid redeclaration
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data: user, error: userError } = await supabase.auth.getUser();
+      try {
+        const { data: userResponse, error: userError } = await supabase.auth.getUser();
 
-      if (userError || !user?.user) {
-        console.error('No user found or auth error', userError);
-        navigate('/auth');
-        return;
+        if (userError) {
+          console.error('Auth error:', userError);
+          return;
+        }
+
+        const user = userResponse?.user;
+
+        if (!user) {
+          console.warn('User not found, redirecting...');
+          navigate('/auth');
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Error fetching profile:', error);
+        } else {
+          setProfile(data);
+        }
+      } catch (err) {
+        console.error('Unexpected error:', err);
+      } finally {
+        setIsLoading(false);
       }
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.user.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-      } else {
-        setProfile(data);
-      }
-
-      setIsLoading(false);
     };
 
     fetchProfile();
@@ -40,9 +51,7 @@ const ProfileScreen = () => {
     navigate('/auth');
   };
 
-  if (isLoading) {
-    return <div className="p-4 text-center">Loading...</div>;
-  }
+  if (isLoading) return <div className="p-4 text-center">Loading...</div>;
 
   return (
     <div className="p-6 max-w-md mx-auto bg-white rounded-xl shadow-md space-y-4">
