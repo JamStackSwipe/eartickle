@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from '../components/AuthProvider';
+import {
+  playTickle,
+  playTickleSpecial
+} from '../utils/tickleSound';
 
 const RewardsScreen = () => {
   const { user, loading: authLoading } = useAuth();
@@ -27,6 +31,16 @@ const RewardsScreen = () => {
       setError('Failed to load Tickles.');
     } else {
       setRewards(data);
+
+      // ✅ Play tickle sound based on latest amount
+      if (data.length > 0) {
+        const latest = data[0];
+        if (latest.amount >= 20) {
+          playTickleSpecial();
+        } else {
+          playTickle();
+        }
+      }
     }
 
     setLoading(false);
