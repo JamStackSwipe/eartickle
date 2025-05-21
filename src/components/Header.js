@@ -16,10 +16,12 @@ const Header = () => {
       </div>
 
       <nav className="hidden md:flex space-x-6 text-white text-sm">
-        <a href="/auth" className="hover:text-blue-400">Auth</a>
-        <a href="/swipe" className="hover:text-blue-400">Swipe</a>
-        <a href="/jamstack" className="hover:text-blue-400">JamStack</a>
+        <a href="/login" className="hover:text-blue-400">Login</a>
+        <a href="/profile" className="hover:text-blue-400">Profile</a>
+        <a href="/jamstack" className="hover:text-blue-400">My Jams</a>
+        <a href="/rewards" className="hover:text-blue-400">Rewards</a>
         <a href="/upload" className="hover:text-blue-400">Upload</a>
+        <a href="/swipe" className="hover:text-blue-400">Swipe</a>
       </nav>
     </header>
   );
