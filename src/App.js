@@ -9,6 +9,9 @@ import UploadScreen from './screens/UploadScreen';
 import SwipeScreen from './screens/SwipeScreen';
 import JamStackScreen from './screens/JamStackScreen';
 import AuthScreen from './screens/AuthScreen';
+import RewardsScreen from './screens/RewardsScreen';
+import MyJamsScreen from './screens/MyJamsScreen';
+import SettingsScreen from './screens/SettingsScreen';
 
 function App() {
   return (
@@ -22,6 +25,9 @@ function App() {
         <Route path="/swipe" element={<SwipeScreen />} />
         <Route path="/jamstack" element={<JamStackScreen />} />
         <Route path="/auth" element={<AuthScreen />} />
+        <Route path="/rewards" element={<RewardsScreen />} />
+        <Route path="/myjams" element={<MyJamsScreen />} />
+        <Route path="/settings" element={<SettingsScreen />} />
       </Routes>
     </Router>
   );
