@@ -1,129 +1,121 @@
+// src/screens/UploadScreen.js
+
 import React, { useState } from 'react';
 import { supabase } from '../supabase';
+import { v4 as uuidv4 } from 'uuid';
+
+const MAX_COVER_SIZE_MB = 2;
+const MAX_AUDIO_SIZE_MB = 20;
 
 const UploadScreen = () => {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [coverFile, setCoverFile] = useState(null);
-  const [mp3File, setMp3File] = useState(null);
-  const [message, setMessage] = useState('');
+  const [audioFile, setAudioFile] = useState(null);
+  const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const validateFile = (file, type, maxSizeMB) => {
+    if (!file) return false;
+    if (!file.type.startsWith(type)) return `❌ Invalid file type for ${type === 'image/' ? 'cover' : 'audio'}`;
+    if (file.size > maxSizeMB * 1024 * 1024) return `❌ File exceeds ${maxSizeMB}MB limit`;
+    return '';
+  };
 
-    if (!title || !artist || !coverFile || !mp3File) {
-      setMessage('All fields are required.');
-      return;
-    }
+  const handleUpload = async () => {
+    const coverError = validateFile(coverFile, 'image/', MAX_COVER_SIZE_MB);
+    const audioError = validateFile(audioFile, 'audio/', MAX_AUDIO_SIZE_MB);
 
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData?.user?.id;
-    if (!userId) {
-      setMessage('You must be logged in to upload.');
-      return;
-    }
+    if (!title || !artist) return setError('⚠️ Title and Artist are required');
+    if (coverError) return setError(coverError);
+    if (audioError) return setError(audioError);
 
-    const fileId = Date.now(); // unique file reference
-    const coverPath = `${userId}/covers/${fileId}-${coverFile.name}`;
-    const mp3Path = `${userId}/mp3s/${fileId}-${mp3File.name}`;
+    setUploading(true);
+    setError('');
+    const songId = uuidv4();
 
-    // Upload cover image
-    const { error: coverError } = await supabase.storage
-      .from('covers')
-      .upload(coverPath, coverFile, { cacheControl: '3600', upsert: true });
+    try {
+      const { data: coverUpload, error: coverErr } = await supabase.storage
+        .from('covers')
+        .upload(`${songId}_cover.jpg`, coverFile);
 
-    if (coverError) {
-      console.error(coverError.message);
-      setMessage('Cover upload failed.');
-      return;
-    }
+      if (coverErr) throw coverErr;
 
-    // Upload mp3
-    const { error: mp3Error } = await supabase.storage
-      .from('mp3s')
-      .upload(mp3Path, mp3File, { cacheControl: '3600', upsert: true });
+      const { data: audioUpload, error: audioErr } = await supabase.storage
+        .from('songs')
+        .upload(`${songId}_audio.mp3`, audioFile);
 
-    if (mp3Error) {
-      console.error(mp3Error.message);
-      setMessage('MP3 upload failed.');
-      return;
-    }
+      if (audioErr) throw audioErr;
 
-    // Get public URLs
-    const coverUrl = supabase.storage.from('covers').getPublicUrl(coverPath).data.publicUrl;
-    const mp3Url = supabase.storage.from('mp3s').getPublicUrl(mp3Path).data.publicUrl;
+      const { error: dbErr } = await supabase.from('songs').insert([
+        {
+          id: songId,
+          title,
+          artist,
+          cover_url: coverUpload.path,
+          audio_url: audioUpload.path,
+        },
+      ]);
 
-    // Insert song into database
-    const { error: insertError } = await supabase.from('songs').insert([
-      {
-        user_id: userId,
-        title,
-        artist,
-        cover_url: coverUrl,
-        mp3_url: mp3Url,
-      },
-    ]);
+      if (dbErr) throw dbErr;
 
-    if (insertError) {
-      console.error(insertError.message);
-      setMessage('Upload failed.');
-    } else {
-      setMessage('✅ Song uploaded successfully!');
+      alert('✅ Song uploaded successfully!');
       setTitle('');
       setArtist('');
       setCoverFile(null);
-      setMp3File(null);
+      setAudioFile(null);
+    } catch (err) {
+      setError(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
-      <h1 className="text-3xl font-bold mb-4">🎧 Upload a Song</h1>
+    <div className="p-6 max-w-lg mx-auto">
+      <h2 className="text-2xl font-bold mb-4">🎧 Upload a Song</h2>
 
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
-        <input
-          type="text"
-          placeholder="Song Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full p-2 rounded text-black"
-          required
-        />
+      {error && <div className="text-red-600 mb-4">{error}</div>}
 
-        <input
-          type="text"
-          placeholder="Artist Name"
-          value={artist}
-          onChange={(e) => setArtist(e.target.value)}
-          className="w-full p-2 rounded text-black"
-          required
-        />
+      <input
+        type="text"
+        placeholder="Song Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        className="w-full p-2 border rounded mb-2"
+      />
 
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => setCoverFile(e.target.files[0])}
-          className="w-full text-sm text-gray-400"
-          required
-        />
+      <input
+        type="text"
+        placeholder="Artist Name"
+        value={artist}
+        onChange={(e) => setArtist(e.target.value)}
+        className="w-full p-2 border rounded mb-4"
+      />
 
-        <input
-          type="file"
-          accept="audio/mpeg"
-          onChange={(e) => setMp3File(e.target.files[0])}
-          className="w-full text-sm text-gray-400"
-          required
-        />
+      <label className="block font-medium mb-1">Album Cover (JPG/PNG, max 2MB)</label>
+      <input
+        type="file"
+        accept="image/jpeg, image/png"
+        onChange={(e) => setCoverFile(e.target.files[0])}
+        className="mb-4"
+      />
 
-        <button
-          type="submit"
-          className="bg-blue-400 text-black px-4 py-2 rounded hover:bg-blue-300"
-        >
-          Upload Song
-        </button>
-      </form>
+      <label className="block font-medium mb-1">MP3 File (max 20MB)</label>
+      <input
+        type="file"
+        accept="audio/mpeg"
+        onChange={(e) => setAudioFile(e.target.files[0])}
+        className="mb-4"
+      />
 
-      {message && <p className="mt-4 text-teal-300">{message}</p>}
+      <button
+        onClick={handleUpload}
+        disabled={uploading}
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+      >
+        {uploading ? 'Uploading...' : 'Upload Song'}
+      </button>
     </div>
   );
 };
