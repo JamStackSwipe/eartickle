@@ -14,8 +14,8 @@ const JamStackScreen = () => {
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('jamstacksongs')
-        .select('id, created_at, songs(*)') // Ensure songs relation is set in Supabase
+        .from('jamstack')
+        .select('*')
         .eq('user_id', user.id);
 
       if (error) {
@@ -39,3 +39,4 @@ const JamStackScreen = () => {
 };
 
 export default JamStackScreen;
+
