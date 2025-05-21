@@ -15,6 +15,12 @@ const UploadScreen = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  console.log("DEBUG — user.id:", user?.id);
+const { data: sessionCheck, error } = await supabase.auth.getSession();
+console.log("DEBUG — Supabase session:", sessionCheck);
+console.log("DEBUG — Supabase error:", error);
+
+
   const handleUpload = async () => {
     if (!title || !artist || !genre || !imageFile || !audioFile) {
       alert('Please fill out all fields and select both files.');
