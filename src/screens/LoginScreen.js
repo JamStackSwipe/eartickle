@@ -1,12 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { supabase } from '../supabase';
 
 const LoginScreen = () => {
-  const handleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'github', // or 'google', 'spotify', etc.
-    });
-    if (error) console.error('Login error:', error.message);
+  const [email, setEmail] = useState('');
+  const [message, setMessage] = useState('');
+
+  const handleOAuthLogin = async (provider) => {
+    const { error } = await supabase.auth.signInWithOAuth({ provider });
+    if (error) {
+      console.error('OAuth login error:', error.message);
+      setMessage('Login failed.');
+    }
+  };
+
+  const handleEmailLogin = async (e) => {
+    e.preventDefault();
+    const { error } = await supabase.auth.signInWithOtp({ email });
+
+    if (error) {
+      console.error('Email login error:', error.message);
+      setMessage('Could not send magic link.');
+    } else {
+      setMessage('Magic login link sent! Check your email.');
+    }
   };
 
   return (
@@ -16,15 +32,15 @@ const LoginScreen = () => {
         <h1 className="text-4xl font-bold">EarTickle™</h1>
         <p className="text-gray-400 text-sm">Swipe. Stack. Play.</p>
 
-        <button
-          onClick={handleLogin}
-          className="mt-6 bg-teal-400 hover:bg-teal-300 text-black font-semibold py-3 px-6 rounded-lg transition"
-        >
-          Login with GitHub
-        </button>
-      </div>
-    </div>
-  );
-};
+        <div className="space-y-4">
+          <button
+            onClick={() => handleOAuthLogin('github')}
+            className="bg-white text-black font-semibold py-2 px-4 rounded w-full hover:bg-gray-200"
+          >
+            Login with GitHub
+          </button>
 
-export default LoginScreen;
+          <button
+            onClick={() => handleOAuthLogin('spotify')}
+            className="bg-green-400 text-black font-semibold py-2 px-4 rounded w-full hover:bg-green-300"
+          >
