@@ -40,12 +40,7 @@ const LoginScreen = () => {
             Login with GitHub
           </button>
 
-          <button
-            onClick={() => handleOAuthLogin('spotify')}
-            className="bg-green-400 text-black font-semibold py-2 px-4 rounded w-full hover:bg-green-300"
-          >
-            Login with Spotify
-          </button>
+      
         </div>
 
         <form onSubmit={handleEmailLogin} className="space-y-4 pt-6">
