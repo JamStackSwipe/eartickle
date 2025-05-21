@@ -1,4 +1,5 @@
-import React from 'react';
+
+  import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import { AuthProvider } from './components/AuthProvider';
@@ -15,8 +16,8 @@ import SettingsScreen from './screens/SettingsScreen';
 
 function App() {
   return (
-    <Router>
-      <AuthProvider> {/* ✅ FIXED: Now wrapped correctly */}
+    <Router> {/* ✅ Router must come first */}
+      <AuthProvider> {/* ✅ Now safe to use useNavigate inside */}
         <Header />
         <Routes>
           <Route path="/" element={<SwipeScreen />} />
