@@ -1,44 +1,45 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useAuth } from '../components/AuthProvider';
 import { supabase } from '../supabase';
 
 const ProfileScreen = () => {
-  const { user, loading } = useAuth();
-  const [profile, setProfile] = useState(null);
+  const { user, loading, signOut } = useAuth();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      window.location.href = '/auth'; // ✅ Avoid useNavigate during render
-    }
-  }, [user, loading]);
+  if (loading) {
+    return <p className="text-center mt-10">Loading...</p>;
+  }
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user?.id)
-        .single();
-      if (!error) setProfile(data);
-    };
-
-    if (user) fetchProfile();
-  }, [user]);
-
-  if (loading) return <div className="text-white p-6">Loading profile...</div>;
+  if (!user) {
+    return <p className="text-center mt-10">You are not logged in.</p>;
+  }
 
   return (
-    <div className="p-6 max-w-md mx-auto bg-white rounded-xl shadow-md space-y-4">
-      <h1 className="text-xl font-bold">Profile</h1>
-      {profile ? (
-        <>
-          <p><strong>Username:</strong> {profile.username}</p>
-          <p><strong>Email:</strong> {profile.email}</p>
-          <p><strong>Joined:</strong> {new Date(profile.created_at).toLocaleDateString()}</p>
-        </>
-      ) : (
-        <p>No profile data available.</p>
-      )}
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow-lg rounded">
+      <h2 className="text-2xl font-bold mb-4 text-center">My Profile</h2>
+
+      <div className="space-y-3">
+        <div>
+          <p className="text-gray-600">Email:</p>
+          <p className="font-medium">{user.email}</p>
+        </div>
+
+        <div>
+          <p className="text-gray-600">User ID:</p>
+          <p className="break-all text-sm">{user.id}</p>
+        </div>
+
+        <div>
+          <p className="text-gray-600">Login Method:</p>
+          <p className="capitalize">{user.app_metadata?.provider || 'Unknown'}</p>
+        </div>
+      </div>
+
+      <button
+        onClick={signOut}
+        className="mt-6 w-full bg-red-600 text-white py-2 rounded hover:bg-red-700"
+      >
+        Log Out
+      </button>
     </div>
   );
 };
