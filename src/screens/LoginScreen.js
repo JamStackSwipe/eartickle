@@ -44,3 +44,31 @@ const LoginScreen = () => {
             onClick={() => handleOAuthLogin('spotify')}
             className="bg-green-400 text-black font-semibold py-2 px-4 rounded w-full hover:bg-green-300"
           >
+            Login with Spotify
+          </button>
+        </div>
+
+        <form onSubmit={handleEmailLogin} className="space-y-4 pt-6">
+          <input
+            type="email"
+            placeholder="Your email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-2 rounded text-black"
+            required
+          />
+          <button
+            type="submit"
+            className="bg-blue-400 text-black font-semibold py-2 px-4 rounded w-full hover:bg-blue-300"
+          >
+            Send Magic Link
+          </button>
+        </form>
+
+        {message && <p className="mt-4 text-teal-300">{message}</p>}
+      </div>
+    </div>
+  );
+};
+
+export default LoginScreen;
