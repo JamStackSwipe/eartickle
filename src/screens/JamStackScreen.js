@@ -1,73 +1,73 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
+import { useAuth } from '../components/AuthProvider';
 
-const JamStackScreen = () => {
-  const [jamstack, setJamstack] = useState([]);
+const MyJamsScreen = () => {
+  const { user, loading: authLoading } = useAuth();
+  const [jams, setJams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchJamStack = async () => {
-      setLoading(true);
-      setError('');
+    if (!authLoading && user) {
+      fetchMyJams();
+    }
+  }, [authLoading, user]);
 
-      const { data: userData } = await supabase.auth.getUser();
-      const userId = userData?.user?.id;
+  const fetchMyJams = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('jamstacksongs')
+      .select('id, song_id, songs (title, artist, cover)')
+      .eq('user_id', user.id);
 
-      if (!userId) {
-        setError('User not logged in.');
-        setLoading(false);
-        return;
-      }
+    if (error) {
+      console.error(error);
+      setError('Failed to load your JamStack.');
+    } else {
+      setJams(data);
+    }
 
-      const { data, error } = await supabase
-        .from('jamstacksongs')
-        .select('id, order, songs(*)')
-        .eq('user_id', userId)
-        .order('order', { ascending: true });
+    setLoading(false);
+  };
 
-      if (error) {
-        console.error('Error fetching JamStack:', error.message);
-        setError('Could not load your JamStack.');
-      } else {
-        setJamstack(data);
-      }
+  if (authLoading || loading) {
+    return <p className="text-center mt-10">Loading your Jams...</p>;
+  }
 
-      setLoading(false);
-    };
+  if (!user) {
+    return <p className="text-center mt-10">Please log in to view your JamStack.</p>;
+  }
 
-    fetchJamStack();
-  }, []);
+  if (error) {
+    return <p className="text-center text-red-500 mt-10">{error}</p>;
+  }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
-      <h1 className="text-3xl font-bold mb-6">🎵 Your JamStack</h1>
+    <div className="max-w-2xl mx-auto mt-10 p-4">
+      <h2 className="text-2xl font-bold mb-6 text-center">My JamStack</h2>
 
-      {loading && <p className="text-gray-400">Loading...</p>}
-      {error && <p className="text-red-400">{error}</p>}
-
-      {!loading && jamstack.length === 0 && (
-        <p className="text-gray-400">You haven't stacked any songs yet.</p>
+      {jams.length === 0 ? (
+        <p className="text-center text-gray-500">You haven't added any jams yet.</p>
+      ) : (
+        <ul className="space-y-4">
+          {jams.map((jam) => (
+            <li key={jam.id} className="p-4 bg-white rounded shadow flex items-center space-x-4">
+              <img
+                src={jam.songs?.cover || '/logo.png'}
+                alt="Cover"
+                className="w-16 h-16 object-cover rounded"
+              />
+              <div>
+                <p className="font-semibold">{jam.songs?.title}</p>
+                <p className="text-sm text-gray-500">{jam.songs?.artist}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
-
-      <div className="space-y-6">
-        {jamstack.map((entry, index) => (
-          <div key={entry.id} className="bg-gray-900 p-4 rounded shadow flex flex-col sm:flex-row sm:items-center sm:space-x-4">
-            <img
-              src={entry.songs?.cover_url}
-              alt={entry.songs?.title}
-              className="w-24 h-24 object-cover rounded mb-4 sm:mb-0"
-            />
-            <div className="flex-1">
-              <h2 className="text-xl font-semibold">{entry.songs?.title}</h2>
-              <p className="text-sm text-gray-400">{entry.songs?.artist}</p>
-              <audio controls src={entry.songs?.mp3_url} className="w-full mt-2" />
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 };
 
-export default JamStackScreen;
+export default MyJamsScreen;
