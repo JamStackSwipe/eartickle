@@ -30,4 +30,30 @@ const AuthScreen = () => {
         <input
           type="email"
           placeholder="Enter your email"
-          valu
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full p-2 border border-gray-300 rounded"
+        />
+        <button
+          onClick={handleMagicLink}
+          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+        >
+          Send Magic Link
+        </button>
+
+        <hr className="my-4" />
+
+        <button
+          onClick={handleGitHubLogin}
+          className="w-full bg-gray-800 text-white p-2 rounded hover:bg-gray-900"
+        >
+          Sign in with GitHub
+        </button>
+
+        {message && <p className="text-center text-sm mt-4">{message}</p>}
+      </div>
+    </div>
+  );
+};
+
+export default AuthScreen;
