@@ -10,11 +10,11 @@ const RewardsScreen = () => {
 
   useEffect(() => {
     if (!authLoading && user) {
-      fetchRewards();
+      fetchTickles();
     }
   }, [authLoading, user]);
 
-  const fetchRewards = async () => {
+  const fetchTickles = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('rewards')
@@ -24,7 +24,7 @@ const RewardsScreen = () => {
 
     if (error) {
       console.error(error);
-      setError('Failed to load rewards.');
+      setError('Failed to load Tickles.');
     } else {
       setRewards(data);
     }
@@ -33,12 +33,66 @@ const RewardsScreen = () => {
   };
 
   if (authLoading || loading) {
-    return <p className="text-center mt-10">Loading rewards...</p>;
+    return <p className="text-center mt-10">Loading Tickles...</p>;
   }
 
   if (!user) {
-    return <p className="text-center mt-10">Please log in to view rewards.</p>;
+    return <p className="text-center mt-10">Please log in to view your Tickles.</p>;
   }
 
   if (error) {
-    return <p className="te
+    return <p className="text-center text-red-500 mt-10">{error}</p>;
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto mt-10 p-4">
+      <h2 className="text-2xl font-bold mb-6 text-center">My Tickles</h2>
+
+      {rewards.length === 0 ? (
+        <p className="text-center text-gray-500">You haven’t been tickled yet 😢</p>
+      ) : (
+        <ul className="space-y-4">
+          {rewards.map((reward) => {
+            const pts = reward.amount || 0;
+            let icon = '🪙';
+            let message = 'A tiny tickle!';
+
+            if (pts >= 5 && pts < 10) {
+              icon = '🎧';
+              message = 'You got someone grooving 🎶';
+            } else if (pts >= 10 && pts < 20) {
+              icon = '💎';
+              message = 'You made someone laugh out loud!';
+            } else if (pts >= 20) {
+              icon = '👑';
+              message = 'Your jam tickled ears all the way to the moon 🚀';
+            }
+
+            return (
+              <li
+                key={reward.id}
+                className="p-4 bg-white rounded shadow border border-gray-200"
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-xl">{icon} {pts} Tickles</p>
+                    <p className="text-sm text-gray-600">
+                      From: {reward.sender_id?.slice(0, 8) || 'Unknown'}<br />
+                      Song: {reward.song_id?.slice(0, 8) || '—'}<br />
+                      Timestamp: {new Date(reward.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                {pts >= 1 && (
+                  <p className="mt-2 text-green-600 italic">{message}</p>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+};
+
+export default RewardsScreen;
