@@ -1,101 +1,88 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '../components/AuthProvider';
 import { supabase } from '../supabase';
+import { useAuth } from '../components/AuthProvider';
+import { v4 as uuidv4 } from 'uuid';
 
 const SwipeScreen = () => {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const [songs, setSongs] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [message, setMessage] = useState('');
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      window.location.href = '/auth'; // ✅ Safe redirect without crashing
+    fetchSongs();
+  }, []);
+
+  const fetchSongs = async () => {
+    const { data, error } = await supabase.from('songs').select('*').order('created_at', { ascending: false });
+    if (!error) {
+      setSongs(data);
+      if (data.length > 0) incrementViews(data[0].id); // view first song
     }
-  }, [user, loading]);
-
-  useEffect(() => {
-    const fetchSongs = async () => {
-      const { data, error } = await supabase
-        .from('songs')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (!error) setSongs(data || []);
-    };
-    if (user) fetchSongs();
-  }, [user]);
-
-  const current = songs[currentIndex];
-
-  const handleAddToJamStack = async () => {
-    if (!user || !current?.id) {
-      setCurrentIndex((i) => i + 1);
-      return;
-    }
-
-    const { data: existingSong } = await supabase
-      .from('jamstacksongs')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('song_id', current.id)
-      .single();
-
-    if (existingSong) {
-      setMessage('⚠️ Already in your JamStack');
-      setTimeout(() => setMessage(''), 2000);
-      setCurrentIndex((i) => i + 1);
-      return;
-    }
-
-    const { data: orderData } = await supabase
-      .from('jamstacksongs')
-      .select('order')
-      .eq('user_id', user.id)
-      .order('order', { ascending: false })
-      .limit(1);
-
-    const newOrder = (orderData?.[0]?.order || 0) + 1;
-
-    const { error } = await supabase.from('jamstacksongs').insert([
-      {
-        user_id: user.id,
-        song_id: current.id,
-        order: newOrder
-      }
-    ]);
-
-    if (error) {
-      setMessage('❌ Could not add song.');
-    } else {
-      setMessage('✅ Added to JamStack!');
-    }
-
-    setTimeout(() => setMessage(''), 2000);
-    setCurrentIndex((i) => i + 1);
   };
 
-  if (loading) return <div className="text-white p-6">Loading...</div>;
+  const incrementViews = async (songId) => {
+    await supabase.rpc('increment_song_views', { song_id: songId });
+  };
+
+  const handleNext = () => {
+    const nextIndex = currentIndex + 1;
+    if (nextIndex < songs.length) {
+      setCurrentIndex(nextIndex);
+      incrementViews(songs[nextIndex].id);
+    }
+  };
+
+  const handleAddToJamStack = async () => {
+    if (!user || adding) return;
+
+    setAdding(true);
+    const currentSong = songs[currentIndex];
+    const { error } = await supabase.from('jamstacksongs').insert([
+      {
+        id: uuidv4(),
+        user_id: user.id,
+        song_id: currentSong.id,
+      },
+    ]);
+
+    if (!error) {
+      alert('🎵 Added to your JamStack!');
+    } else {
+      console.error('JamStack insert error:', error);
+    }
+    setAdding(false);
+  };
+
+  if (songs.length === 0) {
+    return <div className="text-center mt-10 text-gray-500">No songs to swipe yet.</div>;
+  }
+
+  const song = songs[currentIndex];
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center">
-      {current ? (
-        <>
-          <img src={current.cover_url} alt={current.title} className="w-60 h-60 object-cover rounded mb-4" />
-          <h2 className="text-xl font-bold">{current.title}</h2>
-          <audio controls src={current.mp3_url} className="my-4" />
-          <div className="space-x-6 mt-4">
-            <button onClick={() => setCurrentIndex((i) => i + 1)} className="bg-red-500 px-4 py-2 rounded">
-              ❌ Skip
-            </button>
-            <button onClick={handleAddToJamStack} className="bg-green-400 text-black px-4 py-2 rounded">
-              ✅ Add to JamStack
-            </button>
-          </div>
-          {message && <p className="mt-4 text-teal-300">{message}</p>}
-        </>
-      ) : (
-        <p className="text-gray-400 text-lg">No more songs to swipe.</p>
-      )}
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow-lg rounded text-center">
+      <h2 className="text-2xl font-bold mb-4">{song.title}</h2>
+      <img src={song.cover} alt="cover" className="w-full h-64 object-cover rounded mb-4" />
+      <p className="text-lg font-semibold">{song.artist}</p>
+      <p className="text-sm italic text-gray-500">{song.genre}</p>
+      <audio controls src={song.audio} className="w-full mt-4 mb-2" />
+
+      <div className="flex justify-between items-center mt-4 space-x-4">
+        <button
+          onClick={handleAddToJamStack}
+          disabled={adding}
+          className="flex-1 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        >
+          ❤️ Add to JamStack
+        </button>
+        <button
+          onClick={handleNext}
+          className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          ⏭️ Next
+        </button>
+      </div>
     </div>
   );
 };
