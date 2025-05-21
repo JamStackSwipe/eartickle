@@ -3,51 +3,81 @@ import { supabase } from '../supabase';
 
 const UploadScreen = () => {
   const [title, setTitle] = useState('');
-  const [coverFile, setCoverFile] = useState(null);
-  const [mp3File, setMp3File] = useState(null);
+  const [artist, setArtist] = useState('');
+  const [coverUrl, setCoverUrl] = useState('');
   const [message, setMessage] = useState('');
 
-  const validateFile = (file, allowedTypes, maxSizeMB) => {
-    const maxSizeBytes = maxSizeMB * 1024 * 1024;
-    if (!allowedTypes.includes(file.type)) return `Invalid file type: ${file.type}`;
-    if (file.size > maxSizeBytes) return `File too large. Max size is ${maxSizeMB}MB.`;
-    return null;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!title || !artist || !coverUrl) {
+      setMessage('All fields are required.');
+      return;
+    }
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+
+      const { error } = await supabase.from('songs').insert([
+        {
+          title,
+          artist,
+          cover_url: coverUrl,
+          user_id: userId
+        }
+      ]);
+
+      if (error) {
+        console.error('Upload error:', error.message);
+        setMessage('Error uploading song.');
+      } else {
+        setMessage('Song uploaded successfully!');
+        setTitle('');
+        setArtist('');
+        setCoverUrl('');
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage('Unexpected error.');
+    }
   };
 
-  const handleUpload = async () => {
-    setMessage('');
+  return (
+    <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center">
+      <h2 className="text-2xl font-bold mb-6">Upload a Song</h2>
+      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-4">
+        <input
+          type="text"
+          placeholder="Song Title"
+          className="w-full p-2 rounded text-black"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Artist Name"
+          className="w-full p-2 rounded text-black"
+          value={artist}
+          onChange={(e) => setArtist(e.target.value)}
+        />
+        <input
+          type="text"
+          placeholder="Album Cover URL"
+          className="w-full p-2 rounded text-black"
+          value={coverUrl}
+          onChange={(e) => setCoverUrl(e.target.value)}
+        />
+        <button
+          type="submit"
+          className="bg-teal-400 text-black font-bold py-2 px-4 rounded hover:bg-teal-300"
+        >
+          Upload
+        </button>
+      </form>
+      {message && <p className="mt-4 text-teal-300">{message}</p>}
+    </div>
+  );
+};
 
-    if (!title || !coverFile || !mp3File) {
-      setMessage('Please fill out all fields and select files.');
-      return;
-    }
-
-    const coverValidation = validateFile(coverFile, ['image/png', 'image/jpeg'], 2);
-    const mp3Validation = validateFile(mp3File, ['audio/mpeg'], 20);
-    if (coverValidation || mp3Validation) {
-      setMessage(coverValidation || mp3Validation);
-      return;
-    }
-
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData?.user) {
-      setMessage('User not authenticated.');
-      return;
-    }
-
-    const userId = userData.user.id;
-    const timestamp = Date.now();
-
-    // Upload files
-    const coverPath = `${userId}/covers/${timestamp}.${coverFile.name.split('.').pop()}`;
-    const mp3Path = `${userId}/songs/${timestamp}.${mp3File.name.split('.').pop()}`;
-
-    const { error: coverError } = await supabase.storage
-      .from('covers')
-      .upload(coverPath, coverFile, { upsert: true });
-    if (coverError) return setMessage('Error uploading cover.');
-
-    const { error: mp3Error } = await supabase.storage
-      .from('mp3s')
-      .upload(mp3Path, mp3File, { upsert: true });
-    if (mp3Error) return set
+export default UploadScreen;
