@@ -50,6 +50,7 @@ const SwipeScreen = () => {
       return;
     }
 
+    // ✅ Check if the song exists in the songs table (FK safety)
     const { data: songCheck } = await supabase
       .from('songs')
       .select('id')
@@ -62,6 +63,21 @@ const SwipeScreen = () => {
       return;
     }
 
+    // ✅ Check for duplicates
+    const { data: existing } = await supabase
+      .from('jamstacksongs')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('song_id', currentSong.id)
+      .maybeSingle();
+
+    if (existing) {
+      alert('🛑 This song is already in your JamStack.');
+      setAdding(false);
+      return;
+    }
+
+    // ✅ Safe insert
     const { error } = await supabase.from('jamstacksongs').insert([
       {
         id: uuidv4(),
