@@ -1,5 +1,5 @@
-
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 
 const UploadScreen = () => {
@@ -8,6 +8,9 @@ const UploadScreen = () => {
   const [imageFile, setImageFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
   const [message, setMessage] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleUpload = async () => {
     if (!title || !artist || !imageFile || !audioFile) {
@@ -25,22 +28,24 @@ const UploadScreen = () => {
       return;
     }
 
+    setIsUploading(true);
     const timestamp = Date.now();
     const imageFilename = `${timestamp}-${imageFile.name}`;
     const audioFilename = `${timestamp}-${audioFile.name}`;
 
     const { error: imageError } = await supabase.storage
-      .from('covers') // ✅ correct bucket
+      .from('covers')
       .upload(imageFilename, imageFile);
 
     const { error: audioError } = await supabase.storage
-      .from('audio') // ✅ correct bucket
+      .from('audio')
       .upload(audioFilename, audioFile);
 
     if (imageError || audioError) {
       console.error('Image error:', imageError);
       console.error('Audio error:', audioError);
       alert('Upload failed: ' + (audioError?.message || imageError?.message));
+      setIsUploading(false);
       return;
     }
 
@@ -59,12 +64,17 @@ const UploadScreen = () => {
     if (dbError) {
       console.error('Database insert failed:', dbError.message);
       alert('Song metadata upload failed.');
+      setIsUploading(false);
     } else {
       setMessage('✅ Song uploaded!');
       setTitle('');
       setArtist('');
       setImageFile(null);
       setAudioFile(null);
+
+      setTimeout(() => {
+        navigate('/swipe');
+      }, 1500);
     }
   };
 
@@ -106,9 +116,10 @@ const UploadScreen = () => {
 
       <button
         onClick={handleUpload}
-        className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+        disabled={isUploading}
+        className={`w-full text-white py-2 rounded ${isUploading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
       >
-        Upload
+        {isUploading ? 'Uploading…' : 'Upload'}
       </button>
 
       {message && <p className="mt-4 text-center text-green-600">{message}</p>}
