@@ -15,23 +15,25 @@ import SettingsScreen from './screens/SettingsScreen';
 
 function App() {
   return (
-    <Router>
-      <Header />
-      <Routes>
-        <Route path="/" element={<LoginScreen />} />
-        <Route path="/login" element={<LoginScreen />} />
-        <Route path="/profile" element={<ProfileScreen />} />
-        <Route path="/upload" element={<UploadScreen />} />
-        <Route path="/swipe" element={<SwipeScreen />} />
-        <Route path="/jamstack" element={<JamStackScreen />} />
-        <Route path="/auth" element={<AuthScreen />} />
-        <Route path="/rewards" element={<RewardsScreen />} />
-        <Route path="/myjams" element={<MyJamsScreen />} />
-        <Route path="/settings" element={<SettingsScreen />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Header />
+        <Routes>
+          <Route path="/" element={<SwipeScreen />} /> {/* 👈 or any public-facing intro */}
+          <Route path="/login" element={<LoginScreen />} />
+          <Route path="/auth" element={<AuthScreen />} />
+          <Route path="/profile" element={<ProfileScreen />} />
+          <Route path="/upload" element={<UploadScreen />} />
+          <Route path="/swipe" element={<SwipeScreen />} />
+          <Route path="/jamstack" element={<JamStackScreen />} />
+          <Route path="/rewards" element={<RewardsScreen />} />
+          <Route path="/myjams" element={<MyJamsScreen />} />
+          <Route path="/settings" element={<SettingsScreen />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
-
 export default App;
+
