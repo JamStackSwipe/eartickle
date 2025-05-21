@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { supabase } from '../supabase';
 
@@ -24,24 +25,26 @@ const UploadScreen = () => {
       return;
     }
 
-    const imageFilename = `${Date.now()}-${imageFile.name}`;
-    const audioFilename = `${Date.now()}-${audioFile.name}`;
+    const timestamp = Date.now();
+    const imageFilename = `${timestamp}-${imageFile.name}`;
+    const audioFilename = `${timestamp}-${audioFile.name}`;
 
     const { error: imageError } = await supabase.storage
-      .from('songs')
+      .from('covers') // ✅ correct bucket
       .upload(imageFilename, imageFile);
 
     const { error: audioError } = await supabase.storage
-      .from('audio')
+      .from('audio') // ✅ correct bucket
       .upload(audioFilename, audioFile);
 
     if (imageError || audioError) {
-      console.error('Upload errors:', imageError || audioError);
-      alert('Upload failed.');
+      console.error('Image error:', imageError);
+      console.error('Audio error:', audioError);
+      alert('Upload failed: ' + (audioError?.message || imageError?.message));
       return;
     }
 
-    const coverUrl = supabase.storage.from('songs').getPublicUrl(imageFilename).data.publicUrl;
+    const coverUrl = supabase.storage.from('covers').getPublicUrl(imageFilename).data.publicUrl;
     const audioUrl = supabase.storage.from('audio').getPublicUrl(audioFilename).data.publicUrl;
 
     const { error: dbError } = await supabase.from('songs').insert([
