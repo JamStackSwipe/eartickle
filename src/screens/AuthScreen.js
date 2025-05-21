@@ -1,9 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../components/AuthProvider';
 
 const AuthScreen = () => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // 🔁 Redirect to /profile when logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/profile');
+    }
+  }, [user, navigate]);
 
   const handleMagicLink = async () => {
     setMessage('Sending magic link...');
