@@ -12,15 +12,13 @@ const Header = () => {
         setUser(data?.user ?? null);
       }
     };
-
     checkUser();
   }, []);
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (!error) {
-      // ✅ This avoids useNavigate, which causes Router context errors during hydration
-      window.location.href = '/auth';
+      window.location.href = '/auth'; // avoids navigate crash
     }
   };
 
@@ -57,6 +55,3 @@ const Header = () => {
 };
 
 export default Header;
-
-
-
