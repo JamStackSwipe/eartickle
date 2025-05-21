@@ -2,58 +2,52 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../components/AuthProvider';
 
 const SwipeScreen = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
   const [songs, setSongs] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [message, setMessage] = useState('');
-  const [userId, setUserId] = useState(null);
-  const navigate = useNavigate();
 
-  // ✅ Check user and fetch songs
   useEffect(() => {
-    const init = async () => {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
+    if (!loading && !user) {
+      navigate('/auth'); // ✅ Safe redirect after auth is ready
+    }
+  }, [user, loading, navigate]);
 
-      if (error || !user) {
-        console.warn('No user found. Redirecting to /auth...');
-        setTimeout(() => navigate('/auth'), 0); // ✅ Prevents router crash
-        return;
-      }
-
-      setUserId(user.id);
-
-      const { data: songData, error: songError } = await supabase
+  useEffect(() => {
+    const fetchSongs = async () => {
+      const { data, error } = await supabase
         .from('songs')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!songError && songData) {
-        setSongs(songData);
+      if (!error && data) {
+        setSongs(data);
       } else {
-        console.error('Song fetch error:', songError?.message);
+        console.error('Error fetching songs:', error?.message);
       }
     };
 
-    init();
-  }, [navigate]);
+    if (user) fetchSongs(); // ✅ Only fetch songs after auth check
+  }, [user]);
 
   const current = songs[currentIndex];
 
   const handleAddToJamStack = async () => {
-    if (!userId || !current?.id) {
+    if (!user || !current?.id) {
       setCurrentIndex((i) => i + 1);
       return;
     }
 
-    // Check for duplicates
+    // Prevent duplicates
     const { data: existingSong } = await supabase
       .from('jamstacksongs')
       .select('id')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .eq('song_id', current.id)
       .single();
 
@@ -64,19 +58,19 @@ const SwipeScreen = () => {
       return;
     }
 
-    // Get current max order
-    const { data: existing } = await supabase
+    // Get current order max
+    const { data: orderData } = await supabase
       .from('jamstacksongs')
       .select('order')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .order('order', { ascending: false })
       .limit(1);
 
-    const newOrder = (existing?.[0]?.order || 0) + 1;
+    const newOrder = (orderData?.[0]?.order || 0) + 1;
 
     const { error } = await supabase.from('jamstacksongs').insert([
       {
-        user_id: userId,
+        user_id: user.id,
         song_id: current.id,
         order: newOrder,
       },
