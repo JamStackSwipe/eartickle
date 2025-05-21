@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../supabase";
 
@@ -11,9 +12,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const getInitialSession = async () => {
       const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Session fetch error:", error.message);
-      }
+      if (error) console.error("Session error:", error.message);
       setSession(data.session);
       setUser(data.session?.user ?? null);
       setLoading(false);
@@ -28,9 +27,7 @@ export const AuthProvider = ({ children }) => {
       setUser(session?.user ?? null);
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signOut = async () => {
