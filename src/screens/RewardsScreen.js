@@ -1,88 +1,74 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../components/AuthProvider';
 
 const RewardsScreen = () => {
+  const { user, loading: authLoading } = useAuth();
   const [rewards, setRewards] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchRewards = async () => {
-      const {
-        data: { user },
-        error: userError
-      } = await supabase.auth.getUser();
+    if (!authLoading && user) {
+      fetchRewards();
+    }
+  }, [authLoading, user]);
 
-      if (userError || !user) {
-        setError('You must be logged in to view rewards.');
-        setIsLoading(false);
-        return;
-      }
+  const fetchRewards = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('rewards')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
-      const { data, error } = await supabase
-        .from('rewards')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+    if (error) {
+      console.error(error);
+      setError('Failed to load rewards.');
+    } else {
+      setRewards(data);
+    }
 
-      if (error) {
-        setError('Failed to load rewards.');
-        console.error(error);
-      } else {
-        setRewards(data);
-      }
-
-      setIsLoading(false);
-    };
-
-    fetchRewards();
-  }, []);
-
-  const handleRedeem = async (rewardId) => {
-    // Placeholder: Implement redemption logic
-    alert(`Redeem logic for reward #${rewardId} goes here.`);
+    setLoading(false);
   };
 
-  if (isLoading) return <div className="p-4 text-center">Loading your rewards...</div>;
-  if (error) return <div className="p-4 text-red-500 text-center">{error}</div>;
+  if (authLoading || loading) {
+    return <p className="text-center mt-10">Loading rewards...</p>;
+  }
+
+  if (!user) {
+    return <p className="text-center mt-10">Please log in to view rewards.</p>;
+  }
+
+  if (error) {
+    return <p className="text-center text-red-500 mt-10">{error}</p>;
+  }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto bg-white rounded-xl shadow-md space-y-4">
-      <h1 className="text-2xl font-bold">Your Rewards</h1>
+    <div className="max-w-2xl mx-auto mt-10 p-4">
+      <h2 className="text-2xl font-bold mb-6 text-center">My Rewards</h2>
 
-      {rewards.length > 0 ? (
-        rewards.map((reward) => (
-          <div
-            key={reward.id}
-            className="flex items-center justify-between p-4 border rounded-lg bg-yellow-50"
-          >
-            <div>
-              <p className="text-lg font-semibold">{reward.title}</p>
-              <p className="text-sm text-gray-600">
-                Earned: {new Date(reward.created_at).toLocaleDateString()}
-              </p>
-              <p className="text-sm font-bold text-indigo-700">Points: {reward.points}</p>
-            </div>
-            <button
-              onClick={() => handleRedeem(reward.id)}
-              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-            >
-              Redeem
-            </button>
-          </div>
-        ))
+      {rewards.length === 0 ? (
+        <p className="text-center text-gray-500">No rewards earned yet.</p>
       ) : (
-        <div className="text-center space-y-2 text-gray-600">
-          <p>You don’t have any rewards yet.</p>
-          <button
-            onClick={() => navigate('/swipe')}
-            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Start Earning
-          </button>
-        </div>
+        <ul className="space-y-4">
+          {rewards.map((reward) => (
+            <li
+              key={reward.id}
+              className="p-4 bg-white rounded shadow border border-gray-200"
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-semibold">{reward.name || 'Reward'}</p>
+                  <p className="text-sm text-gray-500">
+                    Earned on {new Date(reward.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <p className="text-blue-600 font-bold text-lg">{reward.points} pts</p>
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );
