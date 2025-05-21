@@ -5,6 +5,7 @@ import { supabase } from '../supabase';
 const UploadScreen = () => {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
+  const [genre, setGenre] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
   const [message, setMessage] = useState('');
@@ -13,7 +14,7 @@ const UploadScreen = () => {
   const navigate = useNavigate();
 
   const handleUpload = async () => {
-    if (!title || !artist || !imageFile || !audioFile) {
+    if (!title || !artist || !genre || !imageFile || !audioFile) {
       alert('Please fill out all fields and select both files.');
       return;
     }
@@ -56,6 +57,7 @@ const UploadScreen = () => {
       {
         title,
         artist,
+        genre,
         cover: coverUrl,
         audio: audioUrl,
       },
@@ -69,6 +71,7 @@ const UploadScreen = () => {
       setMessage('✅ Song uploaded!');
       setTitle('');
       setArtist('');
+      setGenre('');
       setImageFile(null);
       setAudioFile(null);
 
@@ -97,6 +100,28 @@ const UploadScreen = () => {
         onChange={(e) => setArtist(e.target.value)}
         className="w-full p-2 border rounded mb-4"
       />
+
+      <label className="block mb-2 font-medium">Genre</label>
+      <select
+        value={genre}
+        onChange={(e) => setGenre(e.target.value)}
+        className="w-full p-2 border rounded mb-4"
+      >
+        <option value="">Select a genre</option>
+        <option value="pop">Pop</option>
+        <option value="rock">Rock</option>
+        <option value="hiphop">Hip-Hop</option>
+        <option value="country">Country</option>
+        <option value="worship">Worship</option>
+        <option value="lofi">Lo-Fi</option>
+        <option value="electronic">Electronic</option>
+        <option value="comedy">Comedy</option>
+        <option value="ambient">Ambient</option>
+        <option value="indie">Indie</option>
+        <option value="instrumental">Instrumental</option>
+        <option value="spokenword">Spoken Word</option>
+        <option value="other">Other</option>
+      </select>
 
       <label className="block mb-2 font-medium">Cover Image (PNG/JPG, Max 10MB)</label>
       <input
@@ -128,3 +153,4 @@ const UploadScreen = () => {
 };
 
 export default UploadScreen;
+
