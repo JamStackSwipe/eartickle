@@ -1,38 +1,47 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../supabase";
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load current session on mount
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
-      if (error) console.error("Error loading user:", error.message);
-      setUser(user);
+    const init = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) console.error("Failed to load session:", error.message);
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
       setLoading(false);
     };
 
-    getSession();
+    init();
 
-    // Subscribe to auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setUser(session?.user || null);
+        setSession(session);
+        setUser(session?.user ?? null);
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
 
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setSession(null);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ session, user, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => useContext(AuthContext);
+
