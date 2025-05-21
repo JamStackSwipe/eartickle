@@ -1,5 +1,5 @@
 
-  import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,52 +7,49 @@ const SwipeScreen = () => {
   const [songs, setSongs] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [message, setMessage] = useState('');
-  const [userReady, setUserReady] = useState(false);
+  const [userId, setUserId] = useState(null);
   const navigate = useNavigate();
 
+  // ✅ Check user and fetch songs
   useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user }, error } = await supabase.auth.getUser();
+    const init = async () => {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
 
-      if (error) {
-        console.error('Auth error:', error);
+      if (error || !user) {
+        console.warn('No user found. Redirecting to /auth...');
+        setTimeout(() => navigate('/auth'), 0); // ✅ Prevents router crash
         return;
       }
 
-      if (!user) {
-        navigate('/auth');
-      } else {
-        setUserReady(true);
-      }
-    };
+      setUserId(user.id);
 
-    checkUser();
-  }, [navigate]);
-
-  useEffect(() => {
-    const fetchSongs = async () => {
-      const { data, error } = await supabase
+      const { data: songData, error: songError } = await supabase
         .from('songs')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error) setSongs(data || []);
+      if (!songError && songData) {
+        setSongs(songData);
+      } else {
+        console.error('Song fetch error:', songError?.message);
+      }
     };
 
-    if (userReady) fetchSongs();
-  }, [userReady]);
+    init();
+  }, [navigate]);
 
   const current = songs[currentIndex];
 
   const handleAddToJamStack = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData?.user?.id;
-
     if (!userId || !current?.id) {
       setCurrentIndex((i) => i + 1);
       return;
     }
 
+    // Check for duplicates
     const { data: existingSong } = await supabase
       .from('jamstacksongs')
       .select('id')
@@ -67,6 +64,7 @@ const SwipeScreen = () => {
       return;
     }
 
+    // Get current max order
     const { data: existing } = await supabase
       .from('jamstacksongs')
       .select('order')
@@ -80,8 +78,8 @@ const SwipeScreen = () => {
       {
         user_id: userId,
         song_id: current.id,
-        order: newOrder
-      }
+        order: newOrder,
+      },
     ]);
 
     if (error) {
@@ -95,13 +93,15 @@ const SwipeScreen = () => {
     setCurrentIndex((i) => i + 1);
   };
 
-  if (!userReady) return <div className="p-4 text-center">Checking session...</div>;
-
   return (
     <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center">
       {current ? (
         <>
-          <img src={current.cover_url} alt={current.title} className="w-60 h-60 object-cover rounded mb-4" />
+          <img
+            src={current.cover_url}
+            alt={current.title}
+            className="w-60 h-60 object-cover rounded mb-4"
+          />
           <h2 className="text-xl font-bold">{current.title}</h2>
           <audio controls src={current.mp3_url} className="my-4" />
 
