@@ -1,11 +1,12 @@
-// src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import LoginScreen from './screens/LoginScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import UploadScreen from './screens/UploadScreen';
 
 const Home = () => (
-  <div>
-    <h2>Welcome to EarTickle™</h2>
+  <div style={{ padding: '2rem', maxWidth: '600px', margin: 'auto' }}>
+    <h1>Welcome to EarTickle™</h1>
     <p>Choose a screen:</p>
     <ul>
       <li><Link to="/login">Login</Link></li>
@@ -15,20 +16,15 @@ const Home = () => (
   </div>
 );
 
-const ProfileScreen = () => <div><h2>Profile (Coming Soon)</h2></div>;
-const UploadScreen = () => <div><h2>Upload (Coming Soon)</h2></div>;
-
 function App() {
   return (
     <Router>
-      <div style={{ padding: '1rem' }}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<LoginScreen />} />
-          <Route path="/profile" element={<ProfileScreen />} />
-          <Route path="/upload" element={<UploadScreen />} />
-        </Routes>
-      </div>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<LoginScreen />} />
+        <Route path="/profile" element={<ProfileScreen />} />
+        <Route path="/upload" element={<UploadScreen />} />
+      </Routes>
     </Router>
   );
 }
