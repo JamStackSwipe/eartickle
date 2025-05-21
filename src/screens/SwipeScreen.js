@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../supabase';
 import { useAuth } from '../components/AuthProvider';
 
 const SwipeScreen = () => {
@@ -14,7 +13,8 @@ const SwipeScreen = () => {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/auth'); // ✅ Safe redirect after auth is ready
+      console.log("🚨 No user. Redirecting to /auth");
+      navigate('/auth'); // ✅ SAFE redirect after auth is loaded
     }
   }, [user, loading, navigate]);
 
@@ -25,14 +25,14 @@ const SwipeScreen = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
-        setSongs(data);
+      if (error) {
+        console.error('Error fetching songs:', error.message);
       } else {
-        console.error('Error fetching songs:', error?.message);
+        setSongs(data || []);
       }
     };
 
-    if (user) fetchSongs(); // ✅ Only fetch songs after auth check
+    if (user) fetchSongs();
   }, [user]);
 
   const current = songs[currentIndex];
@@ -43,49 +43,47 @@ const SwipeScreen = () => {
       return;
     }
 
-    // Prevent duplicates
-    const { data: existingSong } = await supabase
+    const { data: existing } = await supabase
       .from('jamstacksongs')
       .select('id')
       .eq('user_id', user.id)
       .eq('song_id', current.id)
       .single();
 
-    if (existingSong) {
+    if (existing) {
       setMessage('⚠️ Already in your JamStack');
-      setTimeout(() => setMessage(''), 2000);
-      setCurrentIndex((i) => i + 1);
-      return;
-    }
-
-    // Get current order max
-    const { data: orderData } = await supabase
-      .from('jamstacksongs')
-      .select('order')
-      .eq('user_id', user.id)
-      .order('order', { ascending: false })
-      .limit(1);
-
-    const newOrder = (orderData?.[0]?.order || 0) + 1;
-
-    const { error } = await supabase.from('jamstacksongs').insert([
-      {
-        user_id: user.id,
-        song_id: current.id,
-        order: newOrder,
-      },
-    ]);
-
-    if (error) {
-      console.error('Add to JamStack failed:', error.message);
-      setMessage('❌ Could not add song.');
     } else {
-      setMessage('✅ Added to JamStack!');
+      const { data: orderData } = await supabase
+        .from('jamstacksongs')
+        .select('order')
+        .eq('user_id', user.id)
+        .order('order', { ascending: false })
+        .limit(1);
+
+      const newOrder = (orderData?.[0]?.order || 0) + 1;
+
+      const { error } = await supabase.from('jamstacksongs').insert([
+        {
+          user_id: user.id,
+          song_id: current.id,
+          order: newOrder
+        }
+      ]);
+
+      if (error) {
+        setMessage('❌ Could not add song.');
+      } else {
+        setMessage('✅ Added to JamStack!');
+      }
     }
 
     setTimeout(() => setMessage(''), 2000);
     setCurrentIndex((i) => i + 1);
   };
+
+  if (loading) {
+    return <div className="text-center text-white p-6">Checking auth...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center justify-center">
