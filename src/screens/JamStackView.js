@@ -9,11 +9,11 @@ const JamStackView = ({ jamstack }) => {
       {jamstack.map((jam) => (
         <li key={jam.id} className="border p-4 rounded shadow bg-white dark:bg-gray-800">
           <h2 className="text-lg font-semibold">
-            {jam.songs?.title || 'Untitled'}
+            {jam.title || 'Untitled'}
           </h2>
-          <p className="text-sm text-gray-500">
-            {jam.songs?.artist || 'Unknown Artist'}
-          </p>
+          {jam.description && (
+            <p className="text-sm text-gray-500">{jam.description}</p>
+          )}
         </li>
       ))}
     </ul>
