@@ -1,178 +1,231 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase';
-import { useUser } from '../components/AuthProvider'; // ✅ FIXED
+import { useUser } from '../components/AuthProvider';
+import { useSwipeable } from 'react-swipeable';
+import { v4 as uuidv4 } from 'uuid';
 
-const UploadScreen = () => {
-  const [title, setTitle] = useState('');
-  const [artist, setArtist] = useState('');
-  const [genre, setGenre] = useState('');
-  const [imageFile, setImageFile] = useState(null);
-  const [audioFile, setAudioFile] = useState(null);
-  const [message, setMessage] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
+const reactionEmojis = ['🔥', '❤️', '😢', '🎯'];
 
-  const { user } = useUser(); // ✅ FIXED
-  const navigate = useNavigate();
+const SwipeScreen = () => {
+  const { user } = useUser();
+  const [songs, setSongs] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [adding, setAdding] = useState(false);
+  const [autoplay, setAutoplay] = useState(false);
+  const [userHasTapped, setUserHasTapped] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(true);
+  const audioRef = useRef();
 
-  const handleUpload = async () => {
-    if (!title || !artist || !genre || !imageFile || !audioFile) {
-      alert('Please fill out all fields and select both files.');
-      return;
-    }
+  useEffect(() => {
+    fetchSongs();
+  }, []);
 
-    if (imageFile.size > 10 * 1024 * 1024) {
-      alert('Image too large. Max size is 10MB.');
-      return;
-    }
+  const fetchSongs = async () => {
+    const { data, error } = await supabase
+      .from('songs')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-    if (audioFile.size > 20 * 1024 * 1024) {
-      alert('Audio file too large. Max size is 20MB.');
-      return;
-    }
-
-    setIsUploading(true);
-    const timestamp = Date.now();
-    const imageFilename = `${timestamp}-${imageFile.name}`;
-    const audioFilename = `${timestamp}-${audioFile.name}`;
-
-    const { error: imageError } = await supabase.storage
-      .from('covers')
-      .upload(imageFilename, imageFile);
-
-    const { error: audioError } = await supabase.storage
-      .from('audio')
-      .upload(audioFilename, audioFile);
-
-    if (imageError || audioError) {
-      alert('Upload failed: ' + (audioError?.message || imageError?.message));
-      setIsUploading(false);
-      return;
-    }
-
-    const coverUrl = supabase.storage.from('covers').getPublicUrl(imageFilename).data.publicUrl;
-    const audioUrl = supabase.storage.from('audio').getPublicUrl(audioFilename).data.publicUrl;
-
-    const { error: dbError } = await supabase.from('songs').insert([
-      {
-        title,
-        artist,
-        genre,
-        cover: coverUrl,
-        audio: audioUrl,
-        user_id: user.id,
-      },
-    ]);
-
-    if (dbError) {
-      alert('Song metadata upload failed.');
-      setIsUploading(false);
-    } else {
-      setMessage('✅ Song uploaded!');
-      setTitle('');
-      setArtist('');
-      setGenre('');
-      setImageFile(null);
-      setAudioFile(null);
-      setTimeout(() => {
-        navigate('/swipe');
-      }, 1500);
+    if (!error && data.length > 0) {
+      setSongs(data);
     }
   };
 
-  return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow-lg rounded">
-      <h2 className="text-2xl font-bold mb-4 text-center">Upload a Song</h2>
+  const incrementViews = async (songId) => {
+    await supabase.rpc('increment_song_views', { song_id: songId });
+  };
 
-      <label className="block mb-2 font-medium">Song Title</label>
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="w-full p-2 border rounded mb-4"
-      />
+  const handleNext = () => {
+    setCurrentIndex((prev) => Math.min(prev + 1, songs.length - 1));
+    if (autoplay) audioRef.current?.play();
+    incrementViews(songs[Math.min(currentIndex + 1, songs.length - 1)]?.id);
+  };
 
-      <label className="block mb-2 font-medium">Artist Name</label>
-      <input
-        type="text"
-        value={artist}
-        onChange={(e) => setArtist(e.target.value)}
-        className="w-full p-2 border rounded mb-4"
-      />
+  const handlePrevious = () => {
+    setCurrentIndex((prev) => Math.max(prev - 1, 0));
+    if (autoplay) audioRef.current?.play();
+  };
 
-      <label className="block mb-2 font-medium">Genre</label>
-      <select
-        value={genre}
-        onChange={(e) => setGenre(e.target.value)}
-        className="w-full p-2 border rounded mb-4"
-      >
-        <option value="">Select a genre</option>
-        <option value="pop">Pop</option>
-        <option value="rock">Rock</option>
-        <option value="hiphop">Hip-Hop</option>
-        <option value="country">Country</option>
-        <option value="worship">Worship</option>
-        <option value="lofi">Lo-Fi</option>
-        <option value="electronic">Electronic</option>
-        <option value="comedy">Comedy</option>
-        <option value="ambient">Ambient</option>
-        <option value="indie">Indie</option>
-        <option value="instrumental">Instrumental</option>
-        <option value="spokenword">Spoken Word</option>
-        <option value="other">Other</option>
-      </select>
+  const handleAddToJamStack = async () => {
+    if (!user || adding) return;
+    setAdding(true);
+    const currentSong = songs[currentIndex];
 
-      <label className="block mb-2 font-medium">Cover Image (PNG/JPG, Max 10MB)</label>
-      <input
-        type="file"
-        accept="image/png, image/jpeg"
-        onChange={(e) => setImageFile(e.target.files[0])}
-        className="w-full p-2 border rounded mb-4"
-      />
+    const { data: existing } = await supabase
+      .from('jamstacksongs')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('song_id', currentSong.id)
+      .maybeSingle();
 
-    <label className="block mb-2 font-medium">
-  Audio File (MP3, M4A, or audio-only MP4, Max 20MB)
-</label>
-<input
-  type="file"
-  accept="audio/mpeg, audio/mp4, audio/x-m4a, audio/aac, video/mp4"
-  onChange={(e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const validAudioTypes = [
-      'audio/mpeg',
-      'audio/mp4',
-      'audio/x-m4a',
-      'audio/aac',
-      'video/mp4' // for audio-only mp4
-    ];
-
-    if (!validAudioTypes.includes(file.type)) {
-      alert('❌ Unsupported file format. Please upload an MP3, M4A, or audio-only MP4.');
+    if (existing) {
+      alert('🛑 Already in your JamStack!');
+      setAdding(false);
       return;
     }
 
-    setAudioFile(file);
-  }}
-  className="w-full p-2 border rounded mb-1"
-/>
-<p className="text-xs text-gray-400 mb-4">
-  Supported formats: MP3, M4A, or audio-only MP4. Make sure your MP4 does not contain video.
-</p>
+    const { error } = await supabase.from('jamstacksongs').insert([
+      {
+        id: uuidv4(),
+        user_id: user.id,
+        song_id: currentSong.id,
+      },
+    ]);
 
+    if (!error) {
+      alert('🎵 Added to your JamStack!');
+    } else {
+      console.error('❌ Error adding to JamStack:', error);
+    }
 
+    setAdding(false);
+  };
+
+  const playReactionSound = (emoji) => {
+    let soundFile = null;
+    if (emoji === '🔥') soundFile = '/sounds/fire.mp3';
+    if (emoji === '❤️') soundFile = '/sounds/love.mp3';
+    if (emoji === '😢') soundFile = '/sounds/sad.mp3';
+    if (emoji === '🎯') soundFile = '/sounds/bullseye.mp3';
+
+    if (soundFile) {
+      const audio = new Audio(soundFile);
+      audio.play();
+    }
+  };
+
+  const handleReact = async (emoji) => {
+    const currentSong = songs[currentIndex];
+    if (!user || !currentSong?.id) return;
+
+    await supabase.from('reactions').insert([
+      {
+        id: uuidv4(),
+        user_id: user.id,
+        song_id: currentSong.id,
+        emoji: emoji,
+      },
+    ]);
+
+    playReactionSound(emoji);
+  };
+
+  const handleFirstTap = () => {
+    setUserHasTapped(true);
+    setShowOverlay(false);
+    if (autoplay && audioRef.current) {
+      audioRef.current.play();
+    }
+  };
+
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      handleNext();
+      handleFirstTap();
+    },
+    onSwipedRight: () => {
+      handleAddToJamStack();
+      handleFirstTap();
+    },
+    onSwipedUp: () => {
+      handleNext();
+      handleFirstTap();
+    },
+    onSwipedDown: () => {
+      handlePrevious();
+      handleFirstTap();
+    },
+    preventScrollOnSwipe: true,
+    trackMouse: true,
+  });
+
+  if (songs.length === 0) {
+    return <div className="text-center mt-10 text-gray-400">No songs to swipe yet.</div>;
+  }
+
+  const song = songs[currentIndex];
+
+  return (
+    <div
+      {...swipeHandlers}
+      onClick={handleFirstTap}
+      className="min-h-screen bg-black text-white flex justify-center items-center p-4 relative"
+    >
+      {/* Autoplay toggle */}
       <button
-        onClick={handleUpload}
-        disabled={isUploading}
-        className={`w-full text-white py-2 rounded ${isUploading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+        onClick={() => setAutoplay(!autoplay)}
+        className="absolute top-4 right-4 text-xs bg-white text-black px-3 py-1 rounded shadow hover:bg-gray-200"
       >
-        {isUploading ? 'Uploading…' : 'Upload'}
+        Autoplay: {autoplay ? 'ON' : 'OFF'}
       </button>
 
-      {message && <p className="mt-4 text-center text-green-600">{message}</p>}
+      {/* Overlay for swipe instructions */}
+      {showOverlay && (
+        <div className="absolute inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center text-white text-center z-20 space-y-2 text-lg">
+          <div>👈 Swipe left to skip</div>
+          <div>👉 Swipe right to add</div>
+          <div>↑ Swipe up for next</div>
+          <div>↓ Swipe down to go back</div>
+          <p className="text-sm text-gray-400 mt-4">(tap to start)</p>
+        </div>
+      )}
+
+      <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center z-10">
+        <img
+          src={song.cover || '/default-cover.png'}
+          alt="cover"
+          className="w-full h-64 object-contain rounded mb-4"
+        />
+        <h2 className="text-2xl font-bold mb-1">{song.title}</h2>
+        <p className="text-sm text-gray-600">{song.artist || 'Unknown Artist'}</p>
+        <p className="text-xs italic text-gray-400 mb-3">{song.genre}</p>
+
+        <audio
+          ref={audioRef}
+          src={song.audio}
+          controls
+          className="w-full mb-4"
+        />
+
+        <div className="flex justify-center gap-4 text-2xl mb-4">
+          {reactionEmojis.map((emoji) => (
+            <button
+              key={emoji}
+              onClick={() => {
+                handleReact(emoji);
+                handleFirstTap();
+              }}
+              className="hover:scale-125 transition-transform duration-150"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => {
+              handleAddToJamStack();
+              handleFirstTap();
+            }}
+            disabled={adding}
+            className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            ❤️ Add to JamStack
+          </button>
+          <button
+            onClick={() => {
+              handleNext();
+              handleFirstTap();
+            }}
+            className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            ⏭️ Next
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default UploadScreen;
+export default SwipeScreen;
