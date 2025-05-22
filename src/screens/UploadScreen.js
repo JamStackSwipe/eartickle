@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
-import { useAuth } from '../components/AuthProvider';
+import { useUser } from '../components/AuthProvider'; // ✅ FIXED
 
 const UploadScreen = () => {
   const [title, setTitle] = useState('');
@@ -13,7 +12,7 @@ const UploadScreen = () => {
   const [message, setMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
-  const { user } = useAuth();
+  const { user } = useUser(); // ✅ FIXED
   const navigate = useNavigate();
 
   const handleUpload = async () => {
