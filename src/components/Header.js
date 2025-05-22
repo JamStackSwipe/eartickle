@@ -20,9 +20,6 @@ const Header = () => {
         <Link to="/upload" className="hover:underline">
           Upload
         </Link>
-        <Link to="/profile" className="hover:underline">
-          Profile
-        </Link>
          <Link to="/stacker">🎶 Stacker</Link>
 
         {user && (
