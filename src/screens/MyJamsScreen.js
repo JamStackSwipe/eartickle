@@ -11,31 +11,45 @@ const MyJamsScreen = () => {
     const fetchMyJams = async () => {
       if (!user) return;
 
-      console.log('✅ MyJamsScreen is LIVE');
+      console.log('✅ MyJamsScreen is LIVE for user:', user.id);
 
-      const { data, error } = await supabase
+      const { data: jamRows, error: jamError } = await supabase
         .from('jamstacksongs')
-        .select(`
-          id,
-          created_at,
-          song_id,
-          songs (
-            id,
-            title,
-            artist,
-            cover
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (error) {
-        console.error('❌ Error fetching JamStack songs:', error);
-      } else {
-        setJams(data);
+      if (jamError) {
+        console.error('❌ Failed to fetch jamstacksongs:', jamError);
+        setLoading(false);
+        return;
       }
 
+      if (jamRows.length === 0) {
+        setJams([]);
+        setLoading(false);
+        return;
+      }
+
+      const songIds = jamRows.map((j) => j.song_id);
+      const { data: songsData, error: songError } = await supabase
+        .from('songs')
+        .select('id, title, artist, cover')
+        .in('id', songIds);
+
+      if (songError) {
+        console.error('❌ Failed to fetch songs:', songError);
+        setLoading(false);
+        return;
+      }
+
+      const enriched = jamRows.map((jam) => ({
+        ...jam,
+        songs: songsData.find((s) => s.id === jam.song_id),
+      }));
+
+      setJams(enriched);
       setLoading(false);
     };
 
@@ -77,3 +91,4 @@ const MyJamsScreen = () => {
 };
 
 export default MyJamsScreen;
+
