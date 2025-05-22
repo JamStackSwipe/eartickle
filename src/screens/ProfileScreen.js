@@ -15,10 +15,11 @@ const ProfileScreen = () => {
       if (!user) return;
 
       const { data, error } = await supabase
-        .from('profiles')
-        .select('avatar_url, display_name, bio')
-        .eq('id', user.id)
-        .single();
+  .from('profiles')
+  .select('avatar_url, display_name, bio')
+  .eq('id', user.id)
+  .maybeSingle(); // ✅ avoids 406 and still returns null if not found
+
 
       if (!error && data) {
         if (data.avatar_url) setAvatarUrl(data.avatar_url);
