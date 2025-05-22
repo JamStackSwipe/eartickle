@@ -1,22 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
-import { useAuth } from '../components/AuthProvider';
+import { useUser } from '../components/AuthProvider'; // ✅ fixed
 import {
   playTickle,
   playTickleSpecial
 } from '../utils/tickleSound';
 
 const RewardsScreen = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useUser(); // ✅ fixed
   const [rewards, setRewards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (user) {
       fetchTickles();
     }
-  }, [authLoading, user]);
+  }, [user]);
 
   const fetchTickles = async () => {
     setLoading(true);
@@ -46,7 +46,7 @@ const RewardsScreen = () => {
     setLoading(false);
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return <p className="text-center mt-10">Loading Tickles...</p>;
   }
 
