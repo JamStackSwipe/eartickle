@@ -3,6 +3,8 @@ import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 import { v4 as uuidv4 } from 'uuid';
 
+const reactionEmojis = ['🔥', '❤️', '😢', '🎯'];
+
 const SwipeScreen = () => {
   const { user } = useUser();
   const [songs, setSongs] = useState([]);
@@ -97,6 +99,29 @@ const SwipeScreen = () => {
     setAdding(false);
   };
 
+  const handleReact = async (emoji) => {
+    const currentSong = songs[currentIndex];
+    if (!user || !currentSong?.id) return;
+
+    const { error } = await supabase.from('reactions').insert([
+      {
+        id: uuidv4(),
+        user_id: user.id,
+        song_id: currentSong.id,
+        emoji: emoji,
+      },
+    ]);
+
+    if (error) {
+      console.error('❌ Reaction insert error:', error);
+    } else {
+      console.log(`✅ Reaction ${emoji} recorded for song ${currentSong.id}`);
+
+      // TODO: Play sound effect here:
+      // playReactionSound(emoji);
+    }
+  };
+
   if (songs.length === 0) {
     return <div className="text-center mt-10 text-gray-500">No songs to swipe yet.</div>;
   }
@@ -105,7 +130,7 @@ const SwipeScreen = () => {
 
   return (
     <div className="w-full max-w-md mx-auto mt-6 p-4 sm:p-6 bg-white shadow-lg rounded text-center">
-      {/* Artist avatar + name */}
+      {/* Artist info */}
       {artistProfile && (
         <div className="flex items-center justify-center space-x-2 mb-3">
           <a
@@ -124,8 +149,8 @@ const SwipeScreen = () => {
         </div>
       )}
 
-      {/* Song content */}
-      <h2 className="text-2xl font-bold mb-3">{song.title}</h2>
+      {/* Song details */}
+      <h2 className="text-2xl font-bold mb-2">{song.title}</h2>
       <img
         src={song.cover}
         alt="cover"
@@ -135,7 +160,20 @@ const SwipeScreen = () => {
       <p className="text-sm italic text-gray-500">{song.genre}</p>
       <audio controls src={song.audio} className="w-full mt-4 mb-2" />
 
-      {/* Buttons */}
+      {/* Reactions */}
+      <div className="flex justify-center gap-4 mt-4 text-2xl">
+        {reactionEmojis.map((emoji) => (
+          <button
+            key={emoji}
+            onClick={() => handleReact(emoji)}
+            className="hover:scale-125 transition-transform duration-150"
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+
+      {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-4 mt-4">
         <button
           onClick={handleAddToJamStack}
