@@ -2,7 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom'; // ✅ No "as Router"
 import Header from './components/Header';
 import { AuthProvider } from './components/AuthProvider';
-
+import ArtistProfileScreen from './screens/ArtistProfileScreen';
 import LoginScreen from './screens/LoginScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import UploadScreen from './screens/UploadScreen';
@@ -21,6 +21,7 @@ function App() {
         <Route path="/" element={<AuthScreen />} />
         <Route path="/auth" element={<AuthScreen />} />
         <Route path="/login" element={<LoginScreen />} />
+        <Route path="/artist/:id" element={<ArtistProfileScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/upload" element={<UploadScreen />} />
         <Route path="/swipe" element={<SwipeScreen />} />
