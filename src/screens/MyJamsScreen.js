@@ -1,4 +1,3 @@
-// src/screens/MyJamsScreen.js
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../components/AuthProvider';
@@ -11,10 +10,7 @@ const MyJamsScreen = () => {
 
   useEffect(() => {
     const fetchMyJams = async () => {
-      if (!user) {
-        console.warn('⚠️ No user logged in');
-        return;
-      }
+      if (!user) return;
 
       console.log('🔍 Fetching JamStack songs for user:', user.id);
 
