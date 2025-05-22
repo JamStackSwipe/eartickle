@@ -1,41 +1,58 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useUser } from './AuthProvider';
 
 const Header = () => {
   const { user } = useUser();
+  const navigate = useNavigate();
+
+  const handleLogoClick = () => {
+    if (user) {
+      navigate('/swipe');
+    } else {
+      navigate('/auth');
+    }
+  };
 
   return (
     <header className="w-full px-4 py-3 bg-black text-white flex justify-between items-center shadow">
-      <Link to="/" className="text-xl font-bold text-white hover:text-gray-300">
+      {/* Logo redirects based on auth */}
+      <div
+        onClick={handleLogoClick}
+        className="text-xl font-bold text-white hover:text-gray-300 cursor-pointer"
+      >
         🎵 EarTickle
-      </Link>
+      </div>
 
       <nav className="flex items-center space-x-4 text-sm">
-        <Link to="/swipe" className="hover:underline">
-          Swipe
-        </Link>
-        <Link to="/myjams" className="hover:underline">
-          My Jams
-        </Link>
-        <Link to="/upload" className="hover:underline">
-          Upload
-        </Link>
-         <Link to="/stacker">🎶 Stacker</Link>
-
         {user && (
           <>
-            <a
-              href={`/artist/${user.id}`}
+            <Link to="/swipe" className="hover:underline text-white">
+              Swipe
+            </Link>
+            <Link to="/myjams" className="hover:underline text-white">
+              My Jams
+            </Link>
+            <Link to="/upload" className="hover:underline text-white">
+              Upload
+            </Link>
+            <Link to="/stacker" className="hover:underline text-white">
+              🎶 Stacker
+            </Link>
+            <Link
+              to={`/artist/${user.id}`}
               className="hover:underline text-indigo-400 font-semibold"
             >
               My Artist Page
-            </a>
-            {/* Optional: show user avatar in header */}
-            {/* <img
-              src={user.user_metadata?.avatar_url || '/default-avatar.png'}
-              alt="avatar"
-              className="w-8 h-8 rounded-full border border-white"
-            /> */}
+            </Link>
+
+            {/* Avatar linking to profile */}
+            <Link to="/profile">
+              <img
+                src={user.user_metadata?.avatar_url || '/default-avatar.png'}
+                alt="avatar"
+                className="w-8 h-8 rounded-full border border-white"
+              />
+            </Link>
           </>
         )}
       </nav>
