@@ -15,11 +15,10 @@ const ProfileScreen = () => {
       if (!user) return;
 
       const { data, error } = await supabase
-  .from('profiles')
-  .select('avatar_url, display_name, bio')
-  .eq('id', user.id)
-  .maybeSingle(); // ✅ avoids 406 and still returns null if not found
-
+        .from('profiles')
+        .select('avatar_url, display_name, bio')
+        .eq('id', user.id)
+        .maybeSingle();
 
       if (!error && data) {
         if (data.avatar_url) setAvatarUrl(data.avatar_url);
@@ -36,7 +35,7 @@ const ProfileScreen = () => {
     if (!file || !user) return;
 
     const ext = file.name.split('.').pop();
-    const filePath = `avatars/${user.id}.${ext}`;
+    const filePath = `${user.id}.${ext}`; // ✅ just the file name
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
@@ -47,7 +46,10 @@ const ProfileScreen = () => {
       return;
     }
 
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    const { data: { publicUrl } } = supabase
+      .storage
+      .from('avatars')
+      .getPublicUrl(filePath);
 
     const { error: updateError } = await supabase
       .from('profiles')
@@ -159,3 +161,4 @@ const ProfileScreen = () => {
 };
 
 export default ProfileScreen;
+
