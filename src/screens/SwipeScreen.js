@@ -13,6 +13,7 @@ const SwipeScreen = () => {
   const [adding, setAdding] = useState(false);
   const [autoplay, setAutoplay] = useState(false);
   const [userHasTapped, setUserHasTapped] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(true);
   const audioRef = useRef();
 
   useEffect(() => {
@@ -35,12 +36,14 @@ const SwipeScreen = () => {
   };
 
   const handleNext = () => {
-    const nextIndex = currentIndex + 1;
-    if (nextIndex < songs.length) {
-      setCurrentIndex(nextIndex);
-      if (autoplay) audioRef.current?.play();
-      incrementViews(songs[nextIndex].id);
-    }
+    setCurrentIndex((prev) => Math.min(prev + 1, songs.length - 1));
+    if (autoplay) audioRef.current?.play();
+    incrementViews(songs[Math.min(currentIndex + 1, songs.length - 1)]?.id);
+  };
+
+  const handlePrevious = () => {
+    setCurrentIndex((prev) => Math.max(prev - 1, 0));
+    if (autoplay) audioRef.current?.play();
   };
 
   const handleAddToJamStack = async () => {
@@ -79,11 +82,11 @@ const SwipeScreen = () => {
   };
 
   const playReactionSound = (emoji) => {
-    let soundFile = null;   // Add more as you upload!
-      if (emoji === '🔥') soundFile = '/sounds/fire.mp3';
-      if (emoji === '❤️') soundFile = '/sounds/love.mp3';
-      if (emoji === '😢') soundFile = '/sounds/sad.mp3';
-      if (emoji === '🎯') soundFile = '/sounds/bullseye.mp3';
+    let soundFile = null;
+    if (emoji === '🔥') soundFile = '/sounds/fire.mp3';
+    if (emoji === '❤️') soundFile = '/sounds/love.mp3';
+    if (emoji === '😢') soundFile = '/sounds/sad.mp3';
+    if (emoji === '🎯') soundFile = '/sounds/bullseye.mp3';
 
     if (soundFile) {
       const audio = new Audio(soundFile);
@@ -109,6 +112,7 @@ const SwipeScreen = () => {
 
   const handleFirstTap = () => {
     setUserHasTapped(true);
+    setShowOverlay(false);
     if (autoplay && audioRef.current) {
       audioRef.current.play();
     }
@@ -121,6 +125,14 @@ const SwipeScreen = () => {
     },
     onSwipedRight: () => {
       handleAddToJamStack();
+      handleFirstTap();
+    },
+    onSwipedUp: () => {
+      handleNext();
+      handleFirstTap();
+    },
+    onSwipedDown: () => {
+      handlePrevious();
       handleFirstTap();
     },
     preventScrollOnSwipe: true,
@@ -139,7 +151,7 @@ const SwipeScreen = () => {
       onClick={handleFirstTap}
       className="min-h-screen bg-black text-white flex justify-center items-center p-4 relative"
     >
-      {/* Autoplay toggle button */}
+      {/* Autoplay toggle */}
       <button
         onClick={() => setAutoplay(!autoplay)}
         className="absolute top-4 right-4 text-xs bg-white text-black px-3 py-1 rounded shadow hover:bg-gray-200"
@@ -147,7 +159,18 @@ const SwipeScreen = () => {
         Autoplay: {autoplay ? 'ON' : 'OFF'}
       </button>
 
-      <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center">
+      {/* Overlay for swipe instructions */}
+      {showOverlay && (
+        <div className="absolute inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center text-white text-center z-20 space-y-2 text-lg">
+          <div>👈 Swipe left to skip</div>
+          <div>👉 Swipe right to add</div>
+          <div>↑ Swipe up for next</div>
+          <div>↓ Swipe down to go back</div>
+          <p className="text-sm text-gray-400 mt-4">(tap to start)</p>
+        </div>
+      )}
+
+      <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center z-10">
         <img
           src={song.cover || '/default-cover.png'}
           alt="cover"
@@ -201,13 +224,6 @@ const SwipeScreen = () => {
           </button>
         </div>
       </div>
-
-      {/* Tap-to-play overlay */}
-      {!userHasTapped && (
-        <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center text-white text-xl font-semibold z-10">
-          👆 Tap to start listening
-        </div>
-      )}
     </div>
   );
 };
