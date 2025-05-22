@@ -1,6 +1,6 @@
 // src/screens/ProfileScreen.js
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 
 const ProfileScreen = () => {
