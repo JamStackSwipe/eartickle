@@ -11,6 +11,7 @@ const ProfileScreen = () => {
   const [bio, setBio] = useState('');
   const [editing, setEditing] = useState(false);
   const fileInputRef = useRef();
+  const [reactionsMap, setReactionsMap] = useState({});
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -34,14 +35,13 @@ const ProfileScreen = () => {
 
       const { data, error } = await supabase
         .from('songs')
-        .select('id, title, artist, cover')
+        .select('id, title, artist, cover, views')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('❌ Error fetching songs:', error);
-      } else {
+      if (!error && data) {
         setSongs(data);
+        fetchReactionsForSongs(data.map((s) => s.id));
       }
 
       setLoading(false);
@@ -50,6 +50,29 @@ const ProfileScreen = () => {
     fetchProfile();
     fetchUserSongs();
   }, [user]);
+
+  const fetchReactionsForSongs = async (songIds) => {
+    if (!songIds.length) return;
+
+    const { data, error } = await supabase
+      .from('reactions')
+      .select('song_id, emoji')
+      .in('song_id', songIds);
+
+    if (error) {
+      console.error('❌ Failed to fetch reactions:', error);
+      return;
+    }
+
+    const map = {};
+    data.forEach(({ song_id, emoji }) => {
+      if (!map[song_id]) map[song_id] = {};
+      if (!map[song_id][emoji]) map[song_id][emoji] = 0;
+      map[song_id][emoji]++;
+    });
+
+    setReactionsMap(map);
+  };
 
   const handleAvatarUpload = async (event) => {
     const file = event.target.files[0];
@@ -202,7 +225,7 @@ const ProfileScreen = () => {
           {songs.map((song) => (
             <li
               key={song.id}
-              className="bg-gray-100 p-4 rounded-lg shadow flex items-center space-x-4"
+              className="bg-gray-100 p-4 rounded-lg shadow flex items-start space-x-4"
             >
               {song.cover ? (
                 <img
@@ -217,7 +240,15 @@ const ProfileScreen = () => {
               )}
               <div className="flex-1">
                 <h2 className="text-lg font-semibold">{song.title || 'Untitled'}</h2>
-                <p className="text-sm text-gray-600">{song.artist || 'Unknown Artist'}</p>
+                <p className="text-sm text-gray-600 mb-1">{song.artist || 'Unknown Artist'}</p>
+                <p className="text-sm text-gray-500 mb-1">👁️ {song.views || 0} views</p>
+                <div className="flex gap-3 text-lg">
+                  {['🔥', '❤️', '😢', '🎯'].map((emoji) => (
+                    <span key={emoji}>
+                      {emoji} {reactionsMap[song.id]?.[emoji] || 0}
+                    </span>
+                  ))}
+                </div>
               </div>
               <button
                 onClick={() => handleDelete(song.id)}
