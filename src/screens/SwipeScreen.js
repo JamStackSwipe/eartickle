@@ -11,6 +11,8 @@ const SwipeScreen = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [adding, setAdding] = useState(false);
   const [artistProfile, setArtistProfile] = useState(null);
+  const [reactionCounts, setReactionCounts] = useState({});
+  const [activeEmoji, setActiveEmoji] = useState(null); // for feedback animation
 
   useEffect(() => {
     fetchSongs();
@@ -26,6 +28,7 @@ const SwipeScreen = () => {
       setSongs(data);
       incrementViews(data[0].id);
       fetchArtistProfile(data[0].user_id);
+      fetchReactionCounts(data[0].id);
     }
   };
 
@@ -40,10 +43,25 @@ const SwipeScreen = () => {
       .eq('id', userId)
       .single();
 
-    if (!error) {
-      setArtistProfile(data);
+    if (!error) setArtistProfile(data);
+    else setArtistProfile(null);
+  };
+
+  const fetchReactionCounts = async (songId) => {
+    const { data, error } = await supabase
+      .from('reactions')
+      .select('emoji, count:emoji', { count: 'exact' })
+      .eq('song_id', songId)
+      .group('emoji');
+
+    if (!error && data) {
+      const counts = {};
+      data.forEach(({ emoji, count }) => {
+        counts[emoji] = count;
+      });
+      setReactionCounts(counts);
     } else {
-      setArtistProfile(null);
+      setReactionCounts({});
     }
   };
 
@@ -53,6 +71,7 @@ const SwipeScreen = () => {
       setCurrentIndex(nextIndex);
       incrementViews(songs[nextIndex].id);
       fetchArtistProfile(songs[nextIndex].user_id);
+      fetchReactionCounts(songs[nextIndex].id);
     }
   };
 
@@ -103,6 +122,9 @@ const SwipeScreen = () => {
     const currentSong = songs[currentIndex];
     if (!user || !currentSong?.id) return;
 
+    setActiveEmoji(emoji); // trigger animation
+    setTimeout(() => setActiveEmoji(null), 300); // reset after bounce
+
     const { error } = await supabase.from('reactions').insert([
       {
         id: uuidv4(),
@@ -112,13 +134,10 @@ const SwipeScreen = () => {
       },
     ]);
 
-    if (error) {
-      console.error('❌ Reaction insert error:', error);
+    if (!error) {
+      fetchReactionCounts(currentSong.id); // refresh counts
     } else {
-      console.log(`✅ Reaction ${emoji} recorded for song ${currentSong.id}`);
-
-      // TODO: Play sound effect here:
-      // playReactionSound(emoji);
+      console.error('❌ Reaction insert error:', error);
     }
   };
 
@@ -166,9 +185,14 @@ const SwipeScreen = () => {
           <button
             key={emoji}
             onClick={() => handleReact(emoji)}
-            className="hover:scale-125 transition-transform duration-150"
+            className={`transition-transform duration-150 ${
+              activeEmoji === emoji ? 'scale-125' : ''
+            }`}
           >
             {emoji}
+            <span className="block text-sm font-semibold text-gray-600">
+              {reactionCounts[emoji] || 0}
+            </span>
           </button>
         ))}
       </div>
