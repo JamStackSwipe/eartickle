@@ -1,11 +1,10 @@
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
-import { useAuth } from '../components/AuthProvider';
+import { useUser } from '../components/AuthProvider'; // ✅ FIXED
 import { v4 as uuidv4 } from 'uuid';
 
 const SwipeScreen = () => {
-  const { user } = useAuth();
+  const { user } = useUser(); // ✅ FIXED
   const [songs, setSongs] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [adding, setAdding] = useState(false);
@@ -50,7 +49,6 @@ const SwipeScreen = () => {
       return;
     }
 
-    // ✅ Check if the song exists in the songs table (FK safety)
     const { data: songCheck } = await supabase
       .from('songs')
       .select('id')
@@ -63,7 +61,6 @@ const SwipeScreen = () => {
       return;
     }
 
-    // ✅ Check for duplicates
     const { data: existing } = await supabase
       .from('jamstacksongs')
       .select('id')
@@ -77,7 +74,6 @@ const SwipeScreen = () => {
       return;
     }
 
-    // ✅ Safe insert
     const { error } = await supabase.from('jamstacksongs').insert([
       {
         id: uuidv4(),
