@@ -23,6 +23,7 @@ const Header = () => {
         <Link to="/profile" className="hover:underline">
           Profile
         </Link>
+         <Link to="/stacker">🎶 Stacker</Link>
 
         {user && (
           <>
