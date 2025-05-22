@@ -10,9 +10,6 @@ const SwipeScreen = () => {
   const [songs, setSongs] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [adding, setAdding] = useState(false);
-  const [artistProfile, setArtistProfile] = useState(null);
-  const [reactionCounts, setReactionCounts] = useState({});
-  const [activeEmoji, setActiveEmoji] = useState(null); // for feedback animation
 
   useEffect(() => {
     fetchSongs();
@@ -24,11 +21,9 @@ const SwipeScreen = () => {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (!error && data.length > 0) {
+    if (!error) {
       setSongs(data);
-      incrementViews(data[0].id);
-      fetchArtistProfile(data[0].user_id);
-      fetchReactionCounts(data[0].id);
+      if (data.length > 0) incrementViews(data[0].id);
     }
   };
 
@@ -36,42 +31,11 @@ const SwipeScreen = () => {
     await supabase.rpc('increment_song_views', { song_id: songId });
   };
 
-  const fetchArtistProfile = async (userId) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('display_name, avatar_url')
-      .eq('id', userId)
-      .single();
-
-    if (!error) setArtistProfile(data);
-    else setArtistProfile(null);
-  };
-
-  const fetchReactionCounts = async (songId) => {
-    const { data, error } = await supabase
-      .from('reactions')
-      .select('emoji, count:emoji', { count: 'exact' })
-      .eq('song_id', songId)
-      .group('emoji');
-
-    if (!error && data) {
-      const counts = {};
-      data.forEach(({ emoji, count }) => {
-        counts[emoji] = count;
-      });
-      setReactionCounts(counts);
-    } else {
-      setReactionCounts({});
-    }
-  };
-
   const handleNext = () => {
     const nextIndex = currentIndex + 1;
     if (nextIndex < songs.length) {
       setCurrentIndex(nextIndex);
       incrementViews(songs[nextIndex].id);
-      fetchArtistProfile(songs[nextIndex].user_id);
-      fetchReactionCounts(songs[nextIndex].id);
     }
   };
 
@@ -81,12 +45,6 @@ const SwipeScreen = () => {
     setAdding(true);
     const currentSong = songs[currentIndex];
 
-    if (!currentSong?.id) {
-      alert("⚠️ Invalid song selected.");
-      setAdding(false);
-      return;
-    }
-
     const { data: existing } = await supabase
       .from('jamstacksongs')
       .select('id')
@@ -95,7 +53,7 @@ const SwipeScreen = () => {
       .maybeSingle();
 
     if (existing) {
-      alert('🛑 This song is already in your JamStack.');
+      alert('🛑 Already added to your JamStack.');
       setAdding(false);
       return;
     }
@@ -109,8 +67,7 @@ const SwipeScreen = () => {
     ]);
 
     if (error) {
-      alert('❌ Failed to add song to your JamStack');
-      console.error('JamStack insert error:', error);
+      console.error('❌ Failed to add to JamStack:', error);
     } else {
       alert('🎵 Added to your JamStack!');
     }
@@ -122,10 +79,7 @@ const SwipeScreen = () => {
     const currentSong = songs[currentIndex];
     if (!user || !currentSong?.id) return;
 
-    setActiveEmoji(emoji); // trigger animation
-    setTimeout(() => setActiveEmoji(null), 300); // reset after bounce
-
-    const { error } = await supabase.from('reactions').insert([
+    await supabase.from('reactions').insert([
       {
         id: uuidv4(),
         user_id: user.id,
@@ -133,85 +87,55 @@ const SwipeScreen = () => {
         emoji: emoji,
       },
     ]);
-
-    if (!error) {
-      fetchReactionCounts(currentSong.id); // refresh counts
-    } else {
-      console.error('❌ Reaction insert error:', error);
-    }
   };
 
   if (songs.length === 0) {
-    return <div className="text-center mt-10 text-gray-500">No songs to swipe yet.</div>;
+    return <div className="text-center mt-10 text-gray-400">No songs to swipe yet.</div>;
   }
 
   const song = songs[currentIndex];
 
   return (
-    <div className="w-full max-w-md mx-auto mt-6 p-4 sm:p-6 bg-white shadow-lg rounded text-center">
-      {/* Artist info */}
-      {artistProfile && (
-        <div className="flex items-center justify-center space-x-2 mb-3">
-          <a
-            href={`/artist/${song.user_id}`}
-            className="flex items-center space-x-2 hover:underline"
-          >
-            <img
-              src={artistProfile.avatar_url || '/default-avatar.png'}
-              alt="artist"
-              className="w-8 h-8 rounded-full object-cover border border-black"
-            />
-            <span className="text-sm font-semibold text-black">
-              {artistProfile.display_name || 'Unknown Artist'}
-            </span>
-          </a>
+    <div className="min-h-screen bg-black text-white flex justify-center items-center p-4">
+      <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center">
+        <img
+          src={song.cover || '/default-cover.png'}
+          alt="cover"
+          className="w-full h-64 object-cover rounded mb-4"
+        />
+        <h2 className="text-2xl font-bold mb-1">{song.title}</h2>
+        <p className="text-sm text-gray-600">{song.artist || 'Unknown Artist'}</p>
+        <p className="text-xs italic text-gray-400 mb-3">{song.genre}</p>
+
+        <audio controls src={song.audio} className="w-full mb-4" />
+
+        <div className="flex justify-center gap-4 text-2xl mb-4">
+          {reactionEmojis.map((emoji) => (
+            <button
+              key={emoji}
+              onClick={() => handleReact(emoji)}
+              className="hover:scale-125 transition-transform duration-150"
+            >
+              {emoji}
+            </button>
+          ))}
         </div>
-      )}
 
-      {/* Song details */}
-      <h2 className="text-2xl font-bold mb-2">{song.title}</h2>
-      <img
-        src={song.cover}
-        alt="cover"
-        className="w-full h-48 sm:h-64 object-cover rounded mb-4"
-      />
-      <p className="text-lg font-semibold">{song.artist}</p>
-      <p className="text-sm italic text-gray-500">{song.genre}</p>
-      <audio controls src={song.audio} className="w-full mt-4 mb-2" />
-
-      {/* Reactions */}
-      <div className="flex justify-center gap-4 mt-4 text-2xl">
-        {reactionEmojis.map((emoji) => (
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
-            key={emoji}
-            onClick={() => handleReact(emoji)}
-            className={`transition-transform duration-150 ${
-              activeEmoji === emoji ? 'scale-125' : ''
-            }`}
+            onClick={handleAddToJamStack}
+            disabled={adding}
+            className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700"
           >
-            {emoji}
-            <span className="block text-sm font-semibold text-gray-600">
-              {reactionCounts[emoji] || 0}
-            </span>
+            ❤️ Add to JamStack
           </button>
-        ))}
-      </div>
-
-      {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 mt-4">
-        <button
-          onClick={handleAddToJamStack}
-          disabled={adding}
-          className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700"
-        >
-          ❤️ Add to JamStack
-        </button>
-        <button
-          onClick={handleNext}
-          className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          ⏭️ Next
-        </button>
+          <button
+            onClick={handleNext}
+            className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            ⏭️ Next
+          </button>
+        </div>
       </div>
     </div>
   );
