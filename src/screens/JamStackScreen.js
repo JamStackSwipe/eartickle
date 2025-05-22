@@ -1,6 +1,6 @@
 // src/screens/JamStackScreen.js
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 import JamStackView from './JamStackView';
 
