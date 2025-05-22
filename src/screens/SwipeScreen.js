@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
+import { useSwipeable } from 'react-swipeable';
 import { v4 as uuidv4 } from 'uuid';
 
 const reactionEmojis = ['🔥', '❤️', '😢', '🎯'];
@@ -21,9 +22,9 @@ const SwipeScreen = () => {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (!error) {
+    if (!error && data.length > 0) {
       setSongs(data);
-      if (data.length > 0) incrementViews(data[0].id);
+      incrementViews(data[0].id);
     }
   };
 
@@ -41,7 +42,6 @@ const SwipeScreen = () => {
 
   const handleAddToJamStack = async () => {
     if (!user || adding) return;
-
     setAdding(true);
     const currentSong = songs[currentIndex];
 
@@ -53,7 +53,7 @@ const SwipeScreen = () => {
       .maybeSingle();
 
     if (existing) {
-      alert('🛑 Already added to your JamStack.');
+      alert('🛑 Already in your JamStack!');
       setAdding(false);
       return;
     }
@@ -66,10 +66,10 @@ const SwipeScreen = () => {
       },
     ]);
 
-    if (error) {
-      console.error('❌ Failed to add to JamStack:', error);
-    } else {
+    if (!error) {
       alert('🎵 Added to your JamStack!');
+    } else {
+      console.error('❌ Error adding to JamStack:', error);
     }
 
     setAdding(false);
@@ -89,6 +89,13 @@ const SwipeScreen = () => {
     ]);
   };
 
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => handleNext(),
+    onSwipedRight: () => handleAddToJamStack(),
+    preventScrollOnSwipe: true,
+    trackMouse: true,
+  });
+
   if (songs.length === 0) {
     return <div className="text-center mt-10 text-gray-400">No songs to swipe yet.</div>;
   }
@@ -96,12 +103,15 @@ const SwipeScreen = () => {
   const song = songs[currentIndex];
 
   return (
-    <div className="min-h-screen bg-black text-white flex justify-center items-center p-4">
+    <div
+      {...swipeHandlers}
+      className="min-h-screen bg-black text-white flex justify-center items-center p-4"
+    >
       <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center">
         <img
           src={song.cover || '/default-cover.png'}
           alt="cover"
-          className="w-full h-64 object-cover rounded mb-4"
+          className="w-full h-64 object-contain rounded mb-4"
         />
         <h2 className="text-2xl font-bold mb-1">{song.title}</h2>
         <p className="text-sm text-gray-600">{song.artist || 'Unknown Artist'}</p>
