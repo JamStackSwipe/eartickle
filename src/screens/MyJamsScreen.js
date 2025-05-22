@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../supabase'; // ✅ your real import path
+import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 
 const MyJamsScreen = () => {
