@@ -63,21 +63,19 @@ const JamStackPlayer = () => {
     );
   };
 
-  if (loading) return <p className="p-6">Loading your JamStack...</p>;
-  if (!playlist.length) return <p className="p-6">You haven’t added any songs yet.</p>;
+  if (loading) return <p className="p-6 text-white">Loading your JamStack...</p>;
+  if (!playlist.length) return <p className="p-6 text-white">You haven’t added any songs yet.</p>;
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 text-center">
-      <h1 className="text-3xl font-bold mb-6">🎧 Random Stacker</h1>
-
-      <div className="bg-gray-800 p-4 rounded-lg shadow max-w-md mx-auto">
+    <div className="min-h-screen bg-black text-white p-6 flex justify-center items-center">
+      <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center">
         <img
           src={currentSong.cover || '/default-cover.png'}
           alt="cover"
-          className="w-full h-64 object-cover rounded mb-4"
+          className="w-full h-64 object-contain rounded mb-4"
         />
-        <h2 className="text-xl font-semibold">{currentSong.title}</h2>
-        <p className="text-sm text-gray-400 mb-4">{currentSong.artist}</p>
+        <h2 className="text-2xl font-bold mb-1">{currentSong.title}</h2>
+        <p className="text-sm text-gray-600 mb-4">{currentSong.artist || 'Unknown Artist'}</p>
 
         <audio
           key={currentSong.id}
@@ -91,13 +89,13 @@ const JamStackPlayer = () => {
         <div className="flex justify-between">
           <button
             onClick={playPrev}
-            className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
+            className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
           >
             ⏮️ Prev
           </button>
           <button
             onClick={playNext}
-            className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600"
+            className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600"
           >
             ⏭️ Next
           </button>
