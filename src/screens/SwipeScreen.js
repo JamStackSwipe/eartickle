@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 import { useSwipeable } from 'react-swipeable';
@@ -11,6 +11,9 @@ const SwipeScreen = () => {
   const [songs, setSongs] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [adding, setAdding] = useState(false);
+  const [autoplay, setAutoplay] = useState(false);
+  const [userHasTapped, setUserHasTapped] = useState(false);
+  const audioRef = useRef();
 
   useEffect(() => {
     fetchSongs();
@@ -24,7 +27,6 @@ const SwipeScreen = () => {
 
     if (!error && data.length > 0) {
       setSongs(data);
-      incrementViews(data[0].id);
     }
   };
 
@@ -36,6 +38,7 @@ const SwipeScreen = () => {
     const nextIndex = currentIndex + 1;
     if (nextIndex < songs.length) {
       setCurrentIndex(nextIndex);
+      if (autoplay) audioRef.current?.play();
       incrementViews(songs[nextIndex].id);
     }
   };
@@ -75,6 +78,16 @@ const SwipeScreen = () => {
     setAdding(false);
   };
 
+  const playReactionSound = (emoji) => {
+    let soundFile = null;
+    if (emoji === '🔥') soundFile = '/sounds/fire.mp3'; // Add more as you upload!
+
+    if (soundFile) {
+      const audio = new Audio(soundFile);
+      audio.play();
+    }
+  };
+
   const handleReact = async (emoji) => {
     const currentSong = songs[currentIndex];
     if (!user || !currentSong?.id) return;
@@ -87,11 +100,26 @@ const SwipeScreen = () => {
         emoji: emoji,
       },
     ]);
+
+    playReactionSound(emoji);
+  };
+
+  const handleFirstTap = () => {
+    setUserHasTapped(true);
+    if (autoplay && audioRef.current) {
+      audioRef.current.play();
+    }
   };
 
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => handleNext(),
-    onSwipedRight: () => handleAddToJamStack(),
+    onSwipedLeft: () => {
+      handleNext();
+      handleFirstTap();
+    },
+    onSwipedRight: () => {
+      handleAddToJamStack();
+      handleFirstTap();
+    },
     preventScrollOnSwipe: true,
     trackMouse: true,
   });
@@ -105,8 +133,17 @@ const SwipeScreen = () => {
   return (
     <div
       {...swipeHandlers}
-      className="min-h-screen bg-black text-white flex justify-center items-center p-4"
+      onClick={handleFirstTap}
+      className="min-h-screen bg-black text-white flex justify-center items-center p-4 relative"
     >
+      {/* Autoplay toggle button */}
+      <button
+        onClick={() => setAutoplay(!autoplay)}
+        className="absolute top-4 right-4 text-xs bg-white text-black px-3 py-1 rounded shadow hover:bg-gray-200"
+      >
+        Autoplay: {autoplay ? 'ON' : 'OFF'}
+      </button>
+
       <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center">
         <img
           src={song.cover || '/default-cover.png'}
@@ -117,13 +154,21 @@ const SwipeScreen = () => {
         <p className="text-sm text-gray-600">{song.artist || 'Unknown Artist'}</p>
         <p className="text-xs italic text-gray-400 mb-3">{song.genre}</p>
 
-        <audio controls src={song.audio} className="w-full mb-4" />
+        <audio
+          ref={audioRef}
+          src={song.audio}
+          controls
+          className="w-full mb-4"
+        />
 
         <div className="flex justify-center gap-4 text-2xl mb-4">
           {reactionEmojis.map((emoji) => (
             <button
               key={emoji}
-              onClick={() => handleReact(emoji)}
+              onClick={() => {
+                handleReact(emoji);
+                handleFirstTap();
+              }}
               className="hover:scale-125 transition-transform duration-150"
             >
               {emoji}
@@ -133,20 +178,33 @@ const SwipeScreen = () => {
 
         <div className="flex flex-col sm:flex-row gap-3">
           <button
-            onClick={handleAddToJamStack}
+            onClick={() => {
+              handleAddToJamStack();
+              handleFirstTap();
+            }}
             disabled={adding}
             className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700"
           >
             ❤️ Add to JamStack
           </button>
           <button
-            onClick={handleNext}
+            onClick={() => {
+              handleNext();
+              handleFirstTap();
+            }}
             className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             ⏭️ Next
           </button>
         </div>
       </div>
+
+      {/* Tap-to-play overlay */}
+      {!userHasTapped && (
+        <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center text-white text-xl font-semibold z-10">
+          👆 Tap to start listening
+        </div>
+      )}
     </div>
   );
 };
