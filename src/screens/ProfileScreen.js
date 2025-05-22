@@ -9,9 +9,9 @@ const ProfileScreen = () => {
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
+  const [editing, setEditing] = useState(false);
   const fileInputRef = useRef();
 
-  // Load profile (avatar, name, bio)
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) return;
@@ -29,11 +29,6 @@ const ProfileScreen = () => {
       }
     };
 
-    fetchProfile();
-  }, [user]);
-
-  // Load user's songs
-  useEffect(() => {
     const fetchUserSongs = async () => {
       if (!user) return;
 
@@ -44,7 +39,7 @@ const ProfileScreen = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('❌ Error fetching user songs:', error);
+        console.error('❌ Error fetching songs:', error);
       } else {
         setSongs(data);
       }
@@ -52,6 +47,7 @@ const ProfileScreen = () => {
       setLoading(false);
     };
 
+    fetchProfile();
     fetchUserSongs();
   }, [user]);
 
@@ -84,13 +80,29 @@ const ProfileScreen = () => {
       .eq('id', user.id);
 
     if (updateError) {
-      alert('❌ Failed to update avatar');
+      alert('❌ Failed to update profile avatar');
       console.error(updateError);
       return;
     }
 
     setAvatarUrl(publicUrl);
     alert('✅ Avatar updated!');
+  };
+
+  const handleSaveProfile = async () => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ display_name: displayName, bio })
+      .eq('id', user.id);
+
+    if (error) {
+      alert('❌ Failed to save profile');
+      console.error(error);
+      return;
+    }
+
+    alert('✅ Profile updated!');
+    setEditing(false);
   };
 
   const handleDelete = async (songId) => {
@@ -111,23 +123,8 @@ const ProfileScreen = () => {
     alert('🗑️ Song deleted!');
   };
 
-  const handleSaveProfile = async () => {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ display_name: displayName, bio })
-      .eq('id', user.id);
-
-    if (error) {
-      alert('❌ Failed to save profile');
-      console.error(error);
-      return;
-    }
-
-    alert('✅ Profile saved!');
-  };
-
   return (
-  <div className="min-h-screen bg-white text-black p-6">
+    <div className="min-h-screen bg-white text-black p-6">
       <h1 className="text-3xl font-bold mb-6">👤 My Profile</h1>
 
       {/* Avatar */}
@@ -135,7 +132,7 @@ const ProfileScreen = () => {
         <img
           src={avatarUrl || '/default-avatar.png'}
           alt="avatar"
-          className="w-24 h-24 rounded-full object-cover border-2 border-white mb-2"
+          className="w-24 h-24 rounded-full object-cover border-2 border-gray-300 mb-2"
         />
         <button
           onClick={() => fileInputRef.current.click()}
@@ -152,49 +149,60 @@ const ProfileScreen = () => {
         />
       </div>
 
-      {/* Editable Name + Bio */}
-      <div className="mb-8 space-y-3">
-        <div>
-          <label className="block text-sm mb-1">Display Name</label>
-          <input
-            type="text"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
-          />
+      {/* Display Name + Bio */}
+      {!editing ? (
+        <div className="mb-8">
+          <div className="flex items-center mb-2">
+            <h2 className="text-xl font-semibold mr-2">{displayName || 'Unnamed Artist'}</h2>
+            <button onClick={() => setEditing(true)} title="Edit">
+              ✏️
+            </button>
+          </div>
+          <p className="text-gray-600">{bio || 'No bio yet.'}</p>
         </div>
-        <div>
-          <label className="block text-sm mb-1">Bio</label>
-          <textarea
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            rows={3}
-            className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
-          />
+      ) : (
+        <div className="mb-8 space-y-3">
+          <div>
+            <label className="block text-sm mb-1">Display Name</label>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="w-full px-3 py-2 rounded bg-gray-100 text-black border border-gray-400"
+            />
+          </div>
+          <div>
+            <label className="block text-sm mb-1">Bio</label>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 rounded bg-gray-100 text-black border border-gray-400"
+            />
+          </div>
+          <button
+            onClick={handleSaveProfile}
+            className="px-4 py-2 bg-green-600 rounded text-white hover:bg-green-700"
+          >
+            Save
+          </button>
         </div>
-        <button
-          onClick={handleSaveProfile}
-          className="px-4 py-2 bg-green-600 rounded text-white hover:bg-green-700"
-        >
-          Save Profile
-        </button>
-      </div>
-
-      {/* User Info */}
-      <p className="mb-2 text-sm text-gray-400">Email: {user?.email}</p>
-      <p className="mb-6 text-sm text-gray-500">User ID: {user?.id}</p>
+      )}
 
       {/* Uploaded Songs */}
+      <p className="mb-2 text-sm text-gray-500">Email: {user?.email}</p>
+      <p className="mb-6 text-sm text-gray-400">User ID: {user?.id}</p>
+
       {loading ? (
         <p>Loading your uploads...</p>
       ) : songs.length === 0 ? (
-        <p className="text-gray-400">You haven’t uploaded any songs yet.</p>
+        <p className="text-gray-500">You haven’t uploaded any songs yet.</p>
       ) : (
         <ul className="space-y-4">
           {songs.map((song) => (
             <li
               key={song.id}
-              className="bg-gray-900 p-4 rounded-lg shadow flex items-center space-x-4"
+              className="bg-gray-100 p-4 rounded-lg shadow flex items-center space-x-4"
             >
               {song.cover ? (
                 <img
@@ -203,13 +211,13 @@ const ProfileScreen = () => {
                   className="w-20 h-20 object-cover rounded"
                 />
               ) : (
-                <div className="w-20 h-20 bg-gray-700 flex items-center justify-center rounded">
+                <div className="w-20 h-20 bg-gray-300 flex items-center justify-center rounded">
                   🎵
                 </div>
               )}
               <div className="flex-1">
                 <h2 className="text-lg font-semibold">{song.title || 'Untitled'}</h2>
-                <p className="text-sm text-gray-400">{song.artist || 'Unknown Artist'}</p>
+                <p className="text-sm text-gray-600">{song.artist || 'Unknown Artist'}</p>
               </div>
               <button
                 onClick={() => handleDelete(song.id)}
