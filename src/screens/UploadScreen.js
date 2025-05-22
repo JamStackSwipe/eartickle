@@ -130,13 +130,37 @@ const UploadScreen = () => {
         className="w-full p-2 border rounded mb-4"
       />
 
-      <label className="block mb-2 font-medium">Audio File (MP3, Max 20MB)</label>
-      <input
-        type="file"
-        accept="audio/mpeg"
-        onChange={(e) => setAudioFile(e.target.files[0])}
-        className="w-full p-2 border rounded mb-4"
-      />
+    <label className="block mb-2 font-medium">
+  Audio File (MP3, M4A, or audio-only MP4, Max 20MB)
+</label>
+<input
+  type="file"
+  accept="audio/mpeg, audio/mp4, audio/x-m4a, audio/aac, video/mp4"
+  onChange={(e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const validAudioTypes = [
+      'audio/mpeg',
+      'audio/mp4',
+      'audio/x-m4a',
+      'audio/aac',
+      'video/mp4' // for audio-only mp4
+    ];
+
+    if (!validAudioTypes.includes(file.type)) {
+      alert('❌ Unsupported file format. Please upload an MP3, M4A, or audio-only MP4.');
+      return;
+    }
+
+    setAudioFile(file);
+  }}
+  className="w-full p-2 border rounded mb-1"
+/>
+<p className="text-xs text-gray-400 mb-4">
+  Supported formats: MP3, M4A, or audio-only MP4. Make sure your MP4 does not contain video.
+</p>
+
 
       <button
         onClick={handleUpload}
