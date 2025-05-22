@@ -127,7 +127,7 @@ const ProfileScreen = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
+  <div className="min-h-screen bg-white text-black p-6">
       <h1 className="text-3xl font-bold mb-6">👤 My Profile</h1>
 
       {/* Avatar */}
