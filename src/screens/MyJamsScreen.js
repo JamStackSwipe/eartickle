@@ -12,7 +12,7 @@ const MyJamsScreen = () => {
     const fetchMyJams = async () => {
       if (!user) return;
 
-      console.log('🔍 Fetching JamStack songs for user:', user.id);
+      console.log('✅ MyJamsScreen is LIVE');
 
       const { data, error } = await supabase
         .from('jamstacksongs')
@@ -29,12 +29,11 @@ const MyJamsScreen = () => {
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
 
       if (error) {
         console.error('❌ Error fetching JamStack songs:', error);
       } else {
-        console.log('✅ JamStack songs fetched:', data);
         setJams(data);
       }
 
@@ -45,11 +44,5 @@ const MyJamsScreen = () => {
   }, [user]);
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">🎧 My JamStack™</h1>
-      {loading ? <p>Loading...</p> : <JamStackView jamstack={jams} />}
-    </div>
-  );
-};
+    <div className="min-
 
-export default MyJamsScreen;
