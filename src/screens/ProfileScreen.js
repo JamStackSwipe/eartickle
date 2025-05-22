@@ -7,9 +7,32 @@ const ProfileScreen = () => {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [avatarUrl, setAvatarUrl] = useState(null);
+  const [displayName, setDisplayName] = useState('');
+  const [bio, setBio] = useState('');
   const fileInputRef = useRef();
 
-  // Fetch uploaded songs
+  // Load profile (avatar, name, bio)
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('avatar_url, display_name, bio')
+        .eq('id', user.id)
+        .single();
+
+      if (!error && data) {
+        setAvatarUrl(data.avatar_url);
+        setDisplayName(data.display_name || '');
+        setBio(data.bio || '');
+      }
+    };
+
+    fetchProfile();
+  }, [user]);
+
+  // Load user's songs
   useEffect(() => {
     const fetchUserSongs = async () => {
       if (!user) return;
@@ -30,23 +53,6 @@ const ProfileScreen = () => {
     };
 
     fetchUserSongs();
-  }, [user]);
-
-  // Fetch avatar from `profiles` table
-  useEffect(() => {
-    const fetchAvatar = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('avatar_url')
-        .eq('id', user.id)
-        .single();
-
-      if (!error && data?.avatar_url) {
-        setAvatarUrl(data.avatar_url);
-      }
-    };
-
-    if (user) fetchAvatar();
   }, [user]);
 
   const handleAvatarUpload = async (event) => {
@@ -78,7 +84,7 @@ const ProfileScreen = () => {
       .eq('id', user.id);
 
     if (updateError) {
-      alert('❌ Failed to update profile');
+      alert('❌ Failed to update avatar');
       console.error(updateError);
       return;
     }
@@ -105,11 +111,26 @@ const ProfileScreen = () => {
     alert('🗑️ Song deleted!');
   };
 
+  const handleSaveProfile = async () => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ display_name: displayName, bio })
+      .eq('id', user.id);
+
+    if (error) {
+      alert('❌ Failed to save profile');
+      console.error(error);
+      return;
+    }
+
+    alert('✅ Profile saved!');
+  };
+
   return (
     <div className="min-h-screen bg-black text-white p-6">
       <h1 className="text-3xl font-bold mb-6">👤 My Profile</h1>
 
-      {/* Avatar section */}
+      {/* Avatar */}
       <div className="mb-6">
         <img
           src={avatarUrl || '/default-avatar.png'}
@@ -131,11 +152,39 @@ const ProfileScreen = () => {
         />
       </div>
 
-      {/* User info */}
-      <p className="mb-4">Email: {user?.email}</p>
-      <p className="mb-8 text-sm text-gray-400">User ID: {user?.id}</p>
+      {/* Editable Name + Bio */}
+      <div className="mb-8 space-y-3">
+        <div>
+          <label className="block text-sm mb-1">Display Name</label>
+          <input
+            type="text"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
+          />
+        </div>
+        <div>
+          <label className="block text-sm mb-1">Bio</label>
+          <textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            rows={3}
+            className="w-full px-3 py-2 rounded bg-gray-800 text-white border border-gray-600"
+          />
+        </div>
+        <button
+          onClick={handleSaveProfile}
+          className="px-4 py-2 bg-green-600 rounded text-white hover:bg-green-700"
+        >
+          Save Profile
+        </button>
+      </div>
 
-      {/* Song list */}
+      {/* User Info */}
+      <p className="mb-2 text-sm text-gray-400">Email: {user?.email}</p>
+      <p className="mb-6 text-sm text-gray-500">User ID: {user?.id}</p>
+
+      {/* Uploaded Songs */}
       {loading ? (
         <p>Loading your uploads...</p>
       ) : songs.length === 0 ? (
