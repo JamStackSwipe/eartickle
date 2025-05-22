@@ -8,6 +8,7 @@ const SwipeScreen = () => {
   const [songs, setSongs] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [adding, setAdding] = useState(false);
+  const [artistProfile, setArtistProfile] = useState(null);
 
   useEffect(() => {
     fetchSongs();
@@ -19,9 +20,10 @@ const SwipeScreen = () => {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (!error) {
+    if (!error && data.length > 0) {
       setSongs(data);
-      if (data.length > 0) incrementViews(data[0].id);
+      incrementViews(data[0].id);
+      fetchArtistProfile(data[0].user_id);
     }
   };
 
@@ -29,11 +31,26 @@ const SwipeScreen = () => {
     await supabase.rpc('increment_song_views', { song_id: songId });
   };
 
+  const fetchArtistProfile = async (userId) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('display_name, avatar_url')
+      .eq('id', userId)
+      .single();
+
+    if (!error) {
+      setArtistProfile(data);
+    } else {
+      setArtistProfile(null);
+    }
+  };
+
   const handleNext = () => {
     const nextIndex = currentIndex + 1;
     if (nextIndex < songs.length) {
       setCurrentIndex(nextIndex);
       incrementViews(songs[nextIndex].id);
+      fetchArtistProfile(songs[nextIndex].user_id);
     }
   };
 
@@ -88,16 +105,37 @@ const SwipeScreen = () => {
 
   return (
     <div className="w-full max-w-md mx-auto mt-6 p-4 sm:p-6 bg-white shadow-lg rounded text-center">
-      <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-4">{song.title}</h2>
+      {/* Artist avatar + name */}
+      {artistProfile && (
+        <div className="flex items-center justify-center space-x-2 mb-3">
+          <a
+            href={`/artist/${song.user_id}`}
+            className="flex items-center space-x-2 hover:underline"
+          >
+            <img
+              src={artistProfile.avatar_url || '/default-avatar.png'}
+              alt="artist"
+              className="w-8 h-8 rounded-full object-cover border border-black"
+            />
+            <span className="text-sm font-semibold text-black">
+              {artistProfile.display_name || 'Unknown Artist'}
+            </span>
+          </a>
+        </div>
+      )}
+
+      {/* Song content */}
+      <h2 className="text-2xl font-bold mb-3">{song.title}</h2>
       <img
         src={song.cover}
         alt="cover"
         className="w-full h-48 sm:h-64 object-cover rounded mb-4"
       />
-      <p className="text-base font-semibold">{song.artist}</p>
+      <p className="text-lg font-semibold">{song.artist}</p>
       <p className="text-sm italic text-gray-500">{song.genre}</p>
       <audio controls src={song.audio} className="w-full mt-4 mb-2" />
 
+      {/* Buttons */}
       <div className="flex flex-col sm:flex-row gap-4 mt-4">
         <button
           onClick={handleAddToJamStack}
