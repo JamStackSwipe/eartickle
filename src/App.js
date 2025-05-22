@@ -12,6 +12,7 @@ import AuthScreen from './screens/AuthScreen';
 import RewardsScreen from './screens/RewardsScreen';
 import MyJamsScreen from './screens/MyJamsScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import JamStackPlayer from './screens/JamStackPlayer';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/auth" element={<AuthScreen />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/artist/:id" element={<ArtistProfileScreen />} />
+        <Route path="/stacker" element={<JamStackPlayer />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/upload" element={<UploadScreen />} />
         <Route path="/swipe" element={<SwipeScreen />} />
