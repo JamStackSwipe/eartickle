@@ -79,8 +79,11 @@ const SwipeScreen = () => {
   };
 
   const playReactionSound = (emoji) => {
-    let soundFile = null;
-    if (emoji === '🔥') soundFile = '/sounds/fire.mp3'; // Add more as you upload!
+    let soundFile = null;   // Add more as you upload!
+      if (emoji === '🔥') soundFile = '/sounds/fire.mp3';
+      if (emoji === '❤️') soundFile = '/sounds/love.mp3';
+      if (emoji === '😢') soundFile = '/sounds/sad.mp3';
+      if (emoji === '🎯') soundFile = '/sounds/bullseye.mp3';
 
     if (soundFile) {
       const audio = new Audio(soundFile);
