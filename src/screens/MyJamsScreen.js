@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../supabase'; // ✅ your real import path
 import { useUser } from '../components/AuthProvider';
 
 const MyJamsScreen = () => {
@@ -11,7 +11,7 @@ const MyJamsScreen = () => {
     const fetchMyJams = async () => {
       if (!user) return;
 
-      console.log("✅ MyJamsScreen is LIVE");
+      console.log('✅ MyJamsScreen is LIVE');
 
       const { data, error } = await supabase
         .from('jamstacksongs')
