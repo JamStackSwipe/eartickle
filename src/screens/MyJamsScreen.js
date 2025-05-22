@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../components/AuthProvider';
-import JamStackView from '../components/JamStackView';
+import JamStackView from './JamStackView';
+
 
 const MyJamsScreen = () => {
   const { user } = useUser();
