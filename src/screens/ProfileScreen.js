@@ -1,4 +1,4 @@
-// src/screens/ProfileScreen.js
+
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -11,7 +11,6 @@ const ProfileScreen = () => {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ title: '', artist: '' });
 
-  // Fetch current user's songs
   useEffect(() => {
     const fetchMySongs = async () => {
       if (!user) return;
@@ -34,7 +33,6 @@ const ProfileScreen = () => {
     fetchMySongs();
   }, [user]);
 
-  // Start editing a song
   const startEditing = (song) => {
     setEditingId(song.id);
     setEditForm({ title: song.title, artist: song.artist });
@@ -55,7 +53,6 @@ const ProfileScreen = () => {
     if (error) {
       console.error('❌ Error updating song:', error.message);
     } else {
-      // Update local list
       setMySongs((prev) =>
         prev.map((song) =>
           song.id === id ? { ...song, ...editForm } : song
@@ -66,35 +63,37 @@ const ProfileScreen = () => {
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-2">👤 My Profile</h1>
+    <div className="min-h-screen bg-black text-white p-6">
+      <h1 className="text-3xl font-bold mb-6">👤 My Profile</h1>
+
       {user && (
-        <div className="mb-6">
-          <p className="text-gray-700 dark:text-gray-300">
+        <div className="mb-8">
+          <p className="text-gray-300">
             <strong>Email:</strong> {user.email}
           </p>
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-500 text-sm">
             <strong>User ID:</strong> {user.id}
           </p>
         </div>
       )}
 
-      <h2 className="text-xl font-semibold mb-2">🎵 My Uploaded Songs</h2>
+      <h2 className="text-xl font-semibold mb-4">🎵 My Uploaded Songs</h2>
+
       {loading ? (
         <p>Loading your songs...</p>
       ) : mySongs.length === 0 ? (
-        <p>You haven't uploaded any songs yet.</p>
+        <p className="text-gray-400">You haven't uploaded any songs yet.</p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="space-y-4">
           {mySongs.map((song) => (
             <li
               key={song.id}
-              className="border p-4 rounded bg-white dark:bg-gray-800 shadow-sm"
+              className="bg-gray-900 p-4 rounded-lg shadow-sm"
             >
               {editingId === song.id ? (
                 <>
                   <input
-                    className="block mb-2 w-full px-2 py-1 border rounded"
+                    className="block mb-2 w-full px-2 py-1 bg-gray-800 text-white border border-gray-700 rounded"
                     value={editForm.title}
                     onChange={(e) =>
                       setEditForm({ ...editForm, title: e.target.value })
@@ -102,7 +101,7 @@ const ProfileScreen = () => {
                     placeholder="Title"
                   />
                   <input
-                    className="block mb-2 w-full px-2 py-1 border rounded"
+                    className="block mb-2 w-full px-2 py-1 bg-gray-800 text-white border border-gray-700 rounded"
                     value={editForm.artist}
                     onChange={(e) =>
                       setEditForm({ ...editForm, artist: e.target.value })
@@ -117,7 +116,7 @@ const ProfileScreen = () => {
                       Save
                     </button>
                     <button
-                      className="px-3 py-1 bg-gray-400 text-white rounded text-sm"
+                      className="px-3 py-1 bg-gray-500 text-white rounded text-sm"
                       onClick={cancelEditing}
                     >
                       Cancel
@@ -126,17 +125,19 @@ const ProfileScreen = () => {
                 </>
               ) : (
                 <>
-                  <h3 className="font-semibold">{song.title}</h3>
-                  <p className="text-sm text-gray-500">{song.artist}</p>
-                  <div className="mt-2 space-x-2">
+                  <h3 className="text-lg font-semibold">{song.title}</h3>
+                  <p className="text-sm text-gray-400">{song.artist}</p>
+                  <div className="mt-3 space-x-2">
                     <button
                       className="px-3 py-1 bg-yellow-500 text-white rounded text-sm"
                       onClick={() => startEditing(song)}
                     >
                       Edit
                     </button>
-                    {/* Delete button coming next */}
-                    <button className="px-3 py-1 bg-red-500 text-white rounded text-sm">
+                    <button
+                      className="px-3 py-1 bg-red-600 text-white rounded text-sm"
+                      // TODO: Hook up delete logic here
+                    >
                       Delete
                     </button>
                   </div>
