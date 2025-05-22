@@ -24,7 +24,9 @@ const ProfileScreen = () => {
         .single();
 
       if (!error && data) {
-        setAvatarUrl(data.avatar_url);
+        if (data.avatar_url && !data.avatar_url.includes('example.com')) {
+          setAvatarUrl(data.avatar_url);
+        }
         setDisplayName(data.display_name || '');
         setBio(data.bio || '');
       }
