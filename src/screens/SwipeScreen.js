@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
-import { useUser } from '../components/AuthProvider'; // ✅ FIXED
+import { useUser } from '../components/AuthProvider';
 import { v4 as uuidv4 } from 'uuid';
 
 const SwipeScreen = () => {
-  const { user } = useUser(); // ✅ FIXED
+  const { user } = useUser();
   const [songs, setSongs] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [adding, setAdding] = useState(false);
@@ -49,18 +49,6 @@ const SwipeScreen = () => {
       return;
     }
 
-    const { data: songCheck } = await supabase
-      .from('songs')
-      .select('id')
-      .eq('id', currentSong.id)
-      .maybeSingle();
-
-    if (!songCheck) {
-      alert("⚠️ This song no longer exists in the catalog.");
-      setAdding(false);
-      return;
-    }
-
     const { data: existing } = await supabase
       .from('jamstacksongs')
       .select('id')
@@ -99,28 +87,28 @@ const SwipeScreen = () => {
   const song = songs[currentIndex];
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow-lg rounded text-center">
-      <h2 className="text-2xl font-bold mb-4">{song.title}</h2>
+    <div className="w-full max-w-md mx-auto mt-6 p-4 sm:p-6 bg-white shadow-lg rounded text-center">
+      <h2 className="text-xl sm:text-2xl font-bold mb-2 sm:mb-4">{song.title}</h2>
       <img
         src={song.cover}
         alt="cover"
-        className="w-full h-64 object-cover rounded mb-4"
+        className="w-full h-48 sm:h-64 object-cover rounded mb-4"
       />
-      <p className="text-lg font-semibold">{song.artist}</p>
+      <p className="text-base font-semibold">{song.artist}</p>
       <p className="text-sm italic text-gray-500">{song.genre}</p>
       <audio controls src={song.audio} className="w-full mt-4 mb-2" />
 
-      <div className="flex justify-between items-center mt-4 space-x-4">
+      <div className="flex flex-col sm:flex-row gap-4 mt-4">
         <button
           onClick={handleAddToJamStack}
           disabled={adding}
-          className="flex-1 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700"
         >
           ❤️ Add to JamStack
         </button>
         <button
           onClick={handleNext}
-          className="flex-1 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
           ⏭️ Next
         </button>
