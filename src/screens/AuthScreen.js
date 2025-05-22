@@ -1,3 +1,4 @@
+// src/screens/AuthScreen.js
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +10,7 @@ const AuthScreen = () => {
   const navigate = useNavigate();
   const { user } = useUser(); // ✅ Corrected
 
+  // 🔁 Redirect to /profile when logged in
   useEffect(() => {
     if (user) {
       navigate('/profile');
