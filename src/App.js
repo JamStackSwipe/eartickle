@@ -13,6 +13,9 @@ import RewardsScreen from './screens/RewardsScreen';
 import MyJamsScreen from './screens/MyJamsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import JamStackPlayer from './screens/JamStackPlayer';
+import ArtistProfileScreen from './screens/ArtistProfileScreen';
+
+
 
 function App() {
   return (
@@ -30,6 +33,7 @@ function App() {
         <Route path="/jamstack" element={<JamStackScreen />} />
         <Route path="/rewards" element={<RewardsScreen />} />
         <Route path="/myjams" element={<MyJamsScreen />} />
+        <Route path="/artist/:id" element={<ArtistProfileScreen />} />
         <Route path="/settings" element={<SettingsScreen />} />
       </Routes>
     </AuthProvider>
