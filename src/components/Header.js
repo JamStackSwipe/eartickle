@@ -27,19 +27,16 @@ const Header = () => {
   const handleMouseLeave = () => {
     timeoutRef.current = setTimeout(() => {
       setMenuOpen(false);
-    }, 300); // 300ms delay before hiding
+    }, 300);
   };
 
   useEffect(() => {
-    return () => clearTimeout(timeoutRef.current); // clean up on unmount
+    return () => clearTimeout(timeoutRef.current);
   }, []);
 
   return (
     <header className="w-full px-4 py-3 bg-black text-white flex justify-between items-center shadow relative z-10">
       <div className="flex items-center space-x-4">
-        {/* Optional: move autoplay toggle here */}
-        {/* <button className="text-xs text-gray-300 border px-2 py-1 rounded">🔁 Auto</button> */}
-
         <div
           onClick={handleLogoClick}
           className="text-xl font-bold text-white hover:text-gray-300 cursor-pointer"
@@ -78,3 +75,32 @@ const Header = () => {
               onClick={() => setMenuOpen(!menuOpen)}
               className="w-8 h-8 rounded-full border border-white cursor-pointer"
             />
+
+            {menuOpen && (
+              <div
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                className="absolute right-0 mt-2 w-32 bg-white text-black rounded shadow-lg text-sm overflow-hidden"
+              >
+                <Link
+                  to="/settings"
+                  className="block px-4 py-2 hover:bg-gray-100"
+                >
+                  ⚙️ Settings
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                >
+                  🚪 Logout
+                </button>
+              </div> // ✅ this closing div was missing or malformed before
+            )}
+          </div>
+        </nav>
+      )}
+    </header>
+  );
+};
+
+export default Header;
