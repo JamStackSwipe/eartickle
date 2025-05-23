@@ -2,7 +2,6 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom'; // ✅ No "as Router"
 import Header from './components/Header';
 import { AuthProvider } from './components/AuthProvider';
-import ArtistProfileScreen from './screens/ArtistProfileScreen';
 import LoginScreen from './screens/LoginScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import UploadScreen from './screens/UploadScreen';
@@ -33,7 +32,6 @@ function App() {
         <Route path="/jamstack" element={<JamStackScreen />} />
         <Route path="/rewards" element={<RewardsScreen />} />
         <Route path="/myjams" element={<MyJamsScreen />} />
-        <Route path="/artist/:id" element={<ArtistProfileScreen />} />
         <Route path="/settings" element={<SettingsScreen />} />
       </Routes>
     </AuthProvider>
