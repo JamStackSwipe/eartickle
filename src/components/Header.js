@@ -40,7 +40,7 @@ const Header = () => {
           <Link to="/stacker" className="hover:underline text-white">
             🎶 Stacker
           </Link>
-          <Link to={`/artist/${user.id}`} className="hover:underline text-indigo-400 font-semibold">
+          <Link to={`/artist/${user.id}`} className="hover:underline text-white">
             My Artist Page
           </Link>
 
