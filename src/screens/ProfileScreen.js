@@ -20,8 +20,14 @@ const ProfileScreen = () => {
         .eq('id', user.id)
         .maybeSingle();
 
-      if (!error && data) {
-        if (data.avatar_url) setAvatarUrl(data.avatar_url);
+      if (error) {
+        console.error("❌ Error fetching profile:", error.message);
+      } else if (data) {
+        console.log("✅ Profile loaded:", data);
+        if (data.avatar_url) {
+          console.log("🖼 Avatar from DB:", data.avatar_url);
+          setAvatarUrl(data.avatar_url);
+        }
         setDisplayName(data.display_name || '');
         setBio(data.bio || '');
       }
@@ -35,7 +41,7 @@ const ProfileScreen = () => {
     if (!file || !user) return;
 
     const ext = file.name.split('.').pop();
-    const filePath = `${user.id}.${ext}`; // ✅ just the file name
+    const filePath = `${user.id}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
@@ -43,13 +49,14 @@ const ProfileScreen = () => {
 
     if (uploadError) {
       alert('❌ Failed to upload avatar');
+      console.error("Upload error:", uploadError.message);
       return;
     }
 
-    const { data: { publicUrl } } = supabase
-      .storage
-      .from('avatars')
-      .getPublicUrl(filePath);
+    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    const publicUrl = data?.publicUrl;
+
+    console.log("🖼 New avatar public URL:", publicUrl);
 
     const { error: updateError } = await supabase
       .from('profiles')
@@ -58,6 +65,7 @@ const ProfileScreen = () => {
 
     if (updateError) {
       alert('❌ Failed to update avatar');
+      console.error("Update error:", updateError.message);
       return;
     }
 
@@ -73,6 +81,7 @@ const ProfileScreen = () => {
 
     if (error) {
       alert('❌ Failed to save profile');
+      console.error("Save profile error:", error.message);
       return;
     }
 
@@ -90,6 +99,10 @@ const ProfileScreen = () => {
           src={avatarUrl || '/default-avatar.png'}
           alt="avatar"
           className="w-24 h-24 rounded-full object-cover border mb-2"
+          onError={(e) => {
+            console.warn("⚠️ Avatar failed to load, reverting to default.");
+            e.target.src = '/default-avatar.png';
+          }}
         />
         <button
           onClick={() => fileInputRef.current.click()}
@@ -111,9 +124,7 @@ const ProfileScreen = () => {
         <div className="mb-6">
           <div className="flex items-center">
             <h2 className="text-xl font-semibold mr-2">{displayName || 'No name yet'}</h2>
-            <button onClick={() => setEditing(true)} title="Edit">
-              ✏️
-            </button>
+            <button onClick={() => setEditing(true)} title="Edit">✏️</button>
           </div>
           <p className="text-gray-600">{bio || 'No bio yet.'}</p>
         </div>
@@ -161,4 +172,3 @@ const ProfileScreen = () => {
 };
 
 export default ProfileScreen;
-
