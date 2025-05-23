@@ -10,11 +10,21 @@ const ArtistProfileScreen = () => {
 
   useEffect(() => {
     const fetchArtist = async () => {
+      if (!id) {
+        console.warn("⚠️ No artist ID in route.");
+        setLoading(false);
+        return;
+      }
+
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('display_name, bio, avatar_url')
         .eq('id', id)
-        .single();
+        .maybeSingle(); // ✅ safer fetch
+
+      if (profileError) {
+        console.error("❌ Error fetching artist profile:", profileError.message);
+      }
 
       const { data: uploads, error: songError } = await supabase
         .from('songs')
@@ -22,8 +32,12 @@ const ArtistProfileScreen = () => {
         .eq('user_id', id)
         .order('created_at', { ascending: false });
 
-      if (!profileError) setArtist(profile);
-      if (!songError) setSongs(uploads);
+      if (songError) {
+        console.error("❌ Error fetching artist songs:", songError.message);
+      }
+
+      if (profile) setArtist(profile);
+      if (uploads) setSongs(uploads);
       setLoading(false);
     };
 
