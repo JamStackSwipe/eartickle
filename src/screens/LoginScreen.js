@@ -1,16 +1,29 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '../components/AuthProvider';
 
 const LoginScreen = () => {
+  const navigate = useNavigate();
+  const { user } = useUser();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
 
+  useEffect(() => {
+    if (user) {
+      navigate('/swipe'); // ✅ Redirect after successful login
+    }
+  }, [user, navigate]);
+
   const handleOAuthLogin = async (provider) => {
-    const { error } = await supabase.auth.signInWithOAuth({ provider });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: 'https://eartickle.com/swipe' } // optional safety net
+    });
 
     if (error) {
       console.error('OAuth login error:', error.message);
-      setMessage('GitHub login failed.');
+      setMessage('Login failed.');
     }
   };
 
@@ -33,7 +46,6 @@ const LoginScreen = () => {
         <h1 className="text-4xl font-bold">EarTickle™</h1>
         <p className="text-gray-400 text-sm">Swipe. Stack. Play.</p>
 
-        {/* GitHub OAuth Login */}
         <div className="space-y-4 pt-2">
           <button
             onClick={() => handleOAuthLogin('github')}
@@ -43,7 +55,6 @@ const LoginScreen = () => {
           </button>
         </div>
 
-        {/* Magic Link Email Login */}
         <form onSubmit={handleEmailLogin} className="space-y-4 pt-6">
           <input
             type="email"
