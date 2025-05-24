@@ -180,6 +180,16 @@ const SwipeScreen = () => {
         <p className="text-sm text-gray-600">{song.artist || 'Unknown Artist'}</p>
         <p className="text-xs italic text-gray-400 mb-3">{song.genre}</p>
 
+        {/* Song Stats */}
+        <div className="flex justify-center gap-3 flex-wrap text-gray-600 text-xs mb-2">
+          <span>👁️ {song.views || 0}</span>
+          <span>❤️ {song.likes || 0}</span>
+          <span>🔥 {song.fires || 0}</span>
+          <span>😢 {song.sads || 0}</span>
+          <span>🎯 {song.bullseyes || 0}</span>
+          <span>📦 {song.jams || 0} Jams</span>
+        </div>
+
         <audio
           ref={audioRef}
           src={song.audio}
