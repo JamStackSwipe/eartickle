@@ -13,6 +13,9 @@ import MyJamsScreen from './screens/MyJamsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import JamStackPlayer from './screens/JamStackPlayer';
 import ArtistProfileScreen from './screens/ArtistProfileScreen';
+import Privacy from './screens/Privacy';
+import Terms from './screens/Terms';
+
 
 
 
@@ -33,6 +36,9 @@ function App() {
         <Route path="/rewards" element={<RewardsScreen />} />
         <Route path="/myjams" element={<MyJamsScreen />} />
         <Route path="/settings" element={<SettingsScreen />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+
       </Routes>
     </AuthProvider>
   );
