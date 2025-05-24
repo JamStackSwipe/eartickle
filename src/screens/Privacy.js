@@ -1,59 +1,28 @@
-# 🔒 Privacy Policy
+import React from 'react';
 
-Effective Date: [Insert Launch Date Here]
+const Privacy = () => (
+  <div className="min-h-screen bg-white text-black p-6 max-w-3xl mx-auto">
+    <h1 className="text-2xl font-bold mb-4">🔒 Privacy Policy</h1>
+    <p className="mb-4">
+      EarTickle™ respects your privacy. We only collect the minimum data needed
+      to make the platform work, including your email, display name, and
+      avatar—provided through GitHub or Magic Link login. Your data is securely
+      stored using Supabase and is never sold or shared with third parties.
+    </p>
+    <p className="mb-4">
+      Songs you upload are publicly viewable by others. Your profile, reactions,
+      and JamStack additions are also visible as part of community interaction.
+    </p>
+    <p className="mb-4">
+      We may use aggregated, anonymized data for internal analytics to improve
+      the EarTickle experience.
+    </p>
+    <p className="mb-4">
+      By using EarTickle, you consent to this policy. You may contact us at
+      <strong> privacy@eartickle.com </strong> with any questions or deletion
+      requests.
+    </p>
+  </div>
+);
 
-EarTickle respects your privacy and is committed to protecting your personal data. This Privacy Policy describes how we collect, use, and safeguard your information when you use our platform.
-
----
-
-## 1. 📋 What We Collect
-
-### ✅ Required for Functionality:
-- **Email Address**: Used for login and account recovery
-- **GitHub Profile Info**: When logging in via GitHub OAuth (username, avatar)
-- **Uploaded Content**: Cover images, song files, bios
-- **Basic Usage Data**: Song views, reactions, jamstack additions
-
-We do **not** collect or store passwords (authentication is handled by [Supabase](https://supabase.com)).
-
----
-
-## 2. 🔐 How We Use Your Info
-- To authenticate and manage your account
-- To display your public artist profile (if you choose to upload music)
-- To track stats like views, reactions, and JamStack adds
-- To improve features and monitor app health (anonymously)
-
-We **never sell your data**, and we don’t use third-party analytics tools.
-
----
-
-## 3. ☁️ Data Storage & Security
-Your data is stored securely via Supabase on a PostgreSQL database and their managed storage for files. Supabase handles user authentication and enforces row-level security.
-
-We regularly update and patch the app to maintain best-practice security.
-
----
-
-## 4. 🎧 Public Profiles
-If you upload songs, your profile (display name, avatar, bio, and social links) becomes publicly visible so listeners can find your music.
-
-You can delete your account or uploaded content at any time.
-
----
-
-## 5. 🧽 Your Rights
-- Request data deletion (via settings or email)
-- Modify your profile or uploads
-- Log out or disconnect OAuth access
-
----
-
-## 6. 📬 Contact
-For questions or concerns about privacy, email: [insert contact email]
-
----
-
-This policy may be updated over time. Changes will be reflected on this page.
-
-Thanks for trusting EarTickle. Your music, your data — your rules.
+export default Privacy;
