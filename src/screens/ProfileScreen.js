@@ -168,6 +168,14 @@ const ProfileScreen = () => {
               <div className="flex-1">
                 <h3 className="text-lg font-semibold">{song.title}</h3>
                 <p className="text-sm text-gray-500">{song.artist}</p>
+                <div className="flex space-x-3 mt-2 text-sm text-gray-600 flex-wrap">
+                  <span>👁️ {song.views || 0}</span>
+                  <span>❤️ {song.likes || 0}</span>
+                  <span>🔥 {song.fires || 0}</span>
+                  <span>😢 {song.sads || 0}</span>
+                  <span>🎯 {song.bullseyes || 0}</span>
+                  <span>📦 {song.jams || 0} Jams</span>
+                </div>
               </div>
               <button
                 onClick={() => handleDeleteSong(song.id)}
