@@ -1,3 +1,53 @@
+import { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../supabase';
+import { useUser } from './AuthProvider';
+
+const Header = () => {
+const { user } = useUser();
+const navigate = useNavigate();
+const [menuOpen, setMenuOpen] = useState(false);
+const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+const timeoutRef = useRef(null);
+
+const handleLogoClick = () => {
+navigate(user ? '/swipe' : '/auth');
+};
+
+const handleLogout = async () => {
+await supabase.auth.signOut();
+navigate('/auth');
+};
+
+const handleMouseEnter = () => {
+clearTimeout(timeoutRef.current);
+setMenuOpen(true);
+};
+
+const handleMouseLeave = () => {
+timeoutRef.current = setTimeout(() => {
+setMenuOpen(false);
+}, 300);
+};
+
+useEffect(() => {
+return () => clearTimeout(timeoutRef.current);
+}, []);
+
+return (
+<header className="w-full px-4 py-3 bg-black text-white flex justify-between items-center shadow relative z-10">
+<div className="flex flex-col cursor-pointer" onClick={handleLogoClick}>
+<div className="text-xl font-bold text-white hover:text-gray-300">
+🎵 EarTickle
+</div>
+<div className="text-xs text-gray-400 -mt-1 ml-1">
+Swipe. Stack. Play.
+</div>
+</div>
+
+javascript
+Copy
+Edit
   {user && (
     <nav className="flex items-center space-x-4 text-sm relative">
       {/* Desktop Nav */}
@@ -66,3 +116,7 @@
     </div>
   )}
 </header>
+);
+};
+
+export default Header;
