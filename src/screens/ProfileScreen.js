@@ -1,13 +1,22 @@
-// src/screens/ProfileScreen.js
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 
 const ProfileScreen = () => {
-  const { user } = useUser();
+  const { user } = useUser(); // This should match supabase.auth.getUser()
   const [profile, setProfile] = useState(null);
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const debugUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      console.log("🧠 useUser():", user?.id);
+      console.log("🛰️ supabase.auth.getUser():", data?.user?.id);
+    };
+
+    debugUser();
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -17,7 +26,7 @@ const ProfileScreen = () => {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .maybeSingle(); // ✅ Avoids crash if no row found
+        .maybeSingle();
 
       if (error) {
         console.error('❌ Error loading profile:', error.message);
@@ -83,17 +92,4 @@ const ProfileScreen = () => {
                 alt="cover"
                 className="w-16 h-16 object-cover rounded"
               />
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold">{song.title}</h3>
-                <p className="text-sm text-gray-500">{song.artist}</p>
-              </div>
-              {/* Future: 🗑️ delete button here */}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-};
-
-export default ProfileScreen;
+              <div className="flex
