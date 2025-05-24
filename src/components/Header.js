@@ -18,7 +18,6 @@ const Header = () => {
     navigate('/auth');
   };
 
-  // Hover behavior for profile dropdown
   const handleMouseEnter = () => {
     clearTimeout(timeoutRef.current);
     setMenuOpen(true);
@@ -59,42 +58,37 @@ const Header = () => {
           <Link to="/stacker" className="hover:underline text-white">
             🎶 Stacker
           </Link>
-          <Link to={`/artist/${user.id}`} className="hover:underline text-white">
-            My Artist Page
-          </Link>
 
-          {/* Avatar + Dropdown Menu */}
+          {/* Avatar + Dropdown */}
           <div
             className="relative"
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
           >
-            <img
-              src={user.user_metadata?.avatar_url || '/default-avatar.png'}
-              alt="avatar"
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="w-8 h-8 rounded-full border border-white cursor-pointer"
-            />
+            <Link to="/profile">
+              <img
+                src={user.user_metadata?.avatar_url || '/default-avatar.png'}
+                alt="avatar"
+                className="w-8 h-8 rounded-full border border-white cursor-pointer"
+              />
+            </Link>
 
             {menuOpen && (
-              <div
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-                className="absolute right-0 mt-2 w-32 bg-white text-black rounded shadow-lg text-sm overflow-hidden"
-              >
-                <Link
-                  to="/settings"
-                  className="block px-4 py-2 hover:bg-gray-100"
-                >
+              <div className="absolute right-0 mt-2 w-32 bg-white text-black rounded shadow-lg text-sm overflow-hidden">
+                <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100">
                   ⚙️ Settings
                 </Link>
+                {/* Uncomment below when is_artist logic is ready */}
+                {/* <Link to={`/artist/${user.id}`} className="block px-4 py-2 hover:bg-gray-100">
+                  🎤 My Artist Page
+                </Link> */}
                 <button
                   onClick={handleLogout}
                   className="w-full text-left px-4 py-2 hover:bg-gray-100"
                 >
                   🚪 Logout
                 </button>
-              </div> // ✅ this closing div was missing or malformed before
+              </div>
             )}
           </div>
         </nav>
