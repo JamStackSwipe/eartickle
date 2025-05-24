@@ -52,15 +52,16 @@ const ArtistProfileScreen = () => {
     return <div className="p-6 text-center text-gray-500">Artist not found.</div>;
   }
 
+  const avatarSrc =
+    artist?.avatar_url && artist.avatar_url.trim() !== ''
+      ? artist.avatar_url
+      : artist?.user_metadata?.avatar_url || '/default-avatar.png';
+
   return (
     <div className="min-h-screen bg-white text-black p-6">
       <div className="flex items-center space-x-4 mb-6">
         <img
-          src={
-            artist.avatar_url ||
-            artist.user_metadata?.avatar_url ||
-            '/default-avatar.png'
-          }
+          src={avatarSrc}
           alt="avatar"
           onError={(e) => {
             e.target.onerror = null;
