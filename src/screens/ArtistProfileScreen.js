@@ -18,12 +18,14 @@ const ArtistProfileScreen = () => {
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('display_name, bio, avatar_url')
+        .select('*')
         .eq('id', id)
-        .maybeSingle(); // ✅ safer fetch
+        .maybeSingle();
 
       if (profileError) {
         console.error("❌ Error fetching artist profile:", profileError.message);
+      } else {
+        console.log("🎨 Artist profile loaded:", profile);
       }
 
       const { data: uploads, error: songError } = await supabase
@@ -54,8 +56,16 @@ const ArtistProfileScreen = () => {
     <div className="min-h-screen bg-white text-black p-6">
       <div className="flex items-center space-x-4 mb-6">
         <img
-          src={artist.avatar_url || '/default-avatar.png'}
+          src={
+            artist.avatar_url ||
+            artist.user_metadata?.avatar_url ||
+            '/default-avatar.png'
+          }
           alt="avatar"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = '/default-avatar.png';
+          }}
           className="w-20 h-20 rounded-full object-cover border"
         />
         <div>
