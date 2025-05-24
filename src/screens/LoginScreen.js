@@ -7,9 +7,10 @@ const LoginScreen = () => {
 
   const handleOAuthLogin = async (provider) => {
     const { error } = await supabase.auth.signInWithOAuth({ provider });
+
     if (error) {
       console.error('OAuth login error:', error.message);
-      setMessage('Login failed.');
+      setMessage('GitHub login failed.');
     }
   };
 
@@ -32,24 +33,24 @@ const LoginScreen = () => {
         <h1 className="text-4xl font-bold">EarTickle™</h1>
         <p className="text-gray-400 text-sm">Swipe. Stack. Play.</p>
 
-        <div className="space-y-4">
+        {/* GitHub OAuth Login */}
+        <div className="space-y-4 pt-2">
           <button
             onClick={() => handleOAuthLogin('github')}
             className="bg-white text-black font-semibold py-2 px-4 rounded w-full hover:bg-gray-200"
           >
             Login with GitHub
           </button>
-
-      
         </div>
 
+        {/* Magic Link Email Login */}
         <form onSubmit={handleEmailLogin} className="space-y-4 pt-6">
           <input
             type="email"
             placeholder="Your email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-2 rounded text-black"
+            className="w-full p-3 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-300"
             required
           />
           <button
