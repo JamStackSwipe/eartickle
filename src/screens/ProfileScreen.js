@@ -1,3 +1,4 @@
+// src/screens/ProfileScreen.js
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -16,10 +17,12 @@ const ProfileScreen = () => {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle(); // ✅ Avoids crash if no row found
 
       if (error) {
         console.error('❌ Error loading profile:', error.message);
+      } else if (!data) {
+        console.warn("⚠️ No profile found for user ID:", user.id);
       } else {
         setProfile(data);
       }
@@ -84,7 +87,7 @@ const ProfileScreen = () => {
                 <h3 className="text-lg font-semibold">{song.title}</h3>
                 <p className="text-sm text-gray-500">{song.artist}</p>
               </div>
-              {/* Future: enable delete/edit actions here */}
+              {/* Future: 🗑️ delete button here */}
             </li>
           ))}
         </ul>
