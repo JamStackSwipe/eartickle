@@ -3,7 +3,7 @@ import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 
 const ProfileScreen = () => {
-  const { user } = useUser(); // This should match supabase.auth.getUser()
+  const { user } = useUser();
   const [profile, setProfile] = useState(null);
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,8 +11,8 @@ const ProfileScreen = () => {
   useEffect(() => {
     const debugUser = async () => {
       const { data } = await supabase.auth.getUser();
-      console.log("🧠 useUser():", user?.id);
-      console.log("🛰️ supabase.auth.getUser():", data?.user?.id);
+      console.log('🧠 useUser():', user?.id);
+      console.log('🛰️ supabase.auth.getUser():', data?.user?.id);
     };
 
     debugUser();
@@ -31,7 +31,7 @@ const ProfileScreen = () => {
       if (error) {
         console.error('❌ Error loading profile:', error.message);
       } else if (!data) {
-        console.warn("⚠️ No profile found for user ID:", user.id);
+        console.warn('⚠️ No profile found for user ID:', user.id);
       } else {
         setProfile(data);
       }
@@ -63,7 +63,7 @@ const ProfileScreen = () => {
 
   return (
     <div className="min-h-screen bg-white text-black p-6">
-      {/* Profile header */}
+      {/* Profile Header */}
       <div className="flex items-center space-x-4 mb-6">
         <img
           src={profile.avatar_url || '/default-avatar.png'}
@@ -71,15 +71,21 @@ const ProfileScreen = () => {
           className="w-20 h-20 rounded-full object-cover border"
         />
         <div>
-          <h1 className="text-2xl font-bold">{profile.display_name || 'Unnamed User'}</h1>
-          <p className="text-gray-600">{profile.bio || 'No bio yet.'}</p>
+          <h1 className="text-2xl font-bold">
+            {profile.display_name || 'Unnamed User'}
+          </h1>
+          <p className="text-gray-600">
+            {profile.bio || 'No bio yet.'}
+          </p>
         </div>
       </div>
 
-      {/* Songs */}
+      {/* Uploaded Songs */}
       <h2 className="text-xl font-semibold mb-3">🎵 Your Uploaded Songs</h2>
       {songs.length === 0 ? (
-        <p className="text-gray-500">You haven’t uploaded any songs yet.</p>
+        <p className="text-gray-500">
+          You haven’t uploaded any songs yet.
+        </p>
       ) : (
         <ul className="space-y-4">
           {songs.map((song) => (
@@ -89,7 +95,3 @@ const ProfileScreen = () => {
             >
               <img
                 src={song.cover || '/default-cover.png'}
-                alt="cover"
-                className="w-16 h-16 object-cover rounded"
-              />
-              <div className="flex
