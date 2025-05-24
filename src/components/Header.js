@@ -1,5 +1,3 @@
-// Responsive Header.js with Hamburger Menu Support
-
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
@@ -84,6 +82,7 @@ const Header = () => {
                 onMouseLeave={handleMouseLeave}
                 className="absolute right-0 mt-2 w-44 bg-white text-black rounded shadow-lg text-sm overflow-hidden"
               >
+                <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100">👤 My Profile</Link>
                 <Link to="/settings" className="block px-4 py-2 hover:bg-gray-100">⚙️ Settings</Link>
                 <Link to="/privacy" className="block px-4 py-2 hover:bg-gray-100">🔒 Privacy</Link>
                 <Link to="/terms" className="block px-4 py-2 hover:bg-gray-100">📄 Terms</Link>
@@ -105,6 +104,7 @@ const Header = () => {
             <Link to="/upload" onClick={() => setMobileMenuOpen(false)}>Upload</Link>
             <Link to="/stacker" onClick={() => setMobileMenuOpen(false)}>🎶 Stacker</Link>
             <Link to={`/artist/${user.id}`} onClick={() => setMobileMenuOpen(false)}>My Artist Page</Link>
+            <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>👤 My Profile</Link>
             <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>⚙️ Settings</Link>
             <Link to="/privacy" onClick={() => setMobileMenuOpen(false)}>🔒 Privacy</Link>
             <Link to="/terms" onClick={() => setMobileMenuOpen(false)}>📄 Terms</Link>
