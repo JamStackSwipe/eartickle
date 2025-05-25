@@ -1,9 +1,8 @@
-// ProfileScreen.js — includes AvatarUploader + Save + Uploads
+// ✅ ProfileScreen.js — with fixed public avatar logic using .env var
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
-import { v4 as uuidv4 } from 'uuid';
 
 const ProfileScreen = () => {
   const { user } = useUser();
@@ -27,11 +26,7 @@ const ProfileScreen = () => {
       .eq('id', user.id)
       .single();
 
-    if (error) {
-      console.error('❌ Error fetching profile:', error.message);
-    } else {
-      setProfile(data || {});
-    }
+    if (!error && data) setProfile(data);
   };
 
   const fetchUploads = async () => {
@@ -41,11 +36,7 @@ const ProfileScreen = () => {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('❌ Error fetching uploads:', error.message);
-    } else {
-      setSongs(data || []);
-    }
+    if (!error) setSongs(data);
     setLoading(false);
   };
 
@@ -80,27 +71,12 @@ const ProfileScreen = () => {
     }
   };
 
-  const handleDelete = async (songId) => {
-    if (!confirm('Delete this song?')) return;
-
-    const { error } = await supabase
-      .from('songs')
-      .delete()
-      .eq('id', songId)
-      .eq('user_id', user.id);
-
-    if (error) {
-      console.error('❌ Error deleting song:', error);
-    } else {
-      setSongs((prev) => prev.filter((s) => s.id !== songId));
-    }
-  };
-
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
     const filePath = `${user.id}/avatar.png`;
+    const SUPABASE_URL = process.env.REACT_APP_SUPABASE_PROJECT_URL;
     setUploading(true);
     setMessage('');
 
@@ -118,7 +94,7 @@ const ProfileScreen = () => {
       return;
     }
 
-    const publicUrl = `https://YOUR_PROJECT_ID.supabase.co/storage/v1/object/public/avatars/${filePath}`;
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${filePath}`;
 
     const { error: updateError } = await supabase
       .from('profiles')
@@ -134,6 +110,17 @@ const ProfileScreen = () => {
     }
 
     setUploading(false);
+  };
+
+  const handleDelete = async (songId) => {
+    if (!confirm('Delete this song?')) return;
+    const { error } = await supabase
+      .from('songs')
+      .delete()
+      .eq('id', songId)
+      .eq('user_id', user.id);
+
+    if (!error) setSongs((prev) => prev.filter((s) => s.id !== songId));
   };
 
   const avatarSrc =
