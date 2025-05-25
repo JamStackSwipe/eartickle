@@ -25,7 +25,12 @@ const ProfileScreen = () => {
 
       if (profileData) {
         setProfile(profileData);
-        setAvatarUrl(profileData.avatar_url || userData.user.user_metadata.avatar_url || '');
+        const storedUrl = profileData.avatar_url;
+        setAvatarUrl(
+          storedUrl?.startsWith('http')
+            ? storedUrl
+            : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${storedUrl}`
+        );
         setBio(profileData.bio || '');
         setDisplayName(profileData.display_name || '');
       }
@@ -58,18 +63,18 @@ const ProfileScreen = () => {
       return;
     }
 
-    const publicUrl = `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${filePath}`;
-
     const { error: updateError } = await supabase
       .from('profiles')
       .update({ avatar_url: filePath })
       .eq('id', user.id);
 
     if (updateError) {
-      console.error('❌ Failed to update profile avatar URL:', updateError.message);
-    } else {
-      setAvatarUrl(publicUrl);
+      console.error('❌ Failed to update profile avatar path:', updateError.message);
+      return;
     }
+
+    const publicUrl = `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${filePath}`;
+    setAvatarUrl(publicUrl);
   };
 
   const handleSave = async () => {
@@ -104,11 +109,7 @@ const ProfileScreen = () => {
       <div className="flex items-center space-x-6 mb-6">
         <label htmlFor="avatar-upload" className="cursor-pointer">
           <img
-            src={
-              avatarUrl?.startsWith('http')
-                ? avatarUrl
-                : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${avatarUrl}`
-            }
+            src={avatarUrl}
             alt="avatar"
             className="w-32 h-32 rounded-full object-cover border-4 border-white shadow hover:opacity-80 transition"
             onError={(e) => {
