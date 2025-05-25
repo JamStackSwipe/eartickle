@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 import { useSwipeable } from 'react-swipeable';
@@ -23,18 +23,13 @@ const SwipeScreen = () => {
   const fetchSongs = async () => {
     const { data, error } = await supabase
       .from('songs')
-      .select(`
-        *,
-        profiles:profiles!songs_user_id_fkey(id, avatar_url)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
-    if (!error && data.length > 0) {
-      const enriched = data.map((song) => ({
-        ...song,
-        artist_avatar_url: song.profiles?.avatar_url,
-      }));
-      setSongs(enriched);
+    if (!error && data) {
+      setSongs(data);
+    } else {
+      console.error('❌ Error fetching songs:', error);
     }
   };
 
@@ -145,10 +140,36 @@ const SwipeScreen = () => {
     return <div className="text-center mt-10 text-gray-400">No songs to swipe yet.</div>;
   }
 
-  const song = songs[currentIndex];
-  const artistAvatar = song.artist_avatar_url
-    ? `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${song.artist_avatar_url}`
-    : '/default-avatar.png';
+  const song = songs[currentIndex] || {};
+
+  const avatarSrc = (() => {
+    const url = song?.artist_avatar_url;
+    if (typeof url === 'string' && url.trim() !== '') {
+      return url.startsWith('http')
+        ? url
+        : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${url}`;
+    }
+    return '/default-avatar.png';
+  })();
+
+  const artistAvatarElement = useMemo(() => {
+    if (!song?.user_id) return null;
+    return (
+      <Link to={`/artist/${song.user_id}`}>
+        <img
+          key={song.user_id}
+          src={avatarSrc}
+          alt="Artist Avatar"
+          className="w-12 h-12 rounded-full mx-auto mb-2 border hover:opacity-80 transition"
+          onClick={(e) => e.stopPropagation()}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = '/default-avatar.png';
+          }}
+        />
+      </Link>
+    );
+  }, [avatarSrc, song?.user_id]);
 
   return (
     <div
@@ -157,28 +178,19 @@ const SwipeScreen = () => {
       className="min-h-screen bg-black text-white flex justify-center items-center p-4 relative"
     >
       {showOverlay && (
-        <div className="absolute inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center text-white text-center z-20 space-y-2 text-lg">
-          <div>👈 Swipe left to skip</div>
-          <div>👉 Swipe right to add</div>
-          <div>↑ Swipe up for next</div>
-          <div>↓ Swipe down to go back</div>
-          <p className="text-sm text-gray-400 mt-4">(tap to start)</p>
+        <div className="absolute inset-0 bg-black bg-opacity-70 pointer-events-none z-10">
+          <div className="flex flex-col items-center justify-center h-full text-white text-center space-y-2 text-lg pointer-events-auto">
+            <div>👈 Swipe left to skip</div>
+            <div>👉 Swipe right to add</div>
+            <div>↑ Swipe up for next</div>
+            <div>↓ Swipe down to go back</div>
+            <p className="text-sm text-gray-400 mt-4">(tap to start)</p>
+          </div>
         </div>
       )}
 
       <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center z-10">
-        <Link to={`/artist/${song.user_id}`}>
-          <img
-            src={artistAvatar}
-            alt="Artist Avatar"
-            className="w-12 h-12 rounded-full mx-auto mb-2 border hover:opacity-80 transition"
-            onClick={(e) => e.stopPropagation()}
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = '/default-avatar.png';
-            }}
-          />
-        </Link>
+        {artistAvatarElement}
 
         <img
           src={song.cover || '/default-cover.png'}
