@@ -44,7 +44,10 @@ const ArtistProfileScreen = () => {
   if (!artist) return <div className="p-6 text-center text-gray-500">Artist not found.</div>;
 
   const avatarSrc =
-    artist.avatar_url?.trim() !== '' ? artist.avatar_url : '/default-avatar.png';
+  artist.avatar_url?.trim() !== ''
+    ? `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${artist.avatar_url}`
+    : '/default-avatar.png';
+
 
   return (
     <div className="min-h-screen bg-white text-black p-6">
