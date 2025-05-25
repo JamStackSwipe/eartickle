@@ -1,4 +1,4 @@
-// 🎨 ArtistProfileScreen.js — Fixed Avatar + Social + Booking
+// 🎨 ArtistProfileScreen.js — Stable Avatar + Debug Logging
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -38,7 +38,10 @@ const ArtistProfileScreen = () => {
         console.error("❌ Error fetching artist songs:", songError.message);
       }
 
-      if (profile) setArtist(profile);
+      if (profile) {
+        console.log('👤 Loaded artist profile:', profile);
+        setArtist(profile);
+      }
       if (uploads) setSongs(uploads);
       setLoading(false);
     };
@@ -50,7 +53,7 @@ const ArtistProfileScreen = () => {
   if (!artist) return <div className="p-6 text-center text-gray-500">Artist not found.</div>;
 
   const avatarSrc =
-    artist?.avatar_url && artist.avatar_url.trim() !== ''
+    artist.avatar_url?.trim()
       ? artist.avatar_url
       : '/default-avatar.png';
 
@@ -60,12 +63,13 @@ const ArtistProfileScreen = () => {
         <div className="flex-shrink-0">
           <img
             src={avatarSrc}
-            alt="avatar"
+            alt="artist avatar"
+            className="w-32 h-32 rounded-full object-cover border-4 border-white shadow"
             onError={(e) => {
+              console.warn('🖼 Avatar failed to load:', avatarSrc);
               e.target.onerror = null;
               e.target.src = '/default-avatar.png';
             }}
-            className="w-32 h-32 rounded-full object-cover border-4 border-white shadow"
           />
         </div>
         <div>
