@@ -43,11 +43,9 @@ const ArtistProfileScreen = () => {
   if (loading) return <div className="p-6">Loading artist page...</div>;
   if (!artist) return <div className="p-6 text-center text-gray-500">Artist not found.</div>;
 
-  const avatarSrc =
-  artist.avatar_url?.trim() !== ''
+  const avatarSrc = artist.avatar_url?.trim()
     ? `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${artist.avatar_url}`
-    : '/default-avatar.png';
-
+    : artist.github_avatar_url || '/default-avatar.png';
 
   return (
     <div className="min-h-screen bg-white text-black p-6">
@@ -127,6 +125,9 @@ const ArtistProfileScreen = () => {
               <div>
                 <h3 className="text-lg font-semibold">{song.title}</h3>
                 <p className="text-sm text-gray-500">{song.artist}</p>
+                <div className="text-sm text-gray-600 mt-1">
+                  👁️ {song.views || 0} | 📥 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.loves || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
+                </div>
               </div>
             </li>
           ))}
