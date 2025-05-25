@@ -138,8 +138,7 @@ const SwipeScreen = () => {
     return <div className="text-center mt-10 text-gray-400">No songs to swipe yet.</div>;
   }
 
-  const song = songs[currentIndex];
-  if (!song) return null;
+  const song = songs[currentIndex] || {};
 
   const avatarSrc = (() => {
     const url = song?.artist_avatar_url;
