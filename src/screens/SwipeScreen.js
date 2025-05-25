@@ -23,18 +23,11 @@ const SwipeScreen = () => {
   const fetchSongs = async () => {
     const { data, error } = await supabase
       .from('songs')
-      .select(`
-        *,
-        profiles:profiles!songs_user_id_fkey(id, avatar_url)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (!error && data.length > 0) {
-      const enriched = data.map((song) => ({
-        ...song,
-        artist_avatar_url: song.profiles?.avatar_url,
-      }));
-      setSongs(enriched);
+      setSongs(data);
     }
   };
 
