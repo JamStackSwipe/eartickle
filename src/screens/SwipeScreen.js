@@ -139,9 +139,13 @@ const SwipeScreen = () => {
   }
 
   const song = songs[currentIndex];
-  const artistAvatar = song.artist_avatar_url
-    ? `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${song.artist_avatar_url}`
-    : '/default-avatar.png';
+  const artistAvatar =
+  song.artist_avatar_url?.startsWith('http')
+    ? song.artist_avatar_url
+    : song.artist_avatar_url
+      ? `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${song.artist_avatar_url}`
+      : '/default-avatar.png';
+
 
   return (
     <div
