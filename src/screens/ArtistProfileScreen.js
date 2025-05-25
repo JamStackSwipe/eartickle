@@ -1,4 +1,4 @@
-// 🎨 ArtistProfileScreen.js with Avatar Fix + Social Links + Booking Button
+// 🎨 ArtistProfileScreen.js — Fixed Avatar + Social + Booking
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -52,7 +52,7 @@ const ArtistProfileScreen = () => {
   const avatarSrc =
     artist?.avatar_url && artist.avatar_url.trim() !== ''
       ? artist.avatar_url
-      : artist?.user_metadata?.avatar_url || '/default-avatar.png';
+      : '/default-avatar.png';
 
   return (
     <div className="min-h-screen bg-white text-black p-6">
