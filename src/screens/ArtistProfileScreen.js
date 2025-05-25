@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
+import { v4 as uuidv4 } from 'uuid';
+import { useUser } from '../components/AuthProvider';
 
 const ArtistProfileScreen = () => {
   const { id } = useParams();
+  const { user } = useUser();
   const [artist, setArtist] = useState(null);
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     const fetchArtist = async () => {
@@ -40,12 +44,47 @@ const ArtistProfileScreen = () => {
     fetchArtist();
   }, [id]);
 
+  const handleAddToJamStack = async (songId) => {
+    if (!user || adding) return;
+    setAdding(true);
+
+    const { data: existing } = await supabase
+      .from('jamstacksongs')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('song_id', songId)
+      .maybeSingle();
+
+    if (existing) {
+      alert('🛑 Already in your JamStack!');
+      setAdding(false);
+      return;
+    }
+
+    const { error } = await supabase.from('jamstacksongs').insert([
+      {
+        id: uuidv4(),
+        user_id: user.id,
+        song_id: songId,
+      },
+    ]);
+
+    if (!error) {
+      alert('🎵 Added to your JamStack!');
+    } else {
+      console.error('❌ Error adding to JamStack:', error);
+    }
+
+    setAdding(false);
+  };
+
   if (loading) return <div className="p-6">Loading artist page...</div>;
   if (!artist) return <div className="p-6 text-center text-gray-500">Artist not found.</div>;
 
-  const avatarSrc = artist.avatar_url?.trim()
-    ? `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${artist.avatar_url}`
-    : artist.github_avatar_url || '/default-avatar.png';
+  const avatarSrc =
+    artist.avatar_url?.trim() !== ''
+      ? `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${artist.avatar_url}`
+      : '/default-avatar.png';
 
   return (
     <div className="min-h-screen bg-white text-black p-6">
@@ -71,27 +110,13 @@ const ArtistProfileScreen = () => {
             <div className="mt-4">
               <p className="font-medium mb-2">🌐 Connect with me if you love my music!</p>
               <div className="flex flex-wrap gap-3 text-sm">
-                {artist.website && (
-                  <a href={artist.website} target="_blank" rel="noopener noreferrer" className="hover:underline">🌍 Website</a>
-                )}
-                {artist.spotify && (
-                  <a href={artist.spotify} target="_blank" rel="noopener noreferrer" className="hover:underline">🎵 Spotify</a>
-                )}
-                {artist.youtube && (
-                  <a href={artist.youtube} target="_blank" rel="noopener noreferrer" className="hover:underline">▶️ YouTube</a>
-                )}
-                {artist.instagram && (
-                  <a href={artist.instagram} target="_blank" rel="noopener noreferrer" className="hover:underline">📸 Instagram</a>
-                )}
-                {artist.soundcloud && (
-                  <a href={artist.soundcloud} target="_blank" rel="noopener noreferrer" className="hover:underline">🌊 SoundCloud</a>
-                )}
-                {artist.tiktok && (
-                  <a href={artist.tiktok} target="_blank" rel="noopener noreferrer" className="hover:underline">🎬 TikTok</a>
-                )}
-                {artist.bandlab && (
-                  <a href={artist.bandlab} target="_blank" rel="noopener noreferrer" className="hover:underline">🎧 BandLab</a>
-                )}
+                {artist.website && <a href={artist.website} target="_blank" rel="noreferrer" className="hover:underline">🌍 Website</a>}
+                {artist.spotify && <a href={artist.spotify} target="_blank" rel="noreferrer" className="hover:underline">🎵 Spotify</a>}
+                {artist.youtube && <a href={artist.youtube} target="_blank" rel="noreferrer" className="hover:underline">▶️ YouTube</a>}
+                {artist.instagram && <a href={artist.instagram} target="_blank" rel="noreferrer" className="hover:underline">📸 Instagram</a>}
+                {artist.soundcloud && <a href={artist.soundcloud} target="_blank" rel="noreferrer" className="hover:underline">🌊 SoundCloud</a>}
+                {artist.tiktok && <a href={artist.tiktok} target="_blank" rel="noreferrer" className="hover:underline">🎬 TikTok</a>}
+                {artist.bandlab && <a href={artist.bandlab} target="_blank" rel="noreferrer" className="hover:underline">🎧 BandLab</a>}
               </div>
             </div>
           )}
@@ -113,22 +138,28 @@ const ArtistProfileScreen = () => {
       ) : (
         <ul className="space-y-4">
           {songs.map((song) => (
-            <li
-              key={song.id}
-              className="bg-gray-100 p-4 rounded shadow flex items-center space-x-4"
-            >
-              <img
-                src={song.cover}
-                alt="cover"
-                className="w-16 h-16 object-cover rounded"
-              />
-              <div>
-                <h3 className="text-lg font-semibold">{song.title}</h3>
-                <p className="text-sm text-gray-500">{song.artist}</p>
-                <div className="text-sm text-gray-600 mt-1">
-                  👁️ {song.views || 0} | 📥 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.loves || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
+            <li key={song.id} className="bg-gray-100 p-4 rounded shadow">
+              <div className="flex items-center space-x-4 mb-2">
+                <img
+                  src={song.cover}
+                  alt="cover"
+                  className="w-16 h-16 object-cover rounded"
+                />
+                <div>
+                  <h3 className="text-lg font-semibold">{song.title}</h3>
+                  <p className="text-sm text-gray-500">{song.artist}</p>
+                  <div className="text-xs text-gray-600 mt-1">
+                    👁️ {song.views || 0} | 📥 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.loves || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
+                  </div>
                 </div>
               </div>
+              <audio controls src={song.audio} className="w-full my-2 rounded" />
+              <button
+                onClick={() => handleAddToJamStack(song.id)}
+                className="mt-1 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                ❤️ Add to JamStack
+              </button>
             </li>
           ))}
         </ul>
