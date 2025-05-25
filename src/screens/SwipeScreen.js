@@ -147,21 +147,13 @@ const SwipeScreen = () => {
         : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${song.artist_avatar_url}`
       : '/default-avatar.png';
 
-  const artistAvatarElement = useMemo(() => (
-    <Link to={`/artist/${song.user_id}`}>
-      <img
-        key={song.user_id}
-        src={avatarSrc}
-        alt="Artist Avatar"
-        className="w-12 h-12 rounded-full mx-auto mb-2 border hover:opacity-80 transition"
-        onClick={(e) => e.stopPropagation()}
-        onError={(e) => {
-          e.target.onerror = null;
-          e.target.src = '/default-avatar.png';
-        }}
-      />
-    </Link>
-  ), [song.user_id, avatarSrc]);
+ const avatarSrc =
+  typeof song.artist_avatar_url === 'string' && song.artist_avatar_url.trim() !== ''
+    ? song.artist_avatar_url.startsWith('http')
+      ? song.artist_avatar_url
+      : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${song.artist_avatar_url}`
+    : '/default-avatar.png';
+
 
   return (
     <div
