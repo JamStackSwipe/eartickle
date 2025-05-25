@@ -138,36 +138,30 @@ const SwipeScreen = () => {
     return <div className="text-center mt-10 text-gray-400">No songs to swipe yet.</div>;
   }
 
-  const song = songs[currentIndex] || {};
+  const song = songs[currentIndex];
 
-  const avatarSrc = (() => {
-    const url = song?.artist_avatar_url;
-    if (typeof url === 'string' && url.trim() !== '') {
-      return url.startsWith('http')
-        ? url
-        : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${url}`;
-    }
-    return '/default-avatar.png';
-  })();
+  const avatarSrc =
+    song.artist_avatar_url?.trim() !== ''
+      ? song.artist_avatar_url.startsWith('http')
+        ? song.artist_avatar_url
+        : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${song.artist_avatar_url}`
+      : '/default-avatar.png';
 
-  const artistAvatarElement = useMemo(() => {
-    if (!song?.user_id) return null;
-    return (
-      <Link to={`/artist/${song.user_id}`}>
-        <img
-          key={song.user_id}
-          src={avatarSrc}
-          alt="Artist Avatar"
-          className="w-12 h-12 rounded-full mx-auto mb-2 border hover:opacity-80 transition"
-          onClick={(e) => e.stopPropagation()}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = '/default-avatar.png';
-          }}
-        />
-      </Link>
-    );
-  }, [avatarSrc, song?.user_id]);
+  const artistAvatarElement = useMemo(() => (
+    <Link to={`/artist/${song.user_id}`}>
+      <img
+        key={song.user_id}
+        src={avatarSrc}
+        alt="Artist Avatar"
+        className="w-12 h-12 rounded-full mx-auto mb-2 border hover:opacity-80 transition"
+        onClick={(e) => e.stopPropagation()}
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = '/default-avatar.png';
+        }}
+      />
+    </Link>
+  ), [song.user_id, avatarSrc]);
 
   return (
     <div
