@@ -139,6 +139,7 @@ const SwipeScreen = () => {
   }
 
   const song = songs[currentIndex];
+  if (!song) return null;
 
   const avatarSrc = (() => {
     const url = song?.artist_avatar_url;
@@ -150,21 +151,24 @@ const SwipeScreen = () => {
     return '/default-avatar.png';
   })();
 
-  const artistAvatarElement = useMemo(() => (
-    <Link to={`/artist/${song.user_id}`}>
-      <img
-        key={song.user_id}
-        src={avatarSrc}
-        alt="Artist Avatar"
-        className="w-12 h-12 rounded-full mx-auto mb-2 border hover:opacity-80 transition"
-        onClick={(e) => e.stopPropagation()}
-        onError={(e) => {
-          e.target.onerror = null;
-          e.target.src = '/default-avatar.png';
-        }}
-      />
-    </Link>
-  ), [song.user_id, avatarSrc]);
+  const artistAvatarElement = useMemo(() => {
+    if (!song?.user_id) return null;
+    return (
+      <Link to={`/artist/${song.user_id}`}>
+        <img
+          key={song.user_id}
+          src={avatarSrc}
+          alt="Artist Avatar"
+          className="w-12 h-12 rounded-full mx-auto mb-2 border hover:opacity-80 transition"
+          onClick={(e) => e.stopPropagation()}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = '/default-avatar.png';
+          }}
+        />
+      </Link>
+    );
+  }, [avatarSrc, song?.user_id]);
 
   return (
     <div
@@ -249,4 +253,3 @@ const SwipeScreen = () => {
 };
 
 export default SwipeScreen;
-
