@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 import { useSwipeable } from 'react-swipeable';
@@ -140,13 +140,28 @@ const SwipeScreen = () => {
 
   const song = songs[currentIndex];
 
-const avatarSrc =
-  song.artist_avatar_url?.trim() !== ''
-    ? song.artist_avatar_url?.startsWith('http')
-      ? song.artist_avatar_url
-      : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${song.artist_avatar_url}`
-    : '/default-avatar.png';
+  const avatarSrc =
+    song.artist_avatar_url?.trim() !== ''
+      ? song.artist_avatar_url.startsWith('http')
+        ? song.artist_avatar_url
+        : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${song.artist_avatar_url}`
+      : '/default-avatar.png';
 
+  const artistAvatarElement = useMemo(() => (
+    <Link to={`/artist/${song.user_id}`}>
+      <img
+        key={song.user_id}
+        src={avatarSrc}
+        alt="Artist Avatar"
+        className="w-12 h-12 rounded-full mx-auto mb-2 border hover:opacity-80 transition"
+        onClick={(e) => e.stopPropagation()}
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = '/default-avatar.png';
+        }}
+      />
+    </Link>
+  ), [song.user_id, avatarSrc]);
 
   return (
     <div
@@ -167,18 +182,7 @@ const avatarSrc =
       )}
 
       <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center z-10">
-        <Link to={`/artist/${song.user_id}`}>
-          <img
-            src={avatarSrc}
-            alt="Artist Avatar"
-            className="w-12 h-12 rounded-full mx-auto mb-2 border hover:opacity-80 transition"
-            onClick={(e) => e.stopPropagation()}
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = '/default-avatar.png';
-            }}
-          />
-        </Link>
+        {artistAvatarElement}
 
         <img
           src={song.cover || '/default-cover.png'}
