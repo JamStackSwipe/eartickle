@@ -154,12 +154,14 @@ const SwipeScreen = () => {
       className="min-h-screen bg-black text-white flex justify-center items-center p-4 relative"
     >
       {showOverlay && (
-        <div className="absolute inset-0 bg-black bg-opacity-70 flex flex-col items-center justify-center text-white text-center z-20 space-y-2 text-lg">
-          <div>👈 Swipe left to skip</div>
-          <div>👉 Swipe right to add</div>
-          <div>↑ Swipe up for next</div>
-          <div>↓ Swipe down to go back</div>
-          <p className="text-sm text-gray-400 mt-4">(tap to start)</p>
+        <div className="absolute inset-0 bg-black bg-opacity-70 pointer-events-none z-10">
+          <div className="flex flex-col items-center justify-center h-full text-white text-center space-y-2 text-lg pointer-events-auto">
+            <div>👈 Swipe left to skip</div>
+            <div>👉 Swipe right to add</div>
+            <div>↑ Swipe up for next</div>
+            <div>↓ Swipe down to go back</div>
+            <p className="text-sm text-gray-400 mt-4">(tap to start)</p>
+          </div>
         </div>
       )}
 
