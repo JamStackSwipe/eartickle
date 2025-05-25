@@ -17,29 +17,61 @@ const SwipeScreen = () => {
   const audioRef = useRef();
 
   useEffect(() => {
+    const fetchSongs = async () => {
+      const { data, error } = await supabase
+        .from('songs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ Error fetching songs:', error);
+      } else {
+        setSongs(data);
+      }
+    };
+
     fetchSongs();
   }, []);
 
-  const fetchSongs = async () => {
-    const { data, error } = await supabase
-      .from('songs')
-      .select('*')
-      .order('created_at', { ascending: false });
+  const song = songs[currentIndex];
 
-    if (!error && data) {
-      setSongs(data);
-    } else {
-      console.error('❌ Error fetching songs:', error);
-    }
-  };
+  const avatarElement = useMemo(() => {
+    if (!song || !song.user_id) return null;
 
-  const incrementViews = async (songId) => {
-    await supabase.rpc('increment_song_views', { song_id: songId });
+    const url = song.artist_avatar_url;
+    const avatarSrc =
+      typeof url === 'string' && url.trim() !== ''
+        ? url.startsWith('http')
+          ? url
+          : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${url}`
+        : '/default-avatar.png';
+
+    return (
+      <Link to={`/artist/${song.user_id}`}>
+        <img
+          src={avatarSrc}
+          alt="Artist Avatar"
+          className="w-12 h-12 rounded-full mx-auto mb-2 border hover:opacity-80 transition"
+          onClick={(e) => e.stopPropagation()}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = '/default-avatar.png';
+          }}
+        />
+      </Link>
+    );
+  }, [song]);
+
+  const handleFirstTap = () => {
+    setUserHasTapped(true);
+    setShowOverlay(false);
   };
 
   const handleNext = () => {
     setCurrentIndex((prev) => Math.min(prev + 1, songs.length - 1));
-    incrementViews(songs[Math.min(currentIndex + 1, songs.length - 1)]?.id);
+    if (songs[currentIndex + 1]) {
+      supabase.rpc('increment_song_views', { song_id: songs[currentIndex + 1].id });
+    }
   };
 
   const handlePrevious = () => {
@@ -47,15 +79,14 @@ const SwipeScreen = () => {
   };
 
   const handleAddToJamStack = async () => {
-    if (!user || adding) return;
+    if (!user || adding || !song?.id) return;
     setAdding(true);
-    const currentSong = songs[currentIndex];
 
     const { data: existing } = await supabase
       .from('jamstacksongs')
       .select('id')
       .eq('user_id', user.id)
-      .eq('song_id', currentSong.id)
+      .eq('song_id', song.id)
       .maybeSingle();
 
     if (existing) {
@@ -68,7 +99,7 @@ const SwipeScreen = () => {
       {
         id: uuidv4(),
         user_id: user.id,
-        song_id: currentSong.id,
+        song_id: song.id,
       },
     ]);
 
@@ -81,38 +112,26 @@ const SwipeScreen = () => {
     setAdding(false);
   };
 
-  const playReactionSound = (emoji) => {
-    let soundFile = null;
-    if (emoji === '🔥') soundFile = '/sounds/fire.mp3';
-    if (emoji === '❤️') soundFile = '/sounds/love.mp3';
-    if (emoji === '😢') soundFile = '/sounds/sad.mp3';
-    if (emoji === '🎯') soundFile = '/sounds/bullseye.mp3';
-
-    if (soundFile) {
-      const audio = new Audio(soundFile);
-      audio.play();
-    }
-  };
-
   const handleReact = async (emoji) => {
-    const currentSong = songs[currentIndex];
-    if (!user || !currentSong?.id) return;
+    if (!user || !song?.id) return;
 
     await supabase.from('reactions').insert([
       {
         id: uuidv4(),
         user_id: user.id,
-        song_id: currentSong.id,
-        emoji: emoji,
+        song_id: song.id,
+        emoji,
       },
     ]);
 
-    playReactionSound(emoji);
-  };
+    const sound = {
+      '🔥': '/sounds/fire.mp3',
+      '❤️': '/sounds/love.mp3',
+      '😢': '/sounds/sad.mp3',
+      '🎯': '/sounds/bullseye.mp3',
+    }[emoji];
 
-  const handleFirstTap = () => {
-    setUserHasTapped(true);
-    setShowOverlay(false);
+    if (sound) new Audio(sound).play();
   };
 
   const swipeHandlers = useSwipeable({
@@ -140,37 +159,6 @@ const SwipeScreen = () => {
     return <div className="text-center mt-10 text-gray-400">No songs to swipe yet.</div>;
   }
 
-  const song = songs[currentIndex] || {};
-
-  const avatarSrc = (() => {
-    const url = song?.artist_avatar_url;
-    if (typeof url === 'string' && url.trim() !== '') {
-      return url.startsWith('http')
-        ? url
-        : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${url}`;
-    }
-    return '/default-avatar.png';
-  })();
-
-  const artistAvatarElement = useMemo(() => {
-    if (!song?.user_id) return null;
-    return (
-      <Link to={`/artist/${song.user_id}`}>
-        <img
-          key={song.user_id}
-          src={avatarSrc}
-          alt="Artist Avatar"
-          className="w-12 h-12 rounded-full mx-auto mb-2 border hover:opacity-80 transition"
-          onClick={(e) => e.stopPropagation()}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = '/default-avatar.png';
-          }}
-        />
-      </Link>
-    );
-  }, [avatarSrc, song?.user_id]);
-
   return (
     <div
       {...swipeHandlers}
@@ -190,7 +178,7 @@ const SwipeScreen = () => {
       )}
 
       <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center z-10">
-        {artistAvatarElement}
+        {avatarElement}
 
         <img
           src={song.cover || '/default-cover.png'}
