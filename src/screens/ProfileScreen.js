@@ -85,6 +85,18 @@ const ProfileScreen = () => {
     }
   };
 
+  const handleDelete = async (songId) => {
+    const confirmed = window.confirm('Are you sure you want to delete this song?');
+    if (!confirmed) return;
+
+    const { error } = await supabase.from('songs').delete().eq('id', songId);
+    if (error) {
+      console.error('❌ Failed to delete song:', error.message);
+    } else {
+      setSongs((prev) => prev.filter((song) => song.id !== songId));
+    }
+  };
+
   if (loading) return <div className="p-6">Loading profile...</div>;
 
   return (
@@ -156,6 +168,12 @@ const ProfileScreen = () => {
                   👁️ {song.views || 0} | 📥 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.loves || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
                 </div>
               </div>
+              <button
+                onClick={() => handleDelete(song.id)}
+                className="text-red-600 hover:text-red-800 text-sm"
+              >
+                🗑️ Delete
+              </button>
             </li>
           ))}
         </ul>
