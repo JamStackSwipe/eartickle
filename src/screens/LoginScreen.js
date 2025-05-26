@@ -1,3 +1,4 @@
+// src/screens/LoginScreen.js
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
@@ -11,19 +12,19 @@ const LoginScreen = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/swipe'); // ✅ Redirect after successful login
+      navigate('/swipe');
     }
-  }, [user, navigate]);
+  }, [user]);
 
   const handleOAuthLogin = async (provider) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: 'https://eartickle.com/swipe' } // optional safety net
+      options: { redirectTo: 'https://eartickle.com/swipe' }
     });
 
     if (error) {
-      console.error('OAuth login error:', error.message);
-      setMessage('Login failed.');
+      console.error(`OAuth login error with ${provider}:`, error.message);
+      setMessage(`Login with ${provider} failed.`);
     }
   };
 
@@ -40,42 +41,41 @@ const LoginScreen = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-black text-white px-4">
-      <div className="text-center space-y-6 max-w-md w-full">
-        <img src="/logo.png" alt="EarTickle Logo" className="w-20 h-20 mx-auto" />
-        <h1 className="text-4xl font-bold">EarTickle™</h1>
-        <p className="text-gray-400 text-sm">Swipe. Stack. Play.</p>
+    <div className="relative min-h-screen bg-gradient-to-br from-purple-900 via-black to-black text-white overflow-hidden">
+      {/* Animated Gradient Background */}
+      <div className="absolute inset-0 opacity-40 animate-pulse z-0" />
 
-        <div className="space-y-4 pt-2">
+      {/* Overlay Content */}
+      <div className="relative z-10 flex flex-col items-center justify-center px-4 py-20 text-center">
+        <img src="/logo.png" alt="EarTickle Logo" className="w-24 h-24 mb-4" />
+        <h1 className="text-5xl font-extrabold mb-2">EarTickle™</h1>
+        <p className="text-lg text-teal-300 mb-8">Swipe. Stack. Play.</p>
+
+        {/* Feature Highlights */}
+        <div className="space-y-2 mb-10 text-sm text-gray-300 max-w-md">
+          <p>🎧 All Your Saved Jams, Always</p>
+          <p>🔀 Stacker Shuffle: Rediscover what you love</p>
+          <p>🌱 Artists: Share your full catalog with fans</p>
+          <p>📈 Grow your following and get real feedback</p>
+          <p>🪙 Rewards Coming Soon – Be Early</p>
+        </div>
+
+        {/* Login Buttons */}
+        <div className="space-y-4 w-full max-w-xs">
           <button
             onClick={() => handleOAuthLogin('github')}
             className="bg-white text-black font-semibold py-2 px-4 rounded w-full hover:bg-gray-200"
           >
             Login with GitHub
           </button>
-        </div>
 
-        <form onSubmit={handleEmailLogin} className="space-y-4 pt-6">
-          <input
-            type="email"
-            placeholder="Your email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-300"
-            required
-          />
           <button
-            type="submit"
-            className="bg-blue-400 text-black font-semibold py-2 px-4 rounded w-full hover:bg-blue-300"
+            onClick={() => handleOAuthLogin('google')}
+            className="bg-red-500 text-white font-semibold py-2 px-4 rounded w-full hover:bg-red-600"
           >
-            Send Magic Link
+            Login with Google
           </button>
-        </form>
 
-        {message && <p className="mt-4 text-teal-300">{message}</p>}
-      </div>
-    </div>
-  );
-};
-
-export default LoginScreen;
+          <button
+            onClick={() => handleOAuthLogin('spotify')}
+            className="bg-green-500 text-white font-semibold py-2 px-4 ro
