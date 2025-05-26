@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 import { useSwipeable } from 'react-swipeable';
@@ -34,13 +34,6 @@ const SwipeScreen = () => {
   }, []);
 
   const song = songs[currentIndex];
-
-  const avatarSrc = useMemo(() => {
-    if (!song || !song.artist_avatar_url || song.artist_avatar_url.trim() === '') {
-      return 'https://www.eartickle.com/default-avatar.png';
-    }
-    return `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${song.artist_avatar_url}`;
-  }, [song]);
 
   const handleFirstTap = () => {
     setUserHasTapped(true);
@@ -158,26 +151,18 @@ const SwipeScreen = () => {
       )}
 
       <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center z-10">
-        {song?.user_id && (
-          <Link to={`/artist/${song.user_id}`}>
-            <img
-              src={avatarSrc}
-              alt="Artist Avatar"
-              className="w-12 h-12 rounded-full mx-auto mb-2 border hover:opacity-80 transition"
-              onClick={(e) => e.stopPropagation()}
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.src = 'https://www.eartickle.com/default-avatar.png';
-              }}
-            />
-          </Link>
-        )}
+        <Link
+          to={`/artist/${song.user_id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="block mb-4"
+        >
+          <img
+            src={song.cover || '/default-cover.png'}
+            alt="cover"
+            className="w-full h-64 object-contain rounded hover:opacity-90 transition"
+          />
+        </Link>
 
-        <img
-          src={song.cover || '/default-cover.png'}
-          alt="cover"
-          className="w-full h-64 object-contain rounded mb-4"
-        />
         <h2 className="text-2xl font-bold mb-1">{song.title}</h2>
         <p className="text-sm text-gray-600">{song.artist || 'Unknown Artist'}</p>
         <p className="text-xs italic text-gray-400 mb-3">{song.genre}</p>
