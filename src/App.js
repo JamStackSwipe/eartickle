@@ -14,7 +14,6 @@ import RewardsScreen from './screens/RewardsScreen';
 import MyJamsScreen from './screens/MyJamsScreen';
 import ArtistProfileScreen from './screens/ArtistProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
-import StackerScreen from './screens/StackerScreen';
 import Dashboard from './screens/Dashboard';
 
 function App() {
@@ -24,7 +23,7 @@ function App() {
         <Header />
         <Routes>
           <Route path="/" element={<LoginScreen />} />
-          <Route path="/auth" element={<LoginScreen />} />         {/* ✅ direct to LoginScreen */}
+          <Route path="/auth" element={<LoginScreen />} />
           <Route path="/profile" element={<ProfileScreen />} />
           <Route path="/upload" element={<UploadScreen />} />
           <Route path="/swipe" element={<SwipeScreen />} />
@@ -33,7 +32,6 @@ function App() {
           <Route path="/myjams" element={<MyJamsScreen />} />
           <Route path="/artist/:id" element={<ArtistProfileScreen />} />
           <Route path="/settings" element={<SettingsScreen />} />
-          <Route path="/stacker" element={<StackerScreen />} />
           <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </AuthProvider>
