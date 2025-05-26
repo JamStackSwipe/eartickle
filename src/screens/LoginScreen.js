@@ -19,7 +19,7 @@ const LoginScreen = () => {
   const handleOAuthLogin = async (provider) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: 'https://eartickle.com/swipe' }
+      options: { redirectTo: 'https://eartickle.com/swipe' },
     });
 
     if (error) {
@@ -78,4 +78,34 @@ const LoginScreen = () => {
 
           <button
             onClick={() => handleOAuthLogin('spotify')}
-            className="bg-green-500 text-white font-semibold py-2 px-4 ro
+            className="bg-green-500 text-white font-semibold py-2 px-4 rounded w-full hover:bg-green-600"
+          >
+            Login with Spotify
+          </button>
+        </div>
+
+        {/* Magic Link Email */}
+        <form onSubmit={handleEmailLogin} className="space-y-4 pt-6 w-full max-w-xs">
+          <input
+            type="email"
+            placeholder="Your email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-300"
+            required
+          />
+          <button
+            type="submit"
+            className="bg-blue-400 text-black font-semibold py-2 px-4 rounded w-full hover:bg-blue-300"
+          >
+            Send Magic Link
+          </button>
+        </form>
+
+        {message && <p className="mt-4 text-teal-300 text-sm">{message}</p>}
+      </div>
+    </div>
+  );
+};
+
+export default LoginScreen;
