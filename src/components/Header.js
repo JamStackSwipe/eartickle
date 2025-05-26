@@ -86,6 +86,7 @@ const Header = () => {
                 <Link to="/settings" className="block px-4 py-2 hover:bg-gray-100">⚙️ Settings</Link>
                 <Link to="/privacy" className="block px-4 py-2 hover:bg-gray-100">🔒 Privacy</Link>
                 <Link to="/terms" className="block px-4 py-2 hover:bg-gray-100">📄 Terms</Link>
+                <Link to="/about" className="block px-4 py-2 hover:bg-gray-100">📖 About EarTickle</Link>
                 <a href="https://github.com/JamStackSwipe/eartickle" target="_blank" rel="noopener noreferrer" className="block px-4 py-2 hover:bg-gray-100">🔗 GitHub</a>
                 <a href="https://github.com/JamStackSwipe/eartickle/wiki" target="_blank" rel="noopener noreferrer" className="block px-4 py-2 hover:bg-gray-100">📘 Wiki</a>
                 <button onClick={handleLogout} className="w-full text-left px-4 py-2 hover:bg-gray-100">🚪 Logout</button>
@@ -108,6 +109,7 @@ const Header = () => {
             <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>⚙️ Settings</Link>
             <Link to="/privacy" onClick={() => setMobileMenuOpen(false)}>🔒 Privacy</Link>
             <Link to="/terms" onClick={() => setMobileMenuOpen(false)}>📄 Terms</Link>
+            <Link to="/about" onClick={() => setMobileMenuOpen(false)}>📖 About EarTickle</Link>
             <a href="https://github.com/JamStackSwipe/eartickle" target="_blank" rel="noopener noreferrer">🔗 GitHub</a>
             <a href="https://github.com/JamStackSwipe/eartickle/wiki" target="_blank" rel="noopener noreferrer">📘 Wiki</a>
             <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }}>🚪 Logout</button>
