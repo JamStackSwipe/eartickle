@@ -19,12 +19,12 @@ const LoginScreen = () => {
   const handleOAuthLogin = async (provider) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: 'https://eartickle.com/swipe' }
+      options: { redirectTo: 'https://eartickle.com/swipe' } // change if needed
     });
 
     if (error) {
-      console.error('OAuth login error:', error.message);
-      setMessage('Login failed.');
+      console.error(`OAuth login error with ${provider}:`, error.message);
+      setMessage(`Login with ${provider} failed.`);
     }
   };
 
@@ -47,7 +47,7 @@ const LoginScreen = () => {
         <h1 className="text-4xl font-bold">EarTickle™</h1>
         <p className="text-gray-400 text-sm">Swipe. Stack. Play.</p>
 
-        <div className="space-y-4 pt-2">
+        <div className="space-y-4 pt-4">
           <button
             onClick={() => handleOAuthLogin('github')}
             className="bg-white text-black font-semibold py-2 px-4 rounded w-full hover:bg-gray-200"
