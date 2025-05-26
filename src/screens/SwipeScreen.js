@@ -35,14 +35,15 @@ const SwipeScreen = () => {
 
   const song = songs[currentIndex];
 
-  const avatarSrc = useMemo(() => {
-    if (!song) return '/default-avatar.png';
-    const url = song.artist_avatar_url;
-    if (!url || url.trim() === '') return '/default-avatar.png';
-    return url.startsWith('http')
-      ? url
-      : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${url}`;
-  }, [song]);
+ const avatarSrc = useMemo(() => {
+  if (!song) return '/default-avatar.png';
+  const url = song.artist_avatar_url?.split('?')[0]; // trim token
+  if (!url || url.trim() === '') return '/default-avatar.png';
+  return url.startsWith('http')
+    ? url
+    : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${url}`;
+}, [song?.artist_avatar_url]);
+
 
   const handleFirstTap = () => {
     setUserHasTapped(true);
