@@ -36,23 +36,10 @@ const SwipeScreen = () => {
   const song = songs[currentIndex];
 
   const avatarSrc = useMemo(() => {
-    if (!song) return '/default-avatar.png';
-    const raw = song.artist_avatar_url;
-
-    console.log('🔍 Raw avatar URL:', raw);
-
-    if (!raw || raw.trim() === '') {
-      console.warn('⚠️ Avatar URL is empty or null');
-      return '/default-avatar.png';
+    if (!song || !song.artist_avatar_url || song.artist_avatar_url.trim() === '') {
+      return 'https://www.eartickle.com/default-avatar.png';
     }
-
-    const trimmed = raw.split('?')[0];
-    const fullUrl = trimmed.startsWith('http')
-      ? trimmed
-      : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${trimmed}`;
-
-    console.log('✅ Final avatarSrc:', fullUrl);
-    return fullUrl;
+    return `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${song.artist_avatar_url}`;
   }, [song]);
 
   const handleFirstTap = () => {
@@ -179,9 +166,8 @@ const SwipeScreen = () => {
               className="w-12 h-12 rounded-full mx-auto mb-2 border hover:opacity-80 transition"
               onClick={(e) => e.stopPropagation()}
               onError={(e) => {
-                console.warn('🧨 Avatar image failed to load:', avatarSrc);
                 e.target.onerror = null;
-                e.target.src = '/default-avatar.png';
+                e.target.src = 'https://www.eartickle.com/default-avatar.png';
               }}
             />
           </Link>
