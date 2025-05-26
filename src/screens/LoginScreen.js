@@ -1,3 +1,4 @@
+// src/screens/LoginScreen.js
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
@@ -18,7 +19,7 @@ const LoginScreen = () => {
   const handleOAuthLogin = async (provider) => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: 'https://eartickle.com/swipe' } // optional safety net
+      options: { redirectTo: 'https://eartickle.com/swipe' }
     });
 
     if (error) {
@@ -52,6 +53,20 @@ const LoginScreen = () => {
             className="bg-white text-black font-semibold py-2 px-4 rounded w-full hover:bg-gray-200"
           >
             Login with GitHub
+          </button>
+
+          <button
+            onClick={() => handleOAuthLogin('google')}
+            className="bg-red-500 text-white font-semibold py-2 px-4 rounded w-full hover:bg-red-600"
+          >
+            Login with Google
+          </button>
+
+          <button
+            onClick={() => handleOAuthLogin('spotify')}
+            className="bg-green-500 text-white font-semibold py-2 px-4 rounded w-full hover:bg-green-600"
+          >
+            Login with Spotify
           </button>
         </div>
 
