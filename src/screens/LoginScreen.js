@@ -1,4 +1,3 @@
-// src/screens/LoginScreen.js
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
@@ -47,9 +46,16 @@ const LoginScreen = () => {
 
       {/* Overlay Content */}
       <div className="relative z-10 flex flex-col items-center justify-center px-4 py-20 text-center">
-        <img src="/logo.png" alt="EarTickle Logo" className="w-24 h-24 mb-4" />
-        <h1 className="text-5xl font-extrabold mb-2">EarTickle™</h1>
-        <p className="text-lg text-teal-300 mb-8">Swipe. Stack. Play.</p>
+        {/* ✅ Inline Logo + Tagline */}
+        <div className="text-center mb-10">
+          <img
+            src="/logo.png"
+            alt="EarTickle Logo"
+            className="w-24 h-24 mx-auto mb-2"
+          />
+          <h1 className="text-4xl font-bold text-white tracking-wide">EarTickle</h1>
+          <p className="text-sm text-teal-300 mt-1">Swipe. Stack. Play.</p>
+        </div>
 
         {/* Feature Highlights */}
         <div className="space-y-2 mb-10 text-sm text-gray-300 max-w-md">
