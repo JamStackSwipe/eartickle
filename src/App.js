@@ -7,7 +7,6 @@ import ProfileScreen from './screens/ProfileScreen';
 import UploadScreen from './screens/UploadScreen';
 import SwipeScreen from './screens/SwipeScreen';
 import JamStackScreen from './screens/JamStackScreen';
-import AuthScreen from './screens/AuthScreen';
 import RewardsScreen from './screens/RewardsScreen';
 import MyJamsScreen from './screens/MyJamsScreen';
 import SettingsScreen from './screens/SettingsScreen';
@@ -24,8 +23,8 @@ function App() {
     <AuthProvider>
       <Header />
       <Routes>
-        <Route path="/" element={<AuthScreen />} />
-        <Route path="/auth" element={<AuthScreen />} />
+        <Route path="/" element={<LoginScreen />} />
+        <Route path="/auth" element={<LoginScreen />} />
         <Route path="/login" element={<LoginScreen />} />
         <Route path="/artist/:id" element={<ArtistProfileScreen />} />
         <Route path="/stacker" element={<JamStackPlayer />} />
