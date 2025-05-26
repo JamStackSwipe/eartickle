@@ -1,10 +1,23 @@
 // src/screens/SettingsScreen.js
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 
 const SettingsScreen = () => {
   const navigate = useNavigate();
+  const [userId, setUserId] = useState(null);
+  const [userEmail, setUserEmail] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data?.user) {
+        setUserId(data.user.id);
+        setUserEmail(data.user.email);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -15,25 +28,19 @@ const SettingsScreen = () => {
     const confirmed = window.confirm('Are you sure you want to permanently delete your account? This cannot be undone.');
     if (!confirmed) return;
 
-    const { data: user } = await supabase.auth.getUser();
-    if (user?.user?.id) {
-      const { error } = await supabase.rpc('delete_user');
-      if (error) {
-        alert('Error deleting account: ' + error.message);
-      } else {
-        await supabase.auth.signOut();
-        alert('Account deleted successfully.');
-        navigate('/');
-      }
+    const { error } = await supabase.rpc('delete_user');
+    if (error) {
+      alert('Error deleting account: ' + error.message);
+    } else {
+      await supabase.auth.signOut();
+      alert('Account deleted successfully.');
+      navigate('/');
     }
   };
 
   const handlePasswordReset = async () => {
-    const { data: user } = await supabase.auth.getUser();
-    const email = user?.user?.email;
-
-    if (email) {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    if (userEmail) {
+      const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
         redirectTo: `${window.location.origin}/profile`
       });
       if (error) {
@@ -47,6 +54,13 @@ const SettingsScreen = () => {
   return (
     <div className="p-6 max-w-xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">Settings</h1>
+
+      {userId && (
+        <div className="bg-gray-100 text-sm p-3 mb-4 rounded">
+          🔐 <strong>User ID:</strong><br />
+          <code className="break-all">{userId}</code>
+        </div>
+      )}
 
       <div className="space-y-4">
         <button
