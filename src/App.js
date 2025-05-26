@@ -14,6 +14,8 @@ import JamStackPlayer from './screens/JamStackPlayer';
 import ArtistProfileScreen from './screens/ArtistProfileScreen';
 import Privacy from './screens/Privacy';
 import Terms from './screens/Terms';
+import AboutScreen from './screens/AboutScreen';
+
 
 
 
@@ -37,6 +39,8 @@ function App() {
         <Route path="/settings" element={<SettingsScreen />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/about" element={<AboutScreen />} />
+
 
       </Routes>
     </AuthProvider>
