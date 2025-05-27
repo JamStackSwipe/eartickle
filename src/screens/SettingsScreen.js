@@ -30,10 +30,10 @@ const SettingsScreen = () => {
       .from('profiles')
       .select('is_artist')
       .eq('id', uid)
-      .single();
+      .maybeSingle(); // Safe: prevents 400 on missing/multiple rows
 
     if (error) {
-      console.error('❌ Error checking artist status:', error);
+      console.error('❌ Error checking artist status:', error.message || error);
       return;
     }
 
@@ -60,7 +60,7 @@ const SettingsScreen = () => {
       .from('profiles')
       .select('preferred_genres')
       .eq('id', uid)
-      .single();
+      .maybeSingle();
 
     if (data?.preferred_genres) {
       setSelectedGenres(data.preferred_genres);
@@ -196,13 +196,28 @@ const SettingsScreen = () => {
         </div>
       )}
 
-      <div className="text-sm text-gray-400 mt-6">
-        Are you an artist? You can update your profile info <a href="/profile" className="underline">here</a>.<br />
-        Want to share your profile? Just send people to: <br />
-        <code className="text-xs break-all">
-          {userId ? `${window.location.origin}/artist/${userId}` : 'Loading...'}
-        </code>
-      </div>
+      {userId && (
+        <div className="mt-8">
+          <p className="text-sm text-gray-300 mb-1">Want to share your artist profile?</p>
+          <div className="flex items-center gap-2 bg-gray-800 text-white text-sm px-4 py-2 rounded-lg">
+            <input
+              readOnly
+              value={`${window.location.origin}/artist/${userId}`}
+              className="flex-1 bg-transparent outline-none text-white text-sm"
+              onClick={(e) => e.target.select()}
+            />
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/artist/${userId}`);
+                alert('✅ Profile link copied!');
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
