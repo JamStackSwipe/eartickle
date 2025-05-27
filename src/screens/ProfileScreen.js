@@ -123,10 +123,26 @@ const ProfileScreen = () => {
   };
 
   const updateSong = async (id, updates) => {
+    if ('stripe_account_id' in updates && updates.stripe_account_id === 'FETCH_FROM_PROFILE') {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('stripe_account_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!profile?.stripe_account_id) {
+        alert('You must connect Stripe in Settings to enable gifting.');
+        return;
+      }
+
+      updates.stripe_account_id = profile.stripe_account_id;
+    }
+
     const { error } = await supabase
       .from('songs')
       .update(updates)
       .eq('id', id);
+
     if (error) {
       console.error('❌ Error updating song:', error.message);
     } else {
@@ -251,22 +267,20 @@ const ProfileScreen = () => {
                       ))}
                     </select>
 
-                    {song.stripe_account_id !== null && (
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={!!song.stripe_account_id}
-                          onChange={(e) =>
-                            updateSong(song.id, {
-                              stripe_account_id: e.target.checked
-                                ? song.stripe_account_id
-                                : null,
-                            })
-                          }
-                        />
-                        <label className="text-sm text-gray-600">Enable Gifting</label>
-                      </div>
-                    )}
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={!!song.stripe_account_id}
+                        onChange={(e) =>
+                          updateSong(song.id, {
+                            stripe_account_id: e.target.checked
+                              ? 'FETCH_FROM_PROFILE'
+                              : null,
+                          })
+                        }
+                      />
+                      <label className="text-sm text-gray-600">Enable Gifting</label>
+                    </div>
                   </div>
 
                   <button
