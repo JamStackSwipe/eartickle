@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
+import SendTickleButton from '../components/SendTickleButton';
 
 const MyJamsScreen = () => {
   const { user } = useUser();
@@ -23,7 +24,9 @@ const MyJamsScreen = () => {
           id,
           title,
           artist,
-          cover
+          cover,
+          audio,
+          stripe_account_id
         )
       `)
       .eq('user_id', user.id)
@@ -54,7 +57,6 @@ const MyJamsScreen = () => {
       return;
     }
 
-    // Update UI
     setJams((prev) => prev.filter((jam) => jam.song_id !== songId));
   };
 
@@ -68,30 +70,55 @@ const MyJamsScreen = () => {
         <p className="text-gray-400">You haven’t added any songs to your JamStack™ yet.</p>
       ) : (
         <ul className="space-y-4">
-          {jams.map((jam) => (
-            <li
-              key={jam.id}
-              className="bg-gray-900 p-4 rounded-lg shadow flex items-center space-x-4"
-            >
-              {jam.songs?.cover && (
-                <img
-                  src={jam.songs.cover}
-                  alt="cover"
-                  className="w-20 h-20 object-contain rounded"
-                />
-              )}
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold">{jam.songs?.title || 'Untitled'}</h2>
-                <p className="text-sm text-gray-400">{jam.songs?.artist || 'Unknown Artist'}</p>
-              </div>
-              <button
-                onClick={() => handleDelete(jam.song_id)}
-                className="text-sm text-red-400 hover:text-red-600"
+          {jams.map((jam) => {
+            const song = jam.songs;
+            return (
+              <li
+                key={jam.id}
+                className="bg-gray-900 p-4 rounded-lg shadow space-y-2"
               >
-                🗑️
-              </button>
-            </li>
-          ))}
+                <div className="flex items-center space-x-4">
+                  {song?.cover && (
+                    <img
+                      src={song.cover}
+                      alt="cover"
+                      className="w-20 h-20 object-contain rounded"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <h2 className="text-lg font-semibold">{song?.title || 'Untitled'}</h2>
+                    <p className="text-sm text-gray-400">{song?.artist || 'Unknown Artist'}</p>
+                    {song.audio && (
+                      <audio controls className="w-full mt-2">
+                        <source src={song.audio} type="audio/mpeg" />
+                        Your browser does not support the audio element.
+                      </audio>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleDelete(jam.song_id)}
+                    className="text-sm text-red-400 hover:text-red-600"
+                  >
+                    🗑️
+                  </button>
+                </div>
+
+                {/* Placeholder stats – can be linked to real data later */}
+                <div className="text-xs text-gray-400 mt-1 flex gap-3">
+                  ❤️ 23 · 😢 5 · 🎯 9 · 👁 102
+                </div>
+
+                {/* Stripe Tickle Button */}
+                <SendTickleButton
+                  songId={song.id}
+                  songTitle={song.title}
+                  artistId={user.id} // for now, pass current user; adjust if needed
+                  artistStripeId={song.stripe_account_id}
+                  senderId={user.id}
+                />
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
