@@ -150,10 +150,10 @@ const ProfileScreen = () => {
     }
   };
 
-  const avatarSrc =
-    profile.avatar_url?.trim()
-      ? profile.avatar_url
-      : user?.user_metadata?.avatar_url || '/default-avatar.png';
+const avatarSrc = profile.avatar_url?.trim()
+  ? `${process.env.REACT_APP_SUPABASE_PROJECT_URL}/storage/v1/object/public/avatars/${user.id}/avatar.png`
+  : user?.user_metadata?.avatar_url || '/default-avatar.png';
+
 
   if (loading) return <div className="p-6">Loading profile...</div>;
 
