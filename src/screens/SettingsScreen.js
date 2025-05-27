@@ -1,14 +1,13 @@
-// src/screens/SettingsScreen.js
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
-import ConnectStripeButton from '../components/ConnectStripeButton'; // ✅ Add this line
+import ConnectStripeButton from '../components/ConnectStripeButton';
 
 const SettingsScreen = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
-  const [isArtist, setIsArtist] = useState(false); // ✅ Track artist role
+  const [isArtist, setIsArtist] = useState(false);
   const [availableGenres, setAvailableGenres] = useState([]);
   const [selectedGenres, setSelectedGenres] = useState([]);
 
@@ -20,7 +19,7 @@ const SettingsScreen = () => {
         setUserEmail(data.user.email);
         fetchPreferences(data.user.id);
         fetchGenresFromSongs();
-        checkIfArtist(data.user.id); // ✅ Check artist status
+        checkIfArtist(data.user.id);
       }
     };
     fetchUser();
@@ -123,7 +122,7 @@ const SettingsScreen = () => {
       <h1 className="text-2xl font-bold mb-4">Settings</h1>
 
       {userId && (
-        <div className="bg-gray-100 text-sm p-3 mb-4 rounded">
+        <div className="bg-gray-100 text-sm p-3 mb-4 rounded text-black">
           🔐 <strong>User ID:</strong><br />
           <code className="break-all">{userId}</code>
         </div>
@@ -200,7 +199,9 @@ const SettingsScreen = () => {
       <div className="text-sm text-gray-400 mt-6">
         Are you an artist? You can update your profile info <a href="/profile" className="underline">here</a>.<br />
         Want to share your profile? Just send people to: <br />
-        <code className="text-xs break-all">{`${window.location.origin}/artist/YOUR_ID`}</code>
+        <code className="text-xs break-all">
+          {userId ? `${window.location.origin}/artist/${userId}` : 'Loading...'}
+        </code>
       </div>
     </div>
   );
