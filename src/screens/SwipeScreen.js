@@ -127,17 +127,12 @@ const SwipeScreen = () => {
   }
 
   return (
+
     <div
-      {...swipeHandlers}
-      onClick={handleFirstTap}
-      className="min-h-screen bg-black text-white flex justify-center items-center p-4 relative"
-    >
-      {/* Avatar menu override fix */}
-      <style>{`
-        [data-headlessui-portal] {
-          z-index: 9999 !important;
-        }
-      `}</style>
+  {...swipeHandlers}
+  onClick={handleFirstTap}
+  className="min-h-screen bg-black text-white flex justify-center items-center p-4 relative z-0"
+>      
 
       {showOverlay && (
         <div className="absolute inset-0 bg-black bg-opacity-70 pointer-events-none z-[98]">
