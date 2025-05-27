@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
-import { useUser } from '../components/AuthProvider'; // ✅ FIXED
+import { useUser } from '../components/AuthProvider';
 
 const UploadScreen = () => {
   const [title, setTitle] = useState('');
@@ -9,10 +9,11 @@ const UploadScreen = () => {
   const [genre, setGenre] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
+  const [enableGifting, setEnableGifting] = useState(false);
   const [message, setMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
-  const { user } = useUser(); // ✅ FIXED
+  const { user } = useUser();
   const navigate = useNavigate();
 
   const handleUpload = async () => {
@@ -36,11 +37,13 @@ const UploadScreen = () => {
     const imageFilename = `${timestamp}-${imageFile.name}`;
     const audioFilename = `${timestamp}-${audioFile.name}`;
 
-    const { error: imageError } = await supabase.storage
+    const { error: imageError } = await supabase
+      .storage
       .from('covers')
       .upload(imageFilename, imageFile);
 
-    const { error: audioError } = await supabase.storage
+    const { error: audioError } = await supabase
+      .storage
       .from('audio')
       .upload(audioFilename, audioFile);
 
@@ -53,6 +56,26 @@ const UploadScreen = () => {
     const coverUrl = supabase.storage.from('covers').getPublicUrl(imageFilename).data.publicUrl;
     const audioUrl = supabase.storage.from('audio').getPublicUrl(audioFilename).data.publicUrl;
 
+    let stripeAccountId = null;
+
+    if (enableGifting) {
+      // Get the artist's stripe_account_id
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('stripe_account_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error || !profile?.stripe_account_id) {
+        alert('To enable gifting, please connect your Stripe account in settings first.');
+        setIsUploading(false);
+        navigate('/settings');
+        return;
+      }
+
+      stripeAccountId = profile.stripe_account_id;
+    }
+
     const { error: dbError } = await supabase.from('songs').insert([
       {
         title,
@@ -61,6 +84,7 @@ const UploadScreen = () => {
         cover: coverUrl,
         audio: audioUrl,
         user_id: user.id,
+        stripe_account_id: stripeAccountId || null,
       },
     ]);
 
@@ -68,10 +92,17 @@ const UploadScreen = () => {
       alert('Song metadata upload failed.');
       setIsUploading(false);
     } else {
+      // ✅ Promote user to artist
+      await supabase
+        .from('profiles')
+        .update({ is_artist: true })
+        .eq('id', user.id);
+
       setMessage('✅ Song uploaded!');
       setTitle('');
       setArtist('');
       setGenre('');
+      setEnableGifting(false);
       setImageFile(null);
       setAudioFile(null);
       setTimeout(() => {
@@ -130,42 +161,52 @@ const UploadScreen = () => {
         className="w-full p-2 border rounded mb-4"
       />
 
-    <label className="block mb-2 font-medium">
-  Audio File (MP3, M4A, or audio-only MP4, Max 20MB)
-</label>
-<input
-  type="file"
-  accept="audio/mpeg, audio/mp4, audio/x-m4a, audio/aac, video/mp4"
-  onChange={(e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+      <label className="block mb-2 font-medium">
+        Audio File (MP3, M4A, or audio-only MP4, Max 20MB)
+      </label>
+      <input
+        type="file"
+        accept="audio/mpeg, audio/mp4, audio/x-m4a, audio/aac, video/mp4"
+        onChange={(e) => {
+          const file = e.target.files[0];
+          if (!file) return;
 
-    const validAudioTypes = [
-      'audio/mpeg',
-      'audio/mp4',
-      'audio/x-m4a',
-      'audio/aac',
-      'video/mp4' // for audio-only mp4
-    ];
+          const validAudioTypes = [
+            'audio/mpeg',
+            'audio/mp4',
+            'audio/x-m4a',
+            'audio/aac',
+            'video/mp4'
+          ];
 
-    if (!validAudioTypes.includes(file.type)) {
-      alert('❌ Unsupported file format. Please upload an MP3, M4A, or audio-only MP4.');
-      return;
-    }
+          if (!validAudioTypes.includes(file.type)) {
+            alert('❌ Unsupported file format. Please upload an MP3, M4A, or audio-only MP4.');
+            return;
+          }
 
-    setAudioFile(file);
-  }}
-  className="w-full p-2 border rounded mb-1"
-/>
-<p className="text-xs text-gray-400 mb-4">
-  Supported formats: MP3, M4A, or audio-only MP4. Make sure your MP4 does not contain video.
-</p>
+          setAudioFile(file);
+        }}
+        className="w-full p-2 border rounded mb-1"
+      />
+      <p className="text-xs text-gray-400 mb-4">
+        Supported formats: MP3, M4A, or audio-only MP4. Make sure your MP4 does not contain video.
+      </p>
 
+      <div className="mb-4 flex items-center space-x-2">
+        <input
+          type="checkbox"
+          checked={enableGifting}
+          onChange={(e) => setEnableGifting(e.target.checked)}
+        />
+        <label className="text-sm font-medium text-gray-800">Enable Gifting for this song</label>
+      </div>
 
       <button
         onClick={handleUpload}
         disabled={isUploading}
-        className={`w-full text-white py-2 rounded ${isUploading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
+        className={`w-full text-white py-2 rounded ${
+          isUploading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
+        }`}
       >
         {isUploading ? 'Uploading…' : 'Upload'}
       </button>
