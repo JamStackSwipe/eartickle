@@ -4,6 +4,7 @@ import { useUser } from '../components/AuthProvider';
 import { useSwipeable } from 'react-swipeable';
 import { v4 as uuidv4 } from 'uuid';
 import { Link } from 'react-router-dom';
+import { getRecommendedSongs } from '../utils/recommendationEngine';
 
 const reactionEmojis = ['🔥', '❤️', '😢', '🎯'];
 
@@ -17,21 +18,14 @@ const SwipeScreen = () => {
   const audioRef = useRef();
 
   useEffect(() => {
-    const fetchSongs = async () => {
-      const { data, error } = await supabase
-        .from('songs')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('❌ Error fetching songs:', error);
-      } else {
-        setSongs(data);
-      }
+    const fetchPersonalizedSongs = async () => {
+      if (!user) return;
+      const rankedSongs = await getRecommendedSongs(user.id);
+      setSongs(rankedSongs);
     };
 
-    fetchSongs();
-  }, []);
+    fetchPersonalizedSongs();
+  }, [user]);
 
   const song = songs[currentIndex];
 
@@ -138,8 +132,15 @@ const SwipeScreen = () => {
       onClick={handleFirstTap}
       className="min-h-screen bg-black text-white flex justify-center items-center p-4 relative"
     >
+      {/* Avatar menu override fix */}
+      <style>{`
+        [data-headlessui-portal] {
+          z-index: 9999 !important;
+        }
+      `}</style>
+
       {showOverlay && (
-        <div className="absolute inset-0 bg-black bg-opacity-70 pointer-events-none z-10">
+        <div className="absolute inset-0 bg-black bg-opacity-70 pointer-events-none z-[98]">
           <div className="flex flex-col items-center justify-center h-full text-white text-center space-y-2 text-lg pointer-events-auto">
             <div>👈 Swipe left to skip</div>
             <div>👉 Swipe right to add</div>
@@ -150,7 +151,7 @@ const SwipeScreen = () => {
         </div>
       )}
 
-      <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center z-10">
+      <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center z-[99] relative">
         <Link
           to={`/artist/${song.user_id}`}
           onClick={(e) => e.stopPropagation()}
