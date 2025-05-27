@@ -1,39 +1,125 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
+import { genreOptions } from '../utils/genreList';
 
 const ProfileScreen = () => {
   const { user } = useUser();
+  const [profile, setProfile] = useState({});
   const [songs, setSongs] = useState([]);
-  const [availableGenres, setAvailableGenres] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (user) {
-      fetchSongs();
-      fetchGenresFromSongs();
+      fetchProfile();
+      fetchUploads();
     }
   }, [user]);
 
-  const fetchSongs = async () => {
+  const fetchProfile = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (!error && data) setProfile(data);
+  };
+
+  const fetchUploads = async () => {
     const { data, error } = await supabase
       .from('songs')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (!error) setSongs(data || []);
+    if (!error) setSongs(data);
+    setLoading(false);
   };
 
-  const fetchGenresFromSongs = async () => {
-    const { data, error } = await supabase
-      .from('songs')
-      .select('genre')
-      .not('genre', 'is', null);
+  const handleChange = (field, value) => {
+    setProfile((prev) => ({ ...prev, [field]: value }));
+  };
 
-    if (!error) {
-      const uniqueGenres = [...new Set(data.map((s) => s.genre).filter(Boolean))].sort();
-      setAvailableGenres(uniqueGenres);
+  const handleSave = async () => {
+    const updates = {
+      display_name: profile.display_name || '',
+      bio: profile.bio || '',
+      booking_email: profile.booking_email || '',
+      website: profile.website || '',
+      spotify: profile.spotify || '',
+      youtube: profile.youtube || '',
+      instagram: profile.instagram || '',
+      soundcloud: profile.soundcloud || '',
+      tiktok: profile.tiktok || '',
+      bandlab: profile.bandlab || '',
+    };
+
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', user.id);
+
+    if (error) {
+      console.error('❌ Error saving profile:', error.message);
+      setMessage('Error saving.');
+    } else {
+      setMessage('✅ Profile saved!');
     }
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    const filePath = `${user.id}/avatar.png`;
+    const SUPABASE_URL = process.env.REACT_APP_SUPABASE_PROJECT_URL;
+    setUploading(true);
+    setMessage('');
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, {
+        upsert: true,
+        cacheControl: 'public, max-age=3600'
+      });
+
+    if (uploadError) {
+      console.error('❌ Upload error:', uploadError.message);
+      setMessage('Upload failed.');
+      setUploading(false);
+      return;
+    }
+
+    const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${filePath}`;
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: publicUrl })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('❌ Profile update error:', updateError.message);
+      setMessage('Avatar saved but profile update failed.');
+    } else {
+      setMessage('✅ Avatar updated!');
+      setProfile((prev) => ({ ...prev, avatar_url: publicUrl }));
+    }
+
+    setUploading(false);
+  };
+
+  const handleDelete = async (songId) => {
+    if (!confirm('Delete this song?')) return;
+    const { error } = await supabase
+      .from('songs')
+      .delete()
+      .eq('id', songId)
+      .eq('user_id', user.id);
+
+    if (!error) setSongs((prev) => prev.filter((s) => s.id !== songId));
   };
 
   const updateSong = async (id, updates) => {
@@ -41,91 +127,168 @@ const ProfileScreen = () => {
       .from('songs')
       .update(updates)
       .eq('id', id);
-
     if (error) {
-      alert('Error updating song');
+      console.error('❌ Error updating song:', error.message);
     } else {
-      fetchSongs(); // reload to reflect edits
+      fetchUploads();
     }
   };
 
-  const handleDelete = async (id) => {
-    const confirmed = window.confirm('Are you sure you want to delete this song?');
-    if (!confirmed) return;
+  const avatarSrc =
+    profile.avatar_url?.trim()
+      ? profile.avatar_url
+      : user?.user_metadata?.avatar_url || '/default-avatar.png';
 
-    await supabase.from('songs').delete().eq('id', id);
-    fetchSongs();
-  };
+  if (loading) return <div className="p-6">Loading profile...</div>;
 
   return (
-    <div className="p-6 max-w-3xl mx-auto text-white">
-      <h1 className="text-3xl font-bold mb-6">Your Uploaded Songs</h1>
+    <div className="min-h-screen bg-white text-black p-6 max-w-3xl mx-auto">
+      <div className="flex items-center space-x-4 mb-6">
+        <img
+          src={avatarSrc}
+          alt="avatar"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = '/default-avatar.png';
+          }}
+          className="w-24 h-24 rounded-full object-cover border shadow"
+        />
+        <div className="flex-1">
+          <input
+            type="text"
+            value={profile.display_name || ''}
+            onChange={(e) => handleChange('display_name', e.target.value)}
+            placeholder="Display Name"
+            className="text-xl font-bold w-full border-b p-1"
+          />
+          <textarea
+            value={profile.bio || ''}
+            onChange={(e) => handleChange('bio', e.target.value)}
+            placeholder="Tell us about you..."
+            className="w-full mt-2 p-2 border rounded"
+            rows={3}
+          />
+          <div className="mt-2">
+            <label className="block text-sm font-medium mb-1">Upload Avatar</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="text-sm"
+              disabled={uploading}
+            />
+          </div>
+        </div>
+      </div>
 
-      {songs.length === 0 ? (
-        <p className="text-gray-400">No songs uploaded yet.</p>
-      ) : (
-        <ul className="space-y-6">
-          {songs.map((song) => (
-            <li key={song.id} className="bg-gray-900 p-4 rounded shadow space-y-2">
-              <div className="flex flex-col md:flex-row items-start md:items-center md:space-x-4">
-                <img
-                  src={song.cover}
-                  alt="cover"
-                  className="w-20 h-20 object-cover rounded mb-2 md:mb-0"
-                />
+      <label className="block text-sm font-semibold mt-4">📩 Booking Email</label>
+      <input
+        type="email"
+        value={profile.booking_email || ''}
+        onChange={(e) => handleChange('booking_email', e.target.value)}
+        placeholder="you@email.com"
+        className="w-full p-2 border rounded mb-2"
+      />
 
-                <div className="flex-1 space-y-1">
-                  <label className="text-sm text-gray-400">🎵 Title</label>
-                  <input
-                    value={song.title}
-                    onChange={(e) => updateSong(song.id, { title: e.target.value })}
-                    className="bg-gray-800 text-white border border-gray-600 rounded px-2 py-1 w-full"
+      {['website', 'spotify', 'youtube', 'instagram', 'soundcloud', 'tiktok', 'bandlab'].map((field) => (
+        <div key={field} className="mb-2">
+          <label className="block text-sm font-semibold capitalize">{field}</label>
+          <input
+            type="text"
+            value={profile[field] || ''}
+            onChange={(e) => handleChange(field, e.target.value)}
+            className="w-full p-2 border rounded"
+            placeholder={`https://${field}.com/yourprofile`}
+          />
+        </div>
+      ))}
+
+      <button
+        onClick={handleSave}
+        className="mt-4 bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700"
+      >
+        Save Profile
+      </button>
+
+      {message && <p className="mt-2 text-green-600">{message}</p>}
+
+      {songs.length > 0 && (
+        <>
+          <h2 className="text-xl font-bold mt-10 mb-4">🎵 Your Uploaded Songs</h2>
+          <ul className="space-y-4">
+            {songs.map((song) => (
+              <li
+                key={song.id}
+                className="bg-gray-100 p-4 rounded shadow space-y-2"
+              >
+                <div className="flex items-center space-x-4">
+                  <img
+                    src={song.cover}
+                    alt="cover"
+                    className="w-16 h-16 object-cover rounded"
                   />
+                  <div className="flex-1 space-y-1">
+                    <input
+                      value={song.title}
+                      onChange={(e) =>
+                        updateSong(song.id, { title: e.target.value })
+                      }
+                      className="w-full border p-1 rounded"
+                    />
 
-                  <label className="text-sm text-gray-400 mt-2 block">🏷️ Genre</label>
-                  <select
-                    value={song.genre}
-                    onChange={(e) => updateSong(song.id, { genre: e.target.value })}
-                    className="bg-gray-800 text-white border border-gray-600 rounded px-2 py-1 w-full"
+                    <select
+                      value={song.genre}
+                      onChange={(e) =>
+                        updateSong(song.id, { genre: e.target.value })
+                      }
+                      className="w-full border p-1 rounded"
+                    >
+                      <option value="">Select genre</option>
+                      {genreOptions.map((g) => (
+                        <option key={g} value={g}>
+                          {g.charAt(0).toUpperCase() + g.slice(1)}
+                        </option>
+                      ))}
+                    </select>
+
+                    {song.stripe_account_id !== null && (
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={!!song.stripe_account_id}
+                          onChange={(e) =>
+                            updateSong(song.id, {
+                              stripe_account_id: e.target.checked
+                                ? song.stripe_account_id
+                                : null,
+                            })
+                          }
+                        />
+                        <label className="text-sm text-gray-600">Enable Gifting</label>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => handleDelete(song.id)}
+                    className="text-sm text-red-500 hover:text-red-700"
                   >
-                    <option value="">Select genre</option>
-                    {availableGenres.map((g) => (
-                      <option key={g} value={g}>
-                        {g}
-                      </option>
-                    ))}
-                  </select>
-
-                  {song.stripe_account_id && (
-                    <>
-                      <label className="text-sm text-gray-400 mt-2 block">🎁 Gifting Enabled</label>
-                      <input
-                        type="checkbox"
-                        checked={!!song.stripe_account_id}
-                        onChange={(e) =>
-                          updateSong(song.id, {
-                            stripe_account_id: e.target.checked ? song.stripe_account_id : null,
-                          })
-                        }
-                        className="mr-2"
-                      />
-                      <span className="text-sm">
-                        {song.stripe_account_id ? 'Yes' : 'No'}
-                      </span>
-                    </>
-                  )}
+                    🗑️
+                  </button>
                 </div>
 
-                <button
-                  onClick={() => handleDelete(song.id)}
-                  className="mt-4 md:mt-0 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
-                >
-                  🗑 Delete
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+                <div className="flex flex-wrap gap-4 text-xs text-gray-600 mt-2">
+                  <span>👁️ {song.views || 0}</span>
+                  <span>❤️ {song.likes || 0}</span>
+                  <span>🔥 {song.fires || 0}</span>
+                  <span>😢 {song.sads || 0}</span>
+                  <span>🎯 {song.bullseyes || 0}</span>
+                  <span>📦 {song.jams || 0} Jams</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );
