@@ -2,11 +2,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
+import ConnectStripeButton from '../components/ConnectStripeButton'; // ✅ Add this line
 
 const SettingsScreen = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
+  const [isArtist, setIsArtist] = useState(false); // ✅ Track artist role
   const [availableGenres, setAvailableGenres] = useState([]);
   const [selectedGenres, setSelectedGenres] = useState([]);
 
@@ -18,10 +20,26 @@ const SettingsScreen = () => {
         setUserEmail(data.user.email);
         fetchPreferences(data.user.id);
         fetchGenresFromSongs();
+        checkIfArtist(data.user.id); // ✅ Check artist status
       }
     };
     fetchUser();
   }, []);
+
+  const checkIfArtist = async (uid) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('is_artist')
+      .eq('id', uid)
+      .single();
+
+    if (error) {
+      console.error('❌ Error checking artist status:', error);
+      return;
+    }
+
+    setIsArtist(data?.is_artist === true);
+  };
 
   const fetchGenresFromSongs = async () => {
     const { data, error } = await supabase
@@ -134,7 +152,6 @@ const SettingsScreen = () => {
         </button>
       </div>
 
-      {/* 🔥 Genre Preference Section */}
       <hr className="my-6" />
 
       <div className="mb-6">
@@ -170,7 +187,17 @@ const SettingsScreen = () => {
 
       <hr className="my-6" />
 
-      <div className="text-sm text-gray-400">
+      {isArtist && (
+        <div className="my-6">
+          <h2 className="text-lg font-semibold mb-2">💸 Artist Payments</h2>
+          <p className="text-sm text-gray-400 mb-3">
+            Connect your Stripe account to receive gifts (Tickles) from fans.
+          </p>
+          <ConnectStripeButton userId={userId} email={userEmail} />
+        </div>
+      )}
+
+      <div className="text-sm text-gray-400 mt-6">
         Are you an artist? You can update your profile info <a href="/profile" className="underline">here</a>.<br />
         Want to share your profile? Just send people to: <br />
         <code className="text-xs break-all">{`${window.location.origin}/artist/YOUR_ID`}</code>
