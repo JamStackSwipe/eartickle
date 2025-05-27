@@ -76,12 +76,13 @@ const Header = () => {
               className="w-8 h-8 rounded-full border border-white cursor-pointer"
             />
 
-            {menuOpen && (
-              <div
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-                className="absolute right-0 mt-2 w-44 bg-white text-black rounded shadow-lg text-sm overflow-hidden"
-              >
+                {menuOpen && (
+  <div
+    onMouseEnter={handleMouseEnter}
+    onMouseLeave={handleMouseLeave}
+    className="absolute right-0 mt-2 w-44 bg-white text-black rounded shadow-lg text-sm overflow-hidden z-[9999]"
+  >
+        
                 <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100">👤 My Profile</Link>
                 <Link to="/settings" className="block px-4 py-2 hover:bg-gray-100">⚙️ Settings</Link>
                 <Link to="/privacy" className="block px-4 py-2 hover:bg-gray-100">🔒 Privacy</Link>
