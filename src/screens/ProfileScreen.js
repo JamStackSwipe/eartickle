@@ -1,180 +1,128 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
+import { useUser } from '../components/AuthProvider';
 
 const ProfileScreen = () => {
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState({});
+  const { user } = useUser();
   const [songs, setSongs] = useState([]);
-  const [avatarUrl, setAvatarUrl] = useState('');
-  const [bio, setBio] = useState('');
-  const [displayName, setDisplayName] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [availableGenres, setAvailableGenres] = useState([]);
 
   useEffect(() => {
-    const loadProfile = async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData?.user) return;
-
-      setUser(userData.user);
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userData.user.id)
-        .single();
-
-      if (profileData) {
-        setProfile(profileData);
-        const storedUrl = profileData.avatar_url;
-        setAvatarUrl(
-          storedUrl?.startsWith('http')
-            ? storedUrl
-            : `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${storedUrl}`
-        );
-        setBio(profileData.bio || '');
-        setDisplayName(profileData.display_name || '');
-      }
-
-      const { data: uploadedSongs } = await supabase
-        .from('songs')
-        .select('*')
-        .eq('user_id', userData.user.id)
-        .order('created_at', { ascending: false });
-
-      if (uploadedSongs) setSongs(uploadedSongs);
-      setLoading(false);
-    };
-
-    loadProfile();
-  }, []);
-
-  const handleAvatarUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file || !user) return;
-
-    const filePath = `avatars/${user.id}/avatar.png`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) {
-      console.error('❌ Upload failed:', uploadError.message);
-      return;
+    if (user) {
+      fetchSongs();
+      fetchGenresFromSongs();
     }
+  }, [user]);
 
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ avatar_url: filePath })
-      .eq('id', user.id);
+  const fetchSongs = async () => {
+    const { data, error } = await supabase
+      .from('songs')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
 
-    if (updateError) {
-      console.error('❌ Failed to update profile avatar path:', updateError.message);
-      return;
-    }
-
-    const publicUrl = `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${filePath}`;
-    setAvatarUrl(publicUrl);
+    if (!error) setSongs(data || []);
   };
 
-  const handleSave = async () => {
+  const fetchGenresFromSongs = async () => {
+    const { data, error } = await supabase
+      .from('songs')
+      .select('genre')
+      .not('genre', 'is', null);
+
+    if (!error) {
+      const uniqueGenres = [...new Set(data.map((s) => s.genre).filter(Boolean))].sort();
+      setAvailableGenres(uniqueGenres);
+    }
+  };
+
+  const updateSong = async (id, updates) => {
     const { error } = await supabase
-      .from('profiles')
-      .update({ display_name: displayName, bio })
-      .eq('id', user.id);
+      .from('songs')
+      .update(updates)
+      .eq('id', id);
 
     if (error) {
-      console.error('❌ Error saving profile:', error.message);
+      alert('Error updating song');
     } else {
-      alert('✅ Profile updated!');
+      fetchSongs(); // reload to reflect edits
     }
   };
 
-  const handleDelete = async (songId) => {
+  const handleDelete = async (id) => {
     const confirmed = window.confirm('Are you sure you want to delete this song?');
     if (!confirmed) return;
 
-    const { error } = await supabase.from('songs').delete().eq('id', songId);
-    if (error) {
-      console.error('❌ Failed to delete song:', error.message);
-    } else {
-      setSongs((prev) => prev.filter((song) => song.id !== songId));
-    }
+    await supabase.from('songs').delete().eq('id', id);
+    fetchSongs();
   };
 
-  if (loading) return <div className="p-6">Loading profile...</div>;
-
   return (
-    <div className="min-h-screen bg-white text-black p-6">
-      <div className="flex items-center space-x-6 mb-6">
-        <label htmlFor="avatar-upload" className="cursor-pointer">
-          <img
-            src={avatarUrl}
-            alt="avatar"
-            className="w-32 h-32 rounded-full object-cover border-4 border-white shadow hover:opacity-80 transition"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = '/default-avatar.png';
-            }}
-          />
-        </label>
-        <input
-          id="avatar-upload"
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleAvatarUpload}
-        />
-        <div>
-          <input
-            className="text-2xl font-bold border-b border-gray-300 focus:outline-none"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Display Name"
-          />
-          <textarea
-            className="mt-2 w-full text-gray-700 border border-gray-300 rounded p-2"
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            placeholder="Bio"
-          />
-          <button
-            onClick={handleSave}
-            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Save Profile
-          </button>
-        </div>
-      </div>
+    <div className="p-6 max-w-3xl mx-auto text-white">
+      <h1 className="text-3xl font-bold mb-6">Your Uploaded Songs</h1>
 
-      <h2 className="text-xl font-semibold mb-3">🎵 Your Uploaded Songs</h2>
       {songs.length === 0 ? (
-        <p className="text-gray-500">You haven’t uploaded any songs yet.</p>
+        <p className="text-gray-400">No songs uploaded yet.</p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="space-y-6">
           {songs.map((song) => (
-            <li
-              key={song.id}
-              className="bg-gray-100 p-4 rounded shadow flex items-center space-x-4"
-            >
-              <img
-                src={song.cover}
-                alt="cover"
-                className="w-16 h-16 object-cover rounded"
-              />
-              <div className="flex-grow">
-                <h3 className="text-lg font-semibold">{song.title}</h3>
-                <p className="text-sm text-gray-500">{song.artist}</p>
-                <div className="text-sm text-gray-600 mt-1">
-                  👁️ {song.views || 0} | 📥 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.loves || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
+            <li key={song.id} className="bg-gray-900 p-4 rounded shadow space-y-2">
+              <div className="flex flex-col md:flex-row items-start md:items-center md:space-x-4">
+                <img
+                  src={song.cover}
+                  alt="cover"
+                  className="w-20 h-20 object-cover rounded mb-2 md:mb-0"
+                />
+
+                <div className="flex-1 space-y-1">
+                  <label className="text-sm text-gray-400">🎵 Title</label>
+                  <input
+                    value={song.title}
+                    onChange={(e) => updateSong(song.id, { title: e.target.value })}
+                    className="bg-gray-800 text-white border border-gray-600 rounded px-2 py-1 w-full"
+                  />
+
+                  <label className="text-sm text-gray-400 mt-2 block">🏷️ Genre</label>
+                  <select
+                    value={song.genre}
+                    onChange={(e) => updateSong(song.id, { genre: e.target.value })}
+                    className="bg-gray-800 text-white border border-gray-600 rounded px-2 py-1 w-full"
+                  >
+                    <option value="">Select genre</option>
+                    {availableGenres.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+
+                  {song.stripe_account_id && (
+                    <>
+                      <label className="text-sm text-gray-400 mt-2 block">🎁 Gifting Enabled</label>
+                      <input
+                        type="checkbox"
+                        checked={!!song.stripe_account_id}
+                        onChange={(e) =>
+                          updateSong(song.id, {
+                            stripe_account_id: e.target.checked ? song.stripe_account_id : null,
+                          })
+                        }
+                        className="mr-2"
+                      />
+                      <span className="text-sm">
+                        {song.stripe_account_id ? 'Yes' : 'No'}
+                      </span>
+                    </>
+                  )}
                 </div>
+
+                <button
+                  onClick={() => handleDelete(song.id)}
+                  className="mt-4 md:mt-0 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
+                >
+                  🗑 Delete
+                </button>
               </div>
-              <button
-                onClick={() => handleDelete(song.id)}
-                className="text-red-600 hover:text-red-800 text-sm"
-              >
-                🗑️ Delete
-              </button>
             </li>
           ))}
         </ul>
