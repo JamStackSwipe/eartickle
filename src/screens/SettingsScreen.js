@@ -30,7 +30,7 @@ const SettingsScreen = () => {
       .from('profiles')
       .select('is_artist')
       .eq('id', uid)
-      .maybeSingle(); // Safe: prevents 400 on missing/multiple rows
+      .maybeSingle();
 
     if (error) {
       console.error('❌ Error checking artist status:', error.message || error);
@@ -91,7 +91,7 @@ const SettingsScreen = () => {
   };
 
   const handleDeleteAccount = async () => {
-    const confirmed = window.confirm('Are you sure you want to permanently delete your account? This cannot be undone.');
+    const confirmed = window.confirm('Are you sure you want to permanently delete your account?');
     if (!confirmed) return;
 
     const { error } = await supabase.rpc('delete_user');
@@ -153,6 +153,7 @@ const SettingsScreen = () => {
 
       <hr className="my-6" />
 
+      {/* 🎵 Dynamic Genre Preference Selector */}
       <div className="mb-6">
         <label className="block text-sm font-medium mb-1">🎵 Favorite Genres</label>
         {availableGenres.length === 0 ? (
@@ -196,28 +197,26 @@ const SettingsScreen = () => {
         </div>
       )}
 
-      {userId && (
-        <div className="mt-8">
-          <p className="text-sm text-gray-300 mb-1">Want to share your artist profile?</p>
-          <div className="flex items-center gap-2 bg-gray-800 text-white text-sm px-4 py-2 rounded-lg">
-            <input
-              readOnly
-              value={`${window.location.origin}/artist/${userId}`}
-              className="flex-1 bg-transparent outline-none text-white text-sm"
-              onClick={(e) => e.target.select()}
-            />
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/artist/${userId}`);
-                alert('✅ Profile link copied!');
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded"
-            >
-              Copy
-            </button>
-          </div>
+      <div className="mt-8">
+        <p className="text-sm text-gray-300 mb-1">Want to share your artist profile?</p>
+        <div className="flex items-center gap-2 bg-gray-800 text-white text-sm px-4 py-2 rounded-lg">
+          <input
+            readOnly
+            value={`${window.location.origin}/artist/${userId}`}
+            className="flex-1 bg-transparent outline-none text-white text-sm"
+            onClick={(e) => e.target.select()}
+          />
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(`${window.location.origin}/artist/${userId}`);
+              alert('✅ Profile link copied!');
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded"
+          >
+            Copy
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
 };
