@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
+import { genreOptions } from '../utils/genreList';
 
 const UploadScreen = () => {
   const [title, setTitle] = useState('');
@@ -37,13 +38,11 @@ const UploadScreen = () => {
     const imageFilename = `${timestamp}-${imageFile.name}`;
     const audioFilename = `${timestamp}-${audioFile.name}`;
 
-    const { error: imageError } = await supabase
-      .storage
+    const { error: imageError } = await supabase.storage
       .from('covers')
       .upload(imageFilename, imageFile);
 
-    const { error: audioError } = await supabase
-      .storage
+    const { error: audioError } = await supabase.storage
       .from('audio')
       .upload(audioFilename, audioFile);
 
@@ -59,7 +58,6 @@ const UploadScreen = () => {
     let stripeAccountId = null;
 
     if (enableGifting) {
-      // Get the artist's stripe_account_id
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('stripe_account_id')
@@ -92,7 +90,6 @@ const UploadScreen = () => {
       alert('Song metadata upload failed.');
       setIsUploading(false);
     } else {
-      // ✅ Promote user to artist
       await supabase
         .from('profiles')
         .update({ is_artist: true })
@@ -138,19 +135,11 @@ const UploadScreen = () => {
         className="w-full p-2 border rounded mb-4"
       >
         <option value="">Select a genre</option>
-        <option value="pop">Pop</option>
-        <option value="rock">Rock</option>
-        <option value="hiphop">Hip-Hop</option>
-        <option value="country">Country</option>
-        <option value="worship">Worship</option>
-        <option value="lofi">Lo-Fi</option>
-        <option value="electronic">Electronic</option>
-        <option value="comedy">Comedy</option>
-        <option value="ambient">Ambient</option>
-        <option value="indie">Indie</option>
-        <option value="instrumental">Instrumental</option>
-        <option value="spokenword">Spoken Word</option>
-        <option value="other">Other</option>
+        {genreOptions.map((g) => (
+          <option key={g} value={g}>
+            {g.charAt(0).toUpperCase() + g.slice(1)}
+          </option>
+        ))}
       </select>
 
       <label className="block mb-2 font-medium">Cover Image (PNG/JPG, Max 10MB)</label>
