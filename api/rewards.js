@@ -1,15 +1,20 @@
 // /api/rewards.js
+// Centralized helper for Stripe-related backend logic
+
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+// Always use Vercel or environment-secured .env key
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2022-11-15',
+});
 
-// ✅ Create a Connected Account for the Artist (Stripe Express)
-export async function createConnectedAccount({ user_id, email }) {
+// Helper to create a connected account onboarding link
+export const createConnectedAccount = async (userId, email) => {
   try {
     const account = await stripe.accounts.create({
       type: 'express',
       email,
-      metadata: { user_id },
+      metadata: { userId },
     });
 
     const accountLink = await stripe.accountLinks.create({
@@ -21,60 +26,49 @@ export async function createConnectedAccount({ user_id, email }) {
 
     return { url: accountLink.url, accountId: account.id };
   } catch (error) {
-    console.error('❌ Stripe connect error:', error);
+    console.error('Stripe Connect Error:', error);
     return { error: error.message };
   }
-}
+};
 
-// ✅ Create a Checkout Session for Sending a Tickle Gift
-export async function createTickleCheckout({
+// Helper to create a one-time checkout session for a "Tickle"
+export const createTickleCheckoutSession = async ({
   artistStripeId,
-  amountCents,
   songId,
   songTitle,
-  artistId,
   senderId,
-}) {
+  artistId,
+  amountCents = 500,
+}) => {
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      mode: 'payment',
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            unit_amount: amountCents,
-            product_data: {
-              name: `🎁 Tickle for: ${songTitle}`,
-              metadata: {
-                songId,
-                artistId,
-                senderId,
-              },
-            },
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          unit_amount: amountCents,
+          product_data: {
+            name: `🎁 Tickle for "${songTitle}"`,
+            metadata: { songId, artistId, senderId },
           },
-          quantity: 1,
         },
-      ],
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/rewards?success=1`,
+      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/rewards?canceled=1`,
+      metadata: { songId, artistId, senderId },
       payment_intent_data: {
-        application_fee_amount: Math.floor(amountCents * 0.10), // 10% platform fee
+        application_fee_amount: Math.floor(amountCents * 0.1), // EarTickle keeps 10%
         transfer_data: {
           destination: artistStripeId,
         },
-      },
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/rewards?success=1`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/rewards?canceled=1`,
-      metadata: {
-        songId,
-        songTitle,
-        artistId,
-        senderId,
       },
     });
 
     return { url: session.url };
   } catch (error) {
-    console.error('❌ Tickle checkout error:', error);
+    console.error('Stripe Checkout Error:', error);
     return { error: error.message };
   }
-}
+};
