@@ -7,6 +7,7 @@ const ProfileScreen = () => {
   const { user } = useUser();
   const [profile, setProfile] = useState({});
   const [songs, setSongs] = useState([]);
+  const [tickleStats, setTickleStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -35,8 +36,29 @@ const ProfileScreen = () => {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (!error) setSongs(data);
+    if (!error) {
+      setSongs(data);
+      fetchTickleStats(data.map((s) => s.id));
+    }
+
     setLoading(false);
+  };
+
+  const fetchTickleStats = async (songIds) => {
+    const { data, error } = await supabase
+      .from('tickles')
+      .select('song_id, emoji, count')
+      .in('song_id', songIds)
+      .group('song_id, emoji');
+
+    if (!error) {
+      const grouped = {};
+      data.forEach(({ song_id, emoji, count }) => {
+        if (!grouped[song_id]) grouped[song_id] = {};
+        grouped[song_id][emoji] = count;
+      });
+      setTickleStats(grouped);
+    }
   };
 
   const handleChange = (field, value) => {
@@ -150,10 +172,9 @@ const ProfileScreen = () => {
     }
   };
 
-const avatarSrc = profile.avatar_url?.trim()
-  ? `${process.env.REACT_APP_SUPABASE_PROJECT_URL}/storage/v1/object/public/avatars/${user.id}/avatar.png`
-  : user?.user_metadata?.avatar_url || '/default-avatar.png';
-
+  const avatarSrc = profile.avatar_url?.trim()
+    ? `${process.env.REACT_APP_SUPABASE_PROJECT_URL}/storage/v1/object/public/avatars/${user.id}/avatar.png`
+    : user?.user_metadata?.avatar_url || '/default-avatar.png';
 
   if (loading) return <div className="p-6">Loading profile...</div>;
 
@@ -298,6 +319,12 @@ const avatarSrc = profile.avatar_url?.trim()
                   <span>😢 {song.sads || 0}</span>
                   <span>🎯 {song.bullseyes || 0}</span>
                   <span>📦 {song.jams || 0} Jams</span>
+
+                  {/* New: live emoji gift counts */}
+                  {tickleStats[song.id] &&
+                    Object.entries(tickleStats[song.id]).map(([emoji, count]) => (
+                      <span key={emoji}>{emoji} {count}</span>
+                    ))}
                 </div>
               </li>
             ))}
