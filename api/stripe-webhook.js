@@ -1,46 +1,60 @@
 // /api/stripe-webhook.js
-const Stripe = require('stripe');
-const { buffer } = require('micro');
-const { createClient } = require('@supabase/supabase-js');
+import Stripe from 'stripe';
+import { buffer } from 'micro';
+import { supabase } from '../../supabase'; // Adjust if your supabase client is elsewhere
+import { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } from '../../rewards';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' });
 
-module.exports = async (req, res) => {
-  const sig = req.headers['stripe-signature'];
+export const config = {
+  api: {
+    bodyParser: false, // Required for Stripe webhook signatures
+  },
+};
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).end('Method Not Allowed');
+  }
 
   let event;
+  const sig = req.headers['stripe-signature'];
+
   try {
     const rawBody = await buffer(req);
-    event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    event = stripe.webhooks.constructEvent(rawBody, sig, STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error('⚠️ Webhook signature verification failed:', err.message);
+    console.error('❌ Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const user_id = session.metadata.user_id;
-    const amount = parseInt(session.metadata.amount);
+    const metadata = session.metadata || {};
 
-    // Mark purchase as complete
-    await supabase
-      .from('tickle_purchases')
-      .update({ completed: true })
-      .eq('stripe_session_id', session.id);
+    const { songId, artistId, senderId, emoji, amountCents } = metadata;
 
-    // Add tickles to user profile
-    await supabase.rpc('increment_tickles', { user_id, amount_to_add: amount });
+    if (!songId || !artistId || !senderId) {
+      console.warn('⚠️ Incomplete metadata on session.');
+      return res.status(400).send('Missing metadata.');
+    }
+
+    const { error } = await supabase.from('tickles').insert([
+      {
+        song_id: songId,
+        artist_id: artistId,
+        user_id: senderId,
+        emoji: emoji || '🎁',
+        amount: parseFloat((amountCents / 100).toFixed(2)),
+      },
+    ]);
+
+    if (error) {
+      console.error('❌ Failed to save Tickle in DB:', error.message);
+    } else {
+      console.log('✅ Tickle recorded for song:', songId);
+    }
   }
 
-  res.status(200).send('ok');
-};
-
-module.exports.config = {
-  api: {
-    bodyParser: false,
-  },
-};
+  res.status(200).json({ received: true });
+}
