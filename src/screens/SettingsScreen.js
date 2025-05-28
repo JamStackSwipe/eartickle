@@ -15,11 +15,12 @@ const SettingsScreen = () => {
     const fetchUser = async () => {
       const { data } = await supabase.auth.getUser();
       if (data?.user) {
-        setUserId(data.user.id);
-        setUserEmail(data.user.email);
-        fetchPreferences(data.user.id);
+        const { id, email } = data.user;
+        setUserId(id);
+        setUserEmail(email);
+        fetchPreferences(id);
         fetchGenresFromSongs();
-        checkIfArtist(data.user.id);
+        checkIfArtist(id);
       }
     };
     fetchUser();
@@ -32,11 +33,7 @@ const SettingsScreen = () => {
       .eq('id', uid)
       .maybeSingle();
 
-    if (error) {
-      console.error('❌ Error checking artist status:', error.message || error);
-      return;
-    }
-
+    if (error) console.error('❌ Error checking artist status:', error);
     setIsArtist(data?.is_artist === true);
   };
 
@@ -46,25 +43,19 @@ const SettingsScreen = () => {
       .select('genre')
       .not('genre', 'is', null);
 
-    if (error) {
-      console.error('❌ Error fetching genres:', error);
-      return;
-    }
-
-    const uniqueGenres = [...new Set(data.map((song) => song.genre).filter(Boolean))].sort();
-    setAvailableGenres(uniqueGenres);
+    if (error) return console.error('❌ Error fetching genres:', error);
+    const unique = [...new Set(data.map((s) => s.genre).filter(Boolean))].sort();
+    setAvailableGenres(unique);
   };
 
   const fetchPreferences = async (uid) => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('profiles')
       .select('preferred_genres')
       .eq('id', uid)
       .maybeSingle();
 
-    if (data?.preferred_genres) {
-      setSelectedGenres(data.preferred_genres);
-    }
+    if (data?.preferred_genres) setSelectedGenres(data.preferred_genres);
   };
 
   const toggleGenre = (genre) => {
@@ -80,9 +71,8 @@ const SettingsScreen = () => {
       .from('profiles')
       .update({ preferred_genres: selectedGenres })
       .eq('id', userId);
-
-    if (!error) alert('✅ Genres saved!');
-    else console.error('❌ Error saving genres:', error);
+    if (error) return console.error('❌ Error saving genres:', error);
+    alert('✅ Genres saved!');
   };
 
   const handleLogout = async () => {
@@ -95,26 +85,20 @@ const SettingsScreen = () => {
     if (!confirmed) return;
 
     const { error } = await supabase.rpc('delete_user');
-    if (error) {
-      alert('Error deleting account: ' + error.message);
-    } else {
-      await supabase.auth.signOut();
-      alert('Account deleted successfully.');
-      navigate('/');
-    }
+    if (error) return alert('Error deleting account: ' + error.message);
+
+    await supabase.auth.signOut();
+    alert('Account deleted successfully.');
+    navigate('/');
   };
 
   const handlePasswordReset = async () => {
-    if (userEmail) {
-      const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
-        redirectTo: `${window.location.origin}/profile`
-      });
-      if (error) {
-        alert('Error sending password reset: ' + error.message);
-      } else {
-        alert('Password reset link sent to your email.');
-      }
-    }
+    if (!userEmail) return;
+    const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
+      redirectTo: `${window.location.origin}/profile`
+    });
+    if (error) alert('Error sending password reset: ' + error.message);
+    else alert('Password reset link sent to your email.');
   };
 
   return (
@@ -129,31 +113,19 @@ const SettingsScreen = () => {
       )}
 
       <div className="space-y-4">
-        <button
-          onClick={handlePasswordReset}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full"
-        >
+        <button onClick={handlePasswordReset} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full">
           🔒 Reset Password
         </button>
-
-        <button
-          onClick={handleDeleteAccount}
-          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 w-full"
-        >
+        <button onClick={handleDeleteAccount} className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 w-full">
           ❌ Delete My Account
         </button>
-
-        <button
-          onClick={handleLogout}
-          className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-full"
-        >
+        <button onClick={handleLogout} className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 w-full">
           🚪 Logout
         </button>
       </div>
 
       <hr className="my-6" />
 
-      {/* 🎵 Dynamic Genre Preference Selector */}
       <div className="mb-6">
         <label className="block text-sm font-medium mb-1">🎵 Favorite Genres</label>
         {availableGenres.length === 0 ? (
