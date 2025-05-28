@@ -1,27 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
-import { useUser } from '../components/AuthProvider'; // ✅ fixed
+import { useUser } from '../components/AuthProvider';
 import {
   playTickle,
   playTickleSpecial
 } from '../utils/tickleSound';
 
 const RewardsScreen = () => {
-  const { user } = useUser(); // ✅ fixed
+  const { user } = useUser();
   const [rewards, setRewards] = useState([]);
+  const [tickles, setTickles] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (user) {
-      fetchTickles();
+      fetchTickleBalance();
+      fetchTickleHistory();
     }
   }, [user]);
 
-  const fetchTickles = async () => {
+  const fetchTickleBalance = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('available_tickles')
+      .eq('id', user.id)
+      .single();
+
+    if (!error && data) setTickles(data.available_tickles || 0);
+  };
+
+  const fetchTickleHistory = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('rewards')
+      .from('rewards') // Assuming this is the Tickles received table
       .select('*')
       .eq('receiver_id', user.id)
       .order('created_at', { ascending: false });
@@ -31,19 +43,35 @@ const RewardsScreen = () => {
       setError('Failed to load Tickles.');
     } else {
       setRewards(data);
-
-      // ✅ Play tickle sound based on latest amount
       if (data.length > 0) {
         const latest = data[0];
-        if (latest.amount >= 20) {
-          playTickleSpecial();
-        } else {
-          playTickle();
-        }
+        if (latest.amount >= 20) playTickleSpecial();
+        else playTickle();
       }
     }
 
     setLoading(false);
+  };
+
+  const handleBuy = async (amount) => {
+    const session = await supabase.auth.getSession();
+    const token = session.data.session.access_token;
+
+    const res = await fetch('/api/create-stripe-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        user_id: user.id,
+        amount,
+      }),
+    });
+
+    const data = await res.json();
+    if (data?.url) window.location.href = data.url;
+    else alert('⚠️ Failed to create Stripe session');
   };
 
   if (loading) {
@@ -54,13 +82,32 @@ const RewardsScreen = () => {
     return <p className="text-center mt-10">Please log in to view your Tickles.</p>;
   }
 
-  if (error) {
-    return <p className="text-center text-red-500 mt-10">{error}</p>;
-  }
-
   return (
     <div className="max-w-2xl mx-auto mt-10 p-4">
-      <h2 className="text-2xl font-bold mb-6 text-center">My Tickles</h2>
+      <h2 className="text-2xl font-bold mb-6 text-center">🎁 My Tickles & Balance</h2>
+
+      <div className="mb-6 text-center">
+        <p className="text-lg mb-2">Your current balance:</p>
+        <p className="text-3xl font-bold text-purple-700">{tickles} Tickles</p>
+
+        <div className="mt-4 space-x-3">
+          {[5, 10, 25].map((amount) => (
+            <button
+              key={amount}
+              onClick={() => handleBuy(amount)}
+              className="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded text-sm"
+            >
+              Buy {amount} for ${amount}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <hr className="my-6" />
+
+      <h3 className="text-xl font-semibold mb-4 text-center">Received Tickles</h3>
+
+      {error && <p className="text-center text-red-500">{error}</p>}
 
       {rewards.length === 0 ? (
         <p className="text-center text-gray-500">You haven’t been tickled yet 😢</p>
@@ -83,23 +130,18 @@ const RewardsScreen = () => {
             }
 
             return (
-              <li
-                key={reward.id}
-                className="p-4 bg-white rounded shadow border border-gray-200"
-              >
+              <li key={reward.id} className="p-4 bg-white rounded shadow border">
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-xl">{icon} {pts} Tickles</p>
                     <p className="text-sm text-gray-600">
                       From: {reward.sender_id?.slice(0, 8) || 'Unknown'}<br />
                       Song: {reward.song_id?.slice(0, 8) || '—'}<br />
-                      Timestamp: {new Date(reward.created_at).toLocaleString()}
+                      {new Date(reward.created_at).toLocaleString()}
                     </p>
+                    {pts >= 1 && <p className="mt-2 text-green-600 italic">{message}</p>}
                   </div>
                 </div>
-                {pts >= 1 && (
-                  <p className="mt-2 text-green-600 italic">{message}</p>
-                )}
               </li>
             );
           })}
