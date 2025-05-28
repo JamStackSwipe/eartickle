@@ -3,25 +3,31 @@ import React from 'react';
 
 const SendTickleButton = ({ songId, songTitle, artistId, artistStripeId, senderId }) => {
   const handleGift = async () => {
-    const res = await fetch('/api/create-tickle-checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        songId,
-        songTitle,
-        artistStripeId,
-        amountCents: 500, // $5 Tickle
-        artistId,
-        senderId,
-      }),
-    });
+    try {
+      const res = await fetch('/api/create-tickle-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          songId,
+          songTitle,
+          artistStripeId,
+          amountCents: 500, // $5 Tickle
+          artistId,
+          senderId,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      alert('Error: ' + data.error);
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error('Tickle Error:', data.error);
+        alert('Something went wrong: ' + (data.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('Tickle Fetch Failed:', err);
+      alert('Connection error while sending Tickle.');
     }
   };
 
