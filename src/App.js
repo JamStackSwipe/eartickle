@@ -1,7 +1,8 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom'; // ✅ No "as Router"
+import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import { AuthProvider } from './components/AuthProvider';
+
 import LoginScreen from './screens/LoginScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import UploadScreen from './screens/UploadScreen';
@@ -15,10 +16,6 @@ import ArtistProfileScreen from './screens/ArtistProfileScreen';
 import Privacy from './screens/Privacy';
 import Terms from './screens/Terms';
 import AboutScreen from './screens/AboutScreen';
-
-
-
-
 
 function App() {
   return (
@@ -40,8 +37,6 @@ function App() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/about" element={<AboutScreen />} />
-
-
       </Routes>
     </AuthProvider>
   );
