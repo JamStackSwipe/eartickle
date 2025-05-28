@@ -78,6 +78,32 @@ const ArtistProfileScreen = () => {
     setAdding(false);
   };
 
+  const handleSendTickle = async (emoji, songId) => {
+    if (!user) return alert('Please log in to send Tickles.');
+    const session = await supabase.auth.getSession();
+    const token = session.data.session.access_token;
+
+    const res = await fetch('/api/send-tickle', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        artist_id: id,
+        song_id: songId,
+        emoji
+      })
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert(`🎁 You sent a ${emoji} Tickle!`);
+    } else {
+      alert(`❌ ${data.error}`);
+    }
+  };
+
   if (loading) return <div className="p-6">Loading artist page...</div>;
   if (!artist) return <div className="p-6 text-center text-gray-500">Artist not found.</div>;
 
@@ -153,7 +179,21 @@ const ArtistProfileScreen = () => {
                   </div>
                 </div>
               </div>
+
               <audio controls src={song.audio} className="w-full my-2 rounded" />
+
+              <div className="flex gap-2 my-2">
+                {['🔥', '❤️', '🎯', '😢'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleSendTickle(emoji, song.id)}
+                    className="text-xl px-2 py-1 rounded hover:bg-gray-200"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+
               <button
                 onClick={() => handleAddToJamStack(song.id)}
                 className="mt-1 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
