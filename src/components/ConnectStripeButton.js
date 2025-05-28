@@ -1,3 +1,4 @@
+// src/components/ConnectStripeButton.js
 import React from 'react';
 
 const ConnectStripeButton = ({ userId, email }) => {
@@ -9,7 +10,7 @@ const ConnectStripeButton = ({ userId, email }) => {
         body: JSON.stringify({ user_id: userId, email }),
       });
 
-      const data = await res.json().catch(() => null); // Protect against invalid JSON
+      const data = await res.json().catch(() => null); // Avoid JSON parse errors
 
       if (!res.ok) {
         throw new Error(data?.error || 'Stripe connection failed. Try again later.');
@@ -21,6 +22,7 @@ const ConnectStripeButton = ({ userId, email }) => {
         alert('Stripe Error: Unexpected response from server.');
       }
     } catch (err) {
+      console.error('Stripe Connect Error:', err);
       alert(`Stripe Error: ${err.message}`);
     }
   };
