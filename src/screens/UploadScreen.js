@@ -187,7 +187,7 @@ const UploadScreen = () => {
           checked={enableGifting}
           onChange={(e) => setEnableGifting(e.target.checked)}
         />
-        <label className="text-sm font-medium text-gray-800">Enable Gifting for this song</label>
+        <label className="text-sm font-medium text-gray-800">Enable Rewards (Allows Users To Send Gifts For This Song)</label>
       </div>
 
       <button
