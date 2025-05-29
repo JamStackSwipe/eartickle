@@ -4,25 +4,21 @@ import React from 'react';
 const ConnectStripeButton = ({ userId, email }) => {
   const handleClick = async () => {
     try {
-      const res = await fetch('/api/create-connected-account', {
+      const response = await fetch('/api/create-connected-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: userId, email }),
       });
 
-      const data = await res.json().catch(() => null); // Avoid JSON parse errors
+      const result = await response.json().catch(() => ({})); // Avoid crash on bad JSON
 
-      if (!res.ok) {
-        throw new Error(data?.error || 'Stripe connection failed. Try again later.');
+      if (!response.ok || !result.url) {
+        throw new Error(result.error || 'Stripe onboarding failed.');
       }
 
-      if (data?.url) {
-        window.location.href = data.url; // Redirect to Stripe onboarding
-      } else {
-        alert('Stripe Error: Unexpected response from server.');
-      }
+      window.location.href = result.url;
     } catch (err) {
-      console.error('Stripe Connect Error:', err);
+      console.error('❌ Stripe Connect Error:', err);
       alert(`Stripe Error: ${err.message}`);
     }
   };
