@@ -1,16 +1,16 @@
 // src/components/ConnectStripeButton.js
 import React from 'react';
 
-const ConnectStripeButton = ({ userId, email }) => {
+const ConnectStripeButton = ({ userId }) => {
   const handleClick = async () => {
     try {
       const response = await fetch('/api/create-connected-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, email }),
+        body: JSON.stringify({ user_id: userId }), // ✅ only send user_id
       });
 
-      const result = await response.json().catch(() => ({})); // Avoid crash on bad JSON
+      const result = await response.json().catch(() => ({})); // Prevent crash on bad JSON
 
       if (!response.ok || !result.url) {
         throw new Error(result.error || 'Stripe onboarding failed.');
