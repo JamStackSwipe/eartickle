@@ -13,8 +13,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const accountLink = await createConnectedAccount({ userId: user_id, email });
-    return res.status(200).json({ url: accountLink });
+   const { url, error } = await createConnectedAccount(user_id, email);
+
+if (error) {
+  throw new Error(error);
+}
+
+return res.status(200).json({ url });
+
   } catch (err) {
     console.error('❌ Stripe connect error:', err.message);
     return res.status(500).json({ error: 'Stripe connection failed.' });
