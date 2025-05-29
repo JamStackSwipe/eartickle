@@ -3,7 +3,6 @@
 
 import Stripe from 'stripe';
 
-// Always use Vercel or environment-secured .env key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2022-11-15',
 });
@@ -49,7 +48,7 @@ export const createTickleCheckoutSession = async ({
           unit_amount: amountCents,
           product_data: {
             name: `🎁 Tickle for "${songTitle}"`,
-            metadata: { songId, artistId, senderId },
+            metadata: { songId, artistId, senderId }, // Optional: Stripe's internal log
           },
         },
         quantity: 1,
@@ -57,7 +56,15 @@ export const createTickleCheckoutSession = async ({
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/rewards?success=1`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/rewards?canceled=1`,
-      metadata: { songId, artistId, senderId },
+      
+      // ✅ This metadata is what your webhook uses
+      metadata: {
+        songId,
+        artistId,
+        senderId,
+        amountCents, // ✅ Add this so webhook can use it
+      },
+
       payment_intent_data: {
         application_fee_amount: Math.floor(amountCents * 0.1), // EarTickle keeps 10%
         transfer_data: {
