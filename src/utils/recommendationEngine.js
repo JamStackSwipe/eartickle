@@ -1,29 +1,50 @@
-// utils/stripe.js
-import Stripe from 'stripe';
+// src/utils/recommendationEngine.js
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2022-11-15',
-});
+import { supabase } from '../supabase';
 
-// Create Express account + onboarding URL
-export const createConnectedAccount = async (userId, email) => {
-  try {
-    const account = await stripe.accounts.create({
-      type: 'express',
-      email,
-      metadata: { userId },
-    });
+export async function getRecommendedSongs(userId) {
+  // Step 1: Pull song list
+  const { data: songs, error: songError } = await supabase
+    .from('songs')
+    .select('*')
+    .neq('audio', null);
 
-    const accountLink = await stripe.accountLinks.create({
-      account: account.id,
-      refresh_url: `${process.env.NEXT_PUBLIC_SITE_URL}/settings`,
-      return_url: `${process.env.NEXT_PUBLIC_SITE_URL}/settings`,
-      type: 'account_onboarding',
-    });
+  if (songError || !songs) return [];
 
-    return { url: accountLink.url, accountId: account.id };
-  } catch (error) {
-    console.error('Stripe Connect Error:', error);
-    return { error: error.message };
-  }
-};
+  // Step 2: Pull user data
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('preferred_genres')
+    .eq('id', userId)
+    .maybeSingle();
+
+  // Step 3: Pull user interactions (JamStack adds, Tickles, skips)
+  const { data: jams } = await supabase
+    .from('jamstacksongs')
+    .select('song_id')
+    .eq('user_id', userId);
+
+  const { data: tickles } = await supabase
+    .from('tickles')
+    .select('song_id')
+    .eq('sender_id', userId);
+
+  // Step 4: Score each song
+  const songScores = songs.map((song) => {
+    let score = 0;
+
+    // JamStack add
+    if (jams?.some((j) => j.song_id === song.id)) score += 10;
+
+    // Gifting bonus
+    if (tickles?.some((t) => t.song_id === song.id)) score += 25;
+
+    // Genre match (soft bias)
+    if (profile?.preferred_genres?.includes(song.genre)) score += 5;
+
+    return { ...song, score };
+  });
+
+  // Step 5: Sort by score (desc)
+  return songScores.sort((a, b) => b.score - a.score);
+}
