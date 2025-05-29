@@ -1,33 +1,45 @@
-// /api/stripe-webhook.js
+// api/stripe-webhook.js
 import Stripe from 'stripe';
 import { buffer } from 'micro';
-import { supabase } from '../../supabase'; // Adjust if your supabase client is elsewhere
-import { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } from '../../rewards';
+import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2023-10-16',
+});
 
 export const config = {
   api: {
-    bodyParser: false, // Required for Stripe webhook signatures
+    bodyParser: false, // required to handle raw body for Stripe
   },
 };
 
+// ✅ Supabase init (do not import shared client – use private key)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY // must be the service key with full access
+);
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).end('Method Not Allowed');
+    return res.status(405).send('Method Not Allowed');
   }
 
-  let event;
   const sig = req.headers['stripe-signature'];
+  let event;
 
   try {
     const rawBody = await buffer(req);
-    event = stripe.webhooks.constructEvent(rawBody, sig, STRIPE_WEBHOOK_SECRET);
+    event = stripe.webhooks.constructEvent(
+      rawBody,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
   } catch (err) {
     console.error('❌ Webhook signature verification failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  // ✅ Handle gift confirmation
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const metadata = session.metadata || {};
@@ -35,8 +47,8 @@ export default async function handler(req, res) {
     const { songId, artistId, senderId, emoji, amountCents } = metadata;
 
     if (!songId || !artistId || !senderId) {
-      console.warn('⚠️ Incomplete metadata on session.');
-      return res.status(400).send('Missing metadata.');
+      console.warn('⚠️ Missing metadata in Stripe session.');
+      return res.status(400).send('Missing metadata');
     }
 
     const { error } = await supabase.from('tickles').insert([
@@ -50,9 +62,9 @@ export default async function handler(req, res) {
     ]);
 
     if (error) {
-      console.error('❌ Failed to save Tickle in DB:', error.message);
+      console.error('❌ Failed to insert Tickle into DB:', error.message);
     } else {
-      console.log('✅ Tickle recorded for song:', songId);
+      console.log(`✅ Tickle recorded: ${emoji} on song ${songId}`);
     }
   }
 
