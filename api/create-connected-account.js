@@ -1,6 +1,4 @@
-// /api/create-connected-account.js
-
-import { createConnectedAccount } from '../../utils/stripe'; // ✅ updated path
+import { createConnectedAccount } from '../utils/stripe'; // ✅ correct relative path
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
