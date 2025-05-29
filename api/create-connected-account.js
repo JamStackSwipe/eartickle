@@ -1,6 +1,5 @@
 // /api/create-connected-account.js
 
-// pages/api/create-connected-account.js
 import { createConnectedAccount } from '../../utils/stripe'; // ✅ updated path
 
 export default async function handler(req, res) {
