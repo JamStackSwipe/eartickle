@@ -1,3 +1,5 @@
+// /api/create-connected-account.js
+
 import { createConnectedAccount } from '../../rewards';
 
 export default async function handler(req, res) {
@@ -12,15 +14,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { url, error } = await createConnectedAccount({ userId: user_id, email });
+    const result = await createConnectedAccount(user_id, email);
 
-    if (error) {
-      throw new Error(error);
+    if (result.error) {
+      console.error('❌ Stripe account creation error:', result.error);
+      return res.status(500).json({ error: result.error });
     }
 
-    return res.status(200).json({ url });
+    return res.status(200).json({ url: result.url });
   } catch (err) {
     console.error('❌ Stripe connect error:', err.message);
-    return res.status(500).json({ error: 'Stripe connection failed.' });
+    return res.status(500).json({ error: 'Stripe connection failed. Try again later.' });
   }
 }
