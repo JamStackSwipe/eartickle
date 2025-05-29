@@ -1,22 +1,21 @@
-// api/stripe-webhook.js
+// /api/stripe-webhook.js
 import Stripe from 'stripe';
 import { buffer } from 'micro';
 import { createClient } from '@supabase/supabase-js';
+
+export const config = {
+  api: {
+    bodyParser: false, // Required for raw Stripe webhook payload
+  },
+};
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2023-10-16',
 });
 
-export const config = {
-  api: {
-    bodyParser: false, // required to handle raw body for Stripe
-  },
-};
-
-// ✅ Supabase init (do not import shared client – use private key)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // must be the service key with full access
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 export default async function handler(req, res) {
@@ -24,8 +23,8 @@ export default async function handler(req, res) {
     return res.status(405).send('Method Not Allowed');
   }
 
-  const sig = req.headers['stripe-signature'];
   let event;
+  const sig = req.headers['stripe-signature'];
 
   try {
     const rawBody = await buffer(req);
@@ -35,19 +34,17 @@ export default async function handler(req, res) {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error('❌ Webhook signature verification failed:', err.message);
+    console.error('❌ Stripe webhook signature failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  // ✅ Handle gift confirmation
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const metadata = session.metadata || {};
-
     const { songId, artistId, senderId, emoji, amountCents } = metadata;
 
     if (!songId || !artistId || !senderId) {
-      console.warn('⚠️ Missing metadata in Stripe session.');
+      console.warn('⚠️ Missing Stripe metadata:', metadata);
       return res.status(400).send('Missing metadata');
     }
 
@@ -62,11 +59,11 @@ export default async function handler(req, res) {
     ]);
 
     if (error) {
-      console.error('❌ Failed to insert Tickle into DB:', error.message);
+      console.error('❌ Failed to log Tickle in DB:', error.message);
     } else {
-      console.log(`✅ Tickle recorded: ${emoji} on song ${songId}`);
+      console.log(`✅ Tickle added: ${emoji} to song ${songId} by ${senderId}`);
     }
   }
 
-  res.status(200).json({ received: true });
+  return res.status(200).json({ received: true });
 }
