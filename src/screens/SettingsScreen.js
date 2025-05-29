@@ -10,6 +10,7 @@ const SettingsScreen = () => {
   const [isArtist, setIsArtist] = useState(false);
   const [availableGenres, setAvailableGenres] = useState([]);
   const [selectedGenres, setSelectedGenres] = useState([]);
+  const [sentTickles, setSentTickles] = useState([]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -21,6 +22,7 @@ const SettingsScreen = () => {
         fetchPreferences(id);
         fetchGenresFromSongs();
         checkIfArtist(id);
+        fetchSentTickles(id); // ✅ added this
       }
     };
     fetchUser();
@@ -56,6 +58,19 @@ const SettingsScreen = () => {
       .maybeSingle();
 
     if (data?.preferred_genres) setSelectedGenres(data.preferred_genres);
+  };
+
+  const fetchSentTickles = async (uid) => {
+    const { data, error } = await supabase
+      .from('tickles')
+      .select('song_id')
+      .eq('user_id', uid); // ✅ fixed key from sender_id → user_id
+
+    if (error) {
+      console.error('❌ Error fetching sent tickles:', error);
+    } else {
+      setSentTickles(data || []);
+    }
   };
 
   const toggleGenre = (genre) => {
