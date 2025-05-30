@@ -7,6 +7,7 @@ const MyJamsScreen = () => {
   const { user } = useUser();
   const [jams, setJams] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [reactionsMap, setReactionsMap] = useState({});
 
   useEffect(() => {
     fetchMyJams();
@@ -17,49 +18,51 @@ const MyJamsScreen = () => {
 
     const { data, error } = await supabase
       .from('jamstacksongs')
-      .select('*')
+      .select(`
+        id,
+        song_id,
+        songs (
+          id,
+          title,
+          artist,
+          cover,
+          audio,
+          stripe_account_id
+        )
+      `)
       .eq('user_id', user.id)
       .order('id', { ascending: false })
       .limit(50);
 
     if (error) {
       console.error('❌ Error fetching JamStack songs:', error);
-      setLoading(false);
+    } else {
+      setJams(data);
+      fetchReactions(data.map(jam => jam.song_id));
+    }
+
+    setLoading(false);
+  };
+
+  const fetchReactions = async (songIds) => {
+    const { data, error } = await supabase
+      .from('reactions')
+      .select('song_id, emoji, count:emoji')
+      .in('song_id', songIds);
+
+    if (error) {
+      console.error('❌ Error fetching reactions:', error);
       return;
     }
 
-    const enriched = await Promise.all(
-      data.map(async (jam) => {
-        const { data: song } = await supabase
-          .from('songs')
-          .select('*')
-          .eq('id', jam.song_id)
-          .maybeSingle();
+    // Tally reactions
+    const map = {};
+    data.forEach(({ song_id, emoji }) => {
+      if (!map[song_id]) map[song_id] = { '❤️': 0, '😢': 0, '🎯': 0, '👁': 0 };
+      map[song_id][emoji] = (map[song_id][emoji] || 0) + 1;
+    });
 
-        if (!song) return null;
-
-        const { data: tickles } = await supabase
-          .from('tickles')
-          .select('emoji')
-          .eq('song_id', song.id);
-
-        const emojiCounts = { '❤️': 0, '🔥': 0, '😢': 0, '🎯': 0 };
-        tickles?.forEach((t) => {
-          if (emojiCounts[t.emoji] !== undefined) {
-            emojiCounts[t.emoji]++;
-          }
-        });
-
-        return {
-          ...jam,
-          song,
-          reactions: emojiCounts,
-        };
-      })
-    );
-
-    setJams(enriched.filter(Boolean));
-    setLoading(false);
+    setReactionsMap(map);
   };
 
   const handleDelete = async (songId) => {
@@ -91,8 +94,9 @@ const MyJamsScreen = () => {
       ) : (
         <ul className="space-y-4">
           {jams.map((jam) => {
-            const song = jam.song;
-            const reactions = jam.reactions || {};
+            const song = jam.songs;
+            const stats = reactionsMap[song.id] || { '❤️': 0, '😢': 0, '🎯': 0, '👁': 0 };
+
             return (
               <li
                 key={jam.id}
@@ -124,19 +128,19 @@ const MyJamsScreen = () => {
                   </button>
                 </div>
 
+                {/* Real reaction stats */}
                 <div className="text-xs text-gray-400 mt-1 flex gap-3">
-                  ❤️ {reactions['❤️']} · 🔥 {reactions['🔥']} · 😢 {reactions['😢']} · 🎯 {reactions['🎯']}
+                  ❤️ {stats['❤️']} · 😢 {stats['😢']} · 🎯 {stats['🎯']} · 👁 {stats['👁']}
                 </div>
 
-                <div className="mt-2">
-                  <SendTickleButton
-                    songId={song.id}
-                    songTitle={song.title}
-                    artistId={user.id}
-                    artistStripeId={song.stripe_account_id}
-                    senderId={user.id}
-                  />
-                </div>
+                {/* Stripe Tickle Button */}
+                <SendTickleButton
+                  songId={song.id}
+                  songTitle={song.title}
+                  artistId={user.id}
+                  artistStripeId={song.stripe_account_id}
+                  senderId={user.id}
+                />
               </li>
             );
           })}
