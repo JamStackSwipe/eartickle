@@ -41,7 +41,6 @@ export default async function handler(req, res) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
 
-    // ✅ Step 1: Pull metadata
     const metadata = session.metadata || {};
     const { user_id, amount } = metadata;
     const parsedAmount = parseInt(amount, 10);
@@ -52,7 +51,7 @@ export default async function handler(req, res) {
       return res.status(400).send('Invalid metadata');
     }
 
-    // ✅ Step 2: Mark the tickle_purchases row as completed
+    // ✅ Step 1: Mark the tickle_purchases row as completed
     const { error: updateError } = await supabase
       .from('tickle_purchases')
       .update({ completed: true })
@@ -63,18 +62,7 @@ export default async function handler(req, res) {
       return res.status(500).send('Purchase DB update failed');
     }
 
-    // ✅ Step 3: Increment available_tickles via Supabase RPC
-    const { error: rpcError } = await supabase.rpc('increment_tickles_balance', {
-      uid: user_id,
-      tickle_count: parsedAmount,
-    });
-
-    if (rpcError) {
-      console.error('❌ Failed to increment available_tickles:', rpcError.message);
-      return res.status(500).send('Tickle balance update failed');
-    }
-
-    console.log(`✅ Successfully added ${parsedAmount} tickles for ${user_id} from session ${stripeSessionId}`);
+    console.log(`✅ Marked tickle_purchases complete for ${user_id}, ${parsedAmount} Tickles`);
   }
 
   return res.status(200).json({ received: true });
