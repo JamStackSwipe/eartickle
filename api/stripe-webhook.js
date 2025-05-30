@@ -40,38 +40,41 @@ export default async function handler(req, res) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
+
+    // ✅ Step 1: Pull metadata
     const metadata = session.metadata || {};
     const { user_id, amount } = metadata;
     const parsedAmount = parseInt(amount, 10);
+    const stripeSessionId = session.id;
 
     if (!user_id || isNaN(parsedAmount)) {
-      console.warn('⚠️ Invalid metadata:', metadata);
+      console.warn('⚠️ Invalid metadata in session:', metadata);
       return res.status(400).send('Invalid metadata');
-    }
-
-    // ✅ Step 1: Add to available_tickles
-    const { error: balanceError } = await supabase.rpc('increment_tickles_balance', {
-      uid: user_id,
-      tickle_count: parsedAmount,
-    });
-
-    if (balanceError) {
-      console.error('❌ Balance update failed:', balanceError.message);
-      return res.status(500).send('Balance update failed');
     }
 
     // ✅ Step 2: Mark the tickle_purchases row as completed
     const { error: updateError } = await supabase
       .from('tickle_purchases')
       .update({ completed: true })
-      .eq('stripe_session_id', session.id);
+      .eq('stripe_session_id', stripeSessionId);
 
     if (updateError) {
-      console.error('❌ Failed to mark purchase completed:', updateError.message);
-      return res.status(500).send('Purchase update failed');
+      console.error('❌ Failed to update tickle_purchases:', updateError.message);
+      return res.status(500).send('Purchase DB update failed');
     }
 
-    console.log(`✅ ${parsedAmount} Tickles added + purchase marked complete for ${user_id}`);
+    // ✅ Step 3: Increment available_tickles via Supabase RPC
+    const { error: rpcError } = await supabase.rpc('increment_tickles_balance', {
+      uid: user_id,
+      tickle_count: parsedAmount,
+    });
+
+    if (rpcError) {
+      console.error('❌ Failed to increment available_tickles:', rpcError.message);
+      return res.status(500).send('Tickle balance update failed');
+    }
+
+    console.log(`✅ Successfully added ${parsedAmount} tickles for ${user_id} from session ${stripeSessionId}`);
   }
 
   return res.status(200).json({ received: true });
