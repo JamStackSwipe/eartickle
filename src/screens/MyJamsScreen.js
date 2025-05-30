@@ -17,28 +17,48 @@ const MyJamsScreen = () => {
 
     const { data, error } = await supabase
       .from('jamstacksongs')
-      .select(`
-        id,
-        song_id,
-        songs (
-          id,
-          title,
-          artist,
-          cover,
-          audio,
-          stripe_account_id
-        )
-      `)
+      .select('*')
       .eq('user_id', user.id)
       .order('id', { ascending: false })
       .limit(50);
 
     if (error) {
       console.error('❌ Error fetching JamStack songs:', error);
-    } else {
-      setJams(data);
+      setLoading(false);
+      return;
     }
 
+    const enriched = await Promise.all(
+      data.map(async (jam) => {
+        const { data: song } = await supabase
+          .from('songs')
+          .select('*')
+          .eq('id', jam.song_id)
+          .maybeSingle();
+
+        if (!song) return null;
+
+        const { data: tickles } = await supabase
+          .from('tickles')
+          .select('emoji')
+          .eq('song_id', song.id);
+
+        const emojiCounts = { '❤️': 0, '🔥': 0, '😢': 0, '🎯': 0 };
+        tickles?.forEach((t) => {
+          if (emojiCounts[t.emoji] !== undefined) {
+            emojiCounts[t.emoji]++;
+          }
+        });
+
+        return {
+          ...jam,
+          song,
+          reactions: emojiCounts,
+        };
+      })
+    );
+
+    setJams(enriched.filter(Boolean));
     setLoading(false);
   };
 
@@ -71,7 +91,8 @@ const MyJamsScreen = () => {
       ) : (
         <ul className="space-y-4">
           {jams.map((jam) => {
-            const song = jam.songs;
+            const song = jam.song;
+            const reactions = jam.reactions || {};
             return (
               <li
                 key={jam.id}
@@ -103,19 +124,19 @@ const MyJamsScreen = () => {
                   </button>
                 </div>
 
-                {/* Placeholder stats – can be linked to real data later */}
                 <div className="text-xs text-gray-400 mt-1 flex gap-3">
-                  ❤️ 23 · 😢 5 · 🎯 9 · 👁 102
+                  ❤️ {reactions['❤️']} · 🔥 {reactions['🔥']} · 😢 {reactions['😢']} · 🎯 {reactions['🎯']}
                 </div>
 
-                {/* Stripe Tickle Button */}
-                <SendTickleButton
-                  songId={song.id}
-                  songTitle={song.title}
-                  artistId={user.id} // for now, pass current user; adjust if needed
-                  artistStripeId={song.stripe_account_id}
-                  senderId={user.id}
-                />
+                <div className="mt-2">
+                  <SendTickleButton
+                    songId={song.id}
+                    songTitle={song.title}
+                    artistId={user.id}
+                    artistStripeId={song.stripe_account_id}
+                    senderId={user.id}
+                  />
+                </div>
               </li>
             );
           })}
