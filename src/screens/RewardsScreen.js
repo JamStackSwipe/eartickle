@@ -9,33 +9,34 @@ import {
 const RewardsScreen = () => {
   const { user } = useUser();
   const [rewards, setRewards] = useState([]);
-  const [tickles, setTickles] = useState(0);
+  const [tickles, setTickles] = useState(null); // set to null for clean UI
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
+      console.log('🔁 Fetching balance for user:', user.id);
       fetchTickleBalance();
       fetchTickleHistory();
     }
   }, [user]);
 
   const fetchTickleBalance = async () => {
-  const { data, error } = await supabase
-    .rpc('get_available_tickles', { uid: user.id });
+    const { data, error } = await supabase
+      .rpc('get_available_tickles', { uid: user.id });
 
-  if (!error && typeof data === 'number') {
-    setTickles(data);
-  } else {
-    console.error('Error fetching tickle balance:', error);
-  }
-};
-
+    if (!error && typeof data === 'number') {
+      console.log('✅ Tickle balance:', data);
+      setTickles(data);
+    } else {
+      console.error('Error fetching tickle balance:', error);
+    }
+  };
 
   const fetchTickleHistory = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from('rewards') // Assuming this is the Tickles received table
+      .from('rewards') // tickles received
       .select('*')
       .eq('receiver_id', user.id)
       .order('created_at', { ascending: false });
@@ -90,7 +91,9 @@ const RewardsScreen = () => {
 
       <div className="mb-6 text-center">
         <p className="text-lg mb-2">Your current balance:</p>
-        <p className="text-3xl font-bold text-purple-700">{tickles} Tickles</p>
+        <p className="text-3xl font-bold text-purple-700">
+          {tickles === null ? 'Loading...' : `${tickles} Tickles`}
+        </p>
 
         <div className="mt-4 space-x-3">
           {[5, 10, 25].map((amount) => (
