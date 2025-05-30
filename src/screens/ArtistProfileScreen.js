@@ -16,25 +16,17 @@ const ArtistProfileScreen = () => {
     const fetchArtist = async () => {
       if (!id) return;
 
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', id)
         .maybeSingle();
 
-      if (profileError) {
-        console.error('❌ Error fetching artist profile:', profileError.message);
-      }
-
-      const { data: uploads, error: songError } = await supabase
+      const { data: uploads } = await supabase
         .from('songs')
         .select('*')
         .eq('user_id', id)
         .order('created_at', { ascending: false });
-
-      if (songError) {
-        console.error('❌ Error fetching artist songs:', songError.message);
-      }
 
       if (profile) setArtist(profile);
       if (uploads) setSongs(uploads);
@@ -121,7 +113,6 @@ const ArtistProfileScreen = () => {
             alt="artist avatar"
             className="w-32 h-32 rounded-full object-cover border-4 border-white shadow"
             onError={(e) => {
-              console.warn('🖼️ Avatar failed to load:', avatarSrc);
               e.target.onerror = null;
               e.target.src = '/default-avatar.png';
             }}
@@ -130,7 +121,6 @@ const ArtistProfileScreen = () => {
         <div>
           <h1 className="text-3xl font-bold">{artist.display_name || 'Unnamed Artist'}</h1>
           <p className="text-gray-600">{artist.bio || 'No bio available.'}</p>
-
           {(artist.website || artist.spotify || artist.youtube || artist.instagram ||
             artist.soundcloud || artist.tiktok || artist.bandlab) && (
             <div className="mt-4">
@@ -146,7 +136,6 @@ const ArtistProfileScreen = () => {
               </div>
             </div>
           )}
-
           {artist.booking_email && (
             <a
               href={`mailto:${artist.booking_email}?subject=Gig Inquiry from EarTickle`}
@@ -166,11 +155,7 @@ const ArtistProfileScreen = () => {
           {songs.map((song) => (
             <li key={song.id} className="bg-gray-100 p-4 rounded shadow">
               <div className="flex items-center space-x-4 mb-2">
-                <img
-                  src={song.cover}
-                  alt="cover"
-                  className="w-16 h-16 object-cover rounded"
-                />
+                <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
                 <div>
                   <h3 className="text-lg font-semibold">{song.title}</h3>
                   <p className="text-sm text-gray-500">{song.artist}</p>
