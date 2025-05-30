@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@supabase/supabase-js": "^2.39.6",
-    "micro": "^9.3.4",                     // ✅ Add this line
+    "micro": "^9.3.4",                  
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.1",
