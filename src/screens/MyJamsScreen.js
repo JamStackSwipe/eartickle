@@ -7,7 +7,6 @@ const MyJamsScreen = () => {
   const { user } = useUser();
   const [jams, setJams] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [reactionsMap, setReactionsMap] = useState({});
 
   useEffect(() => {
     fetchMyJams();
@@ -38,31 +37,9 @@ const MyJamsScreen = () => {
       console.error('❌ Error fetching JamStack songs:', error);
     } else {
       setJams(data);
-      fetchReactions(data.map(jam => jam.song_id));
     }
 
     setLoading(false);
-  };
-
-  const fetchReactions = async (songIds) => {
-    const { data, error } = await supabase
-      .from('reactions')
-      .select('song_id, emoji, count:emoji')
-      .in('song_id', songIds);
-
-    if (error) {
-      console.error('❌ Error fetching reactions:', error);
-      return;
-    }
-
-    // Tally reactions
-    const map = {};
-    data.forEach(({ song_id, emoji }) => {
-      if (!map[song_id]) map[song_id] = { '❤️': 0, '😢': 0, '🎯': 0, '👁': 0 };
-      map[song_id][emoji] = (map[song_id][emoji] || 0) + 1;
-    });
-
-    setReactionsMap(map);
   };
 
   const handleDelete = async (songId) => {
@@ -95,8 +72,6 @@ const MyJamsScreen = () => {
         <ul className="space-y-4">
           {jams.map((jam) => {
             const song = jam.songs;
-            const stats = reactionsMap[song.id] || { '❤️': 0, '😢': 0, '🎯': 0, '👁': 0 };
-
             return (
               <li
                 key={jam.id}
@@ -128,16 +103,16 @@ const MyJamsScreen = () => {
                   </button>
                 </div>
 
-                {/* Real reaction stats */}
+                {/* Placeholder stats – can be linked to real data later */}
                 <div className="text-xs text-gray-400 mt-1 flex gap-3">
-                  ❤️ {stats['❤️']} · 😢 {stats['😢']} · 🎯 {stats['🎯']} · 👁 {stats['👁']}
+                  ❤️ 23 · 😢 5 · 🎯 9 · 👁 102
                 </div>
 
                 {/* Stripe Tickle Button */}
                 <SendTickleButton
                   songId={song.id}
                   songTitle={song.title}
-                  artistId={user.id}
+                  artistId={user.id} // for now, pass current user; adjust if needed
                   artistStripeId={song.stripe_account_id}
                   senderId={user.id}
                 />
