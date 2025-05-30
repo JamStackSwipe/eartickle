@@ -14,8 +14,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_URL,                     // ✅ your live var
+  process.env.SUPABASE_SERVICE_ROLE_KEY         // ✅ make sure this exists and is correct
 );
 
 export default async function handler(req, res) {
@@ -40,29 +40,40 @@ export default async function handler(req, res) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-
     const metadata = session.metadata || {};
     const { user_id, amount } = metadata;
     const parsedAmount = parseInt(amount, 10);
-    const stripeSessionId = session.id;
+
+    console.log('✅ Webhook triggered with metadata:', metadata);
 
     if (!user_id || isNaN(parsedAmount)) {
-      console.warn('⚠️ Invalid metadata in session:', metadata);
+      console.warn('⚠️ Invalid metadata:', metadata);
       return res.status(400).send('Invalid metadata');
     }
 
-    // ✅ Step 1: Mark the tickle_purchases row as completed
+    // ✅ Step 1: Add to available_tickles
+    const { error: balanceError } = await supabase.rpc('increment_tickles_balance', {
+      uid: user_id,
+      tickle_count: parsedAmount,
+    });
+
+    if (balanceError) {
+      console.error('❌ Balance RPC failed:', balanceError.message);
+      return res.status(500).send('Balance update failed');
+    }
+
+    // ✅ Step 2: Mark tickle_purchases row as completed
     const { error: updateError } = await supabase
       .from('tickle_purchases')
       .update({ completed: true })
-      .eq('stripe_session_id', stripeSessionId);
+      .eq('stripe_session_id', session.id);
 
     if (updateError) {
-      console.error('❌ Failed to update tickle_purchases:', updateError.message);
-      return res.status(500).send('Purchase DB update failed');
+      console.error('❌ Update tickle_purchases failed:', updateError.message);
+      return res.status(500).send('Purchase update failed');
     }
 
-    console.log(`✅ Marked tickle_purchases complete for ${user_id}, ${parsedAmount} Tickles`);
+    console.log(`✅ ${parsedAmount} Tickles added + purchase marked complete for ${user_id}`);
   }
 
   return res.status(200).json({ received: true });
