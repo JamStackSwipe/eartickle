@@ -1,170 +1,119 @@
-// ✅ ArtistProfileScreen.js (fixed emoji logic + spacing)
-
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
-import { v4 as uuidv4 } from 'uuid';
-import { useUser } from '../components/AuthProvider';
+import SendTickleButton from '../components/SendTickleButton';
 
 const ArtistProfileScreen = () => {
-  const { id } = useParams();
-  const { user } = useUser();
+  const { id } = useParams(); // artist id
   const [artist, setArtist] = useState(null);
   const [songs, setSongs] = useState([]);
+  const [reactionsMap, setReactionsMap] = useState({});
   const [loading, setLoading] = useState(true);
-  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    const fetchArtist = async () => {
-      if (!id) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-
-      const { data: uploads } = await supabase
-        .from('songs')
-        .select('*')
-        .eq('user_id', id)
-        .order('created_at', { ascending: false });
-
-      const enriched = await Promise.all(
-        (uploads || []).map(async (song) => {
-          const { data: tickles } = await supabase
-            .from('tickles')
-            .select('id', { count: 'exact', head: true })
-            .eq('song_id', song.id)
-            .eq('receiver_id', id);
-
-          return {
-            ...song,
-            tickle_count: tickles?.length || 0,
-          };
-        })
-      );
-
-      enriched.sort((a, b) => b.tickle_count - a.tickle_count);
-
-      setArtist(profile);
-      setSongs(enriched);
-      setLoading(false);
-    };
-
-    fetchArtist();
+    fetchArtistAndSongs();
   }, [id]);
 
-  const handleAddToJamStack = async (songId) => {
-    if (!user || adding) return;
-    setAdding(true);
+  const fetchArtistAndSongs = async () => {
+    const [{ data: artistData }, { data: songData }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
+      supabase.from('songs').select('*').eq('owner_id', id),
+    ]);
 
-    const { data: existing } = await supabase
-      .from('jamstacksongs')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('song_id', songId)
-      .maybeSingle();
+    if (artistData) setArtist(artistData);
+    if (songData) {
+      setSongs(songData);
+      fetchReactions(songData.map((s) => s.id));
+    }
 
-    if (existing) {
-      alert('🛑 Already in your JamStack!');
-      setAdding(false);
+    setLoading(false);
+  };
+
+  const fetchReactions = async (songIds) => {
+    const { data, error } = await supabase
+      .from('reactions')
+      .select('song_id, emoji')
+      .in('song_id', songIds);
+
+    if (error) {
+      console.error('❌ Error fetching reactions:', error);
       return;
     }
 
-    const { error } = await supabase.from('jamstacksongs').insert([
-      {
-        id: uuidv4(),
-        user_id: user.id,
-        song_id: songId,
-      },
-    ]);
-
-    if (!error) {
-      alert('🎵 Added to your JamStack!');
-    }
-    setAdding(false);
-  };
-
-  const handleSendTickle = async (emoji, songId) => {
-    if (!user) return alert('Please log in to send Tickles.');
-    const session = await supabase.auth.getSession();
-    const token = session.data.session.access_token;
-
-    const res = await fetch('/api/send-tickle', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ artist_id: id, song_id: songId, emoji }),
+    const map = {};
+    data.forEach(({ song_id, emoji }) => {
+      if (!map[song_id]) map[song_id] = { '❤️': 0, '😢': 0, '🎯': 0, '👁': 0 };
+      map[song_id][emoji] = (map[song_id][emoji] || 0) + 1;
     });
 
-    const data = await res.json();
-    if (res.ok) {
-      alert(`🎁 You sent a ${emoji} Tickle!`);
-    } else {
-      alert(`❌ ${data.error}`);
-    }
+    setReactionsMap(map);
   };
 
-  if (loading) return <div className="p-6">Loading artist page...</div>;
-  if (!artist) return <div className="p-6 text-center text-gray-500">Artist not found.</div>;
-
-  const avatarSrc =
-    artist.avatar_url?.trim() !== ''
-      ? `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/${artist.avatar_url}`
-      : '/default-avatar.png';
-
   return (
-    <div className="min-h-screen bg-white text-black p-6">
-      <div className="flex items-center space-x-6 mb-6">
-        <img src={avatarSrc} alt="artist avatar" className="w-32 h-32 rounded-full object-cover border-4 border-white shadow" />
-        <div>
-          <h1 className="text-3xl font-bold">{artist.display_name || 'Unnamed Artist'}</h1>
-          <p className="text-gray-600">{artist.bio || 'No bio available.'}</p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-black text-white p-6">
+      {loading ? (
+        <p>Loading artist profile...</p>
+      ) : !artist ? (
+        <p>Artist not found.</p>
+      ) : (
+        <>
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-1">{artist.display_name || 'Unknown Artist'}</h1>
+            <p className="text-sm text-gray-400">{artist.bio || ''}</p>
+          </div>
 
-      <h2 className="text-xl font-semibold mb-3">🎵 Songs by this artist</h2>
-      <ul className="space-y-4">
-        {songs.map((song) => (
-          <li key={song.id} className="bg-gray-100 p-4 rounded shadow">
-            <div className="flex items-center space-x-4 mb-2">
-              <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
-              <div>
-                <h3 className="text-lg font-semibold">{song.title}</h3>
-                <p className="text-sm text-gray-500">{song.artist}</p>
-                <div className="text-xs text-gray-600 mt-1">
-                  🎁 {song.tickle_count || 0} | 🔥 {song.fires || 0} | ❤️ {song.likes || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
-                </div>
-              </div>
-            </div>
+          {songs.length === 0 ? (
+            <p>This artist hasn’t uploaded any songs yet.</p>
+          ) : (
+            <ul className="space-y-4">
+              {songs.map((song) => {
+                const stats = reactionsMap[song.id] || { '❤️': 0, '😢': 0, '🎯': 0, '👁': 0 };
 
-            <audio controls src={song.audio} className="w-full my-2 rounded" />
+                return (
+                  <li
+                    key={song.id}
+                    className="bg-gray-900 p-4 rounded-lg shadow space-y-2"
+                  >
+                    <div className="flex items-center space-x-4">
+                      {song.cover && (
+                        <img
+                          src={song.cover}
+                          alt="cover"
+                          className="w-20 h-20 object-contain rounded"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <h2 className="text-lg font-semibold">{song?.title || 'Untitled'}</h2>
+                        <p className="text-sm text-gray-400">{song?.artist || 'Unknown Artist'}</p>
+                        {song.audio && (
+                          <audio controls className="w-full mt-2">
+                            <source src={song.audio} type="audio/mpeg" />
+                            Your browser does not support the audio element.
+                          </audio>
+                        )}
+                      </div>
+                    </div>
 
-            <div className="flex flex-wrap gap-3 mt-2">
-              <button
-                onClick={() => handleSendTickle('💎', song.id)}
-                className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
-              >
-                🎁 Send a Tickle
-              </button>
-              <button
-                onClick={() => handleAddToJamStack(song.id)}
-                className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                ❤️ Add to JamStack
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+                    <div className="text-xs text-gray-400 mt-1 flex gap-3">
+                      ❤️ {stats['❤️']} · 😢 {stats['😢']} · 🎯 {stats['🎯']} · 👁 {stats['👁']}
+                    </div>
+
+                    <SendTickleButton
+                      songId={song.id}
+                      songTitle={song.title}
+                      artistId={id}
+                      artistStripeId={song.stripe_account_id}
+                      senderId={song.owner_id}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </>
+      )}
     </div>
   );
 };
 
 export default ArtistProfileScreen;
-
-
-// ✅ MyJamsScreen.js already posted above — use that clean version with reactions + SendTickleButton preserved.
