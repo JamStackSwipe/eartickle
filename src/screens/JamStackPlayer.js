@@ -16,6 +16,7 @@ const JamStackPlayer = () => {
   const [playlist, setPlaylist] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     const fetchJamStack = async () => {
@@ -30,7 +31,9 @@ const JamStackPlayer = () => {
             title,
             artist,
             audio,
-            cover
+            cover,
+            user_id,
+            stripe_account_id
           )
         `)
         .eq('user_id', user.id);
@@ -63,6 +66,39 @@ const JamStackPlayer = () => {
     );
   };
 
+  const handleSendTickle = async () => {
+    if (!user || !currentSong?.user_id || user.id === currentSong.user_id) {
+      alert('You cannot send a tickle to yourself.');
+      return;
+    }
+
+    setSending(true);
+    const session = await supabase.auth.getSession();
+    const token = session.data.session.access_token;
+
+    const res = await fetch('/api/send-tickle', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        artist_id: currentSong.user_id,
+        song_id: currentSong.id,
+        emoji: '💎'
+      }),
+    });
+
+    const result = await res.json();
+    setSending(false);
+
+    if (res.ok) {
+      alert(`🎁 You sent a Tickle to ${currentSong.artist || 'this artist'}!`);
+    } else {
+      alert(`❌ ${result.error || 'Failed to send Tickle.'}`);
+    }
+  };
+
   if (loading) return <p className="p-6 text-white">Loading your JamStack...</p>;
   if (!playlist.length) return <p className="p-6 text-white">You haven’t added any songs yet.</p>;
 
@@ -85,6 +121,16 @@ const JamStackPlayer = () => {
           onEnded={playNext}
           className="w-full mb-4"
         />
+
+        <div className="flex flex-col sm:flex-row justify-center gap-4 mb-4">
+          <button
+            onClick={handleSendTickle}
+            disabled={sending}
+            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-60"
+          >
+            🎁 Send a Tickle
+          </button>
+        </div>
 
         <div className="flex justify-between">
           <button
