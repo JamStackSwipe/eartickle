@@ -17,17 +17,20 @@ const RewardsScreen = () => {
   }, [user]);
 
   const fetchTickles = async () => {
-    const { data, error } = await supabase
-      .from('tickle_purchases')
-      .select('amount')
-      .eq('user_id', user.id)
-      .eq('completed', true);
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('tickles')
+    .eq('id', user.id)
+    .single();
 
-    if (error) {
-      console.error('❌ Error fetching tickles:', error);
-      setTickles(0);
-      return;
-    }
+  if (error) {
+    console.error('❌ Error fetching tickle balance from profile:', error);
+    setTickles(0);
+  } else {
+    setTickles(data.tickles || 0);
+  }
+};
+
 
     const total = data.reduce((sum, row) => sum + (row.amount || 0), 0);
     setTickles(total);
