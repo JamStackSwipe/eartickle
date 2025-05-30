@@ -11,14 +11,14 @@ export async function getRecommendedSongs(userId) {
 
   if (songError || !songs) return [];
 
-  // Step 2: Pull user data
+  // Step 2: Pull user profile
   const { data: profile } = await supabase
     .from('profiles')
     .select('preferred_genres')
     .eq('id', userId)
     .maybeSingle();
 
-  // Step 3: Pull user interactions (JamStack adds, Tickles, skips)
+  // Step 3: Pull user interactions
   const { data: jams } = await supabase
     .from('jamstacksongs')
     .select('song_id')
@@ -29,22 +29,47 @@ export async function getRecommendedSongs(userId) {
     .select('song_id')
     .eq('sender_id', userId);
 
-  // Step 4: Score each song
-  const songScores = songs.map((song) => {
-    let score = 0;
+  // Step 4: Enrich each song with score + public stats
+  const enriched = await Promise.all(
+    songs.map(async (song) => {
+      let score = 0;
 
-    // JamStack add
-    if (jams?.some((j) => j.song_id === song.id)) score += 10;
+      // Personalized scoring
+      if (jams?.some((j) => j.song_id === song.id)) score += 10;
+      if (tickles?.some((t) => t.song_id === song.id)) score += 25;
+      if (profile?.preferred_genres?.includes(song.genre)) score += 5;
 
-    // Gifting bonus
-    if (tickles?.some((t) => t.song_id === song.id)) score += 25;
+      // Public stats (emoji reactions)
+      const { data: allTickles } = await supabase
+        .from('tickles')
+        .select('emoji')
+        .eq('song_id', song.id);
 
-    // Genre match (soft bias)
-    if (profile?.preferred_genres?.includes(song.genre)) score += 5;
+      const emojiCounts = { '❤️': 0, '🔥': 0, '😢': 0, '🎯': 0 };
+      allTickles?.forEach((t) => {
+        if (emojiCounts[t.emoji] !== undefined) {
+          emojiCounts[t.emoji]++;
+        }
+      });
 
-    return { ...song, score };
-  });
+      // Jam count
+      const { data: jamCountData } = await supabase
+        .from('jamstacksongs')
+        .select('id', { count: 'exact', head: true })
+        .eq('song_id', song.id);
+
+      return {
+        ...song,
+        score,
+        likes: emojiCounts['❤️'],
+        fires: emojiCounts['🔥'],
+        sads: emojiCounts['😢'],
+        bullseyes: emojiCounts['🎯'],
+        jams: jamCountData?.length || 0,
+      };
+    })
+  );
 
   // Step 5: Sort by score (desc)
-  return songScores.sort((a, b) => b.score - a.score);
+  return enriched.sort((a, b) => b.score - a.score);
 }
