@@ -36,8 +36,25 @@ const ArtistProfileScreen = () => {
         console.error('❌ Error fetching artist songs:', songError.message);
       }
 
+      const enriched = await Promise.all(
+        (uploads || []).map(async (song) => {
+          const { data: tickles } = await supabase
+            .from('tickles')
+            .select('id', { count: 'exact', head: true })
+            .eq('song_id', song.id)
+            .eq('receiver_id', id);
+
+          return {
+            ...song,
+            tickle_count: tickles?.length || 0,
+          };
+        })
+      );
+
+      enriched.sort((a, b) => b.tickle_count - a.tickle_count);
+
       if (profile) setArtist(profile);
-      if (uploads) setSongs(uploads);
+      setSongs(enriched);
       setLoading(false);
     };
 
@@ -87,13 +104,13 @@ const ArtistProfileScreen = () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
         artist_id: id,
         song_id: songId,
-        emoji
-      })
+        emoji,
+      }),
     });
 
     const data = await res.json();
@@ -175,7 +192,7 @@ const ArtistProfileScreen = () => {
                   <h3 className="text-lg font-semibold">{song.title}</h3>
                   <p className="text-sm text-gray-500">{song.artist}</p>
                   <div className="text-xs text-gray-600 mt-1">
-                    👁️ {song.views || 0} | 📥 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.loves || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
+                    🎁 {song.tickle_count || 0} | 👁️ {song.views || 0} | 📥 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.likes || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
                   </div>
                 </div>
               </div>
@@ -195,8 +212,15 @@ const ArtistProfileScreen = () => {
               </div>
 
               <button
+                onClick={() => handleSendTickle('💎', song.id)}
+                className="mt-1 px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
+              >
+                🎁 Send a Tickle
+              </button>
+
+              <button
                 onClick={() => handleAddToJamStack(song.id)}
-                className="mt-1 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="mt-2 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
               >
                 ❤️ Add to JamStack
               </button>
