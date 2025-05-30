@@ -1,4 +1,3 @@
-// src/screens/ArtistProfileScreen.js
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
@@ -183,12 +182,12 @@ const ArtistProfileScreen = () => {
 
               <audio controls src={song.audio} className="w-full my-2 rounded" />
 
-              <div className="flex gap-2 my-3">
+              <div className="flex gap-2 my-2">
                 {['🔥', '❤️', '🎯', '😢'].map((emoji) => (
                   <button
                     key={emoji}
                     onClick={() => handleSendTickle(emoji, song.id)}
-                    className="text-xl px-3 py-1 rounded hover:bg-gray-200"
+                    className="text-xl px-2 py-1 rounded hover:bg-gray-200"
                   >
                     {emoji}
                   </button>
@@ -197,7 +196,7 @@ const ArtistProfileScreen = () => {
 
               <button
                 onClick={() => handleAddToJamStack(song.id)}
-                className="mt-2 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="mt-1 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
               >
                 ❤️ Add to JamStack
               </button>
