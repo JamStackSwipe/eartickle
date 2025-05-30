@@ -1,4 +1,3 @@
-// src/screens/MyJamsScreen.js
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -27,12 +26,6 @@ const MyJamsScreen = () => {
           artist,
           cover,
           audio,
-          views,
-          jams,
-          fires,
-          loves,
-          sads,
-          bullseyes,
           stripe_account_id
         )
       `)
@@ -110,14 +103,16 @@ const MyJamsScreen = () => {
                   </button>
                 </div>
 
+                {/* Placeholder stats – can be linked to real data later */}
                 <div className="text-xs text-gray-400 mt-1 flex gap-3">
-                  👁️ {song.views || 0} · ❤️ {song.loves || 0} · 🔥 {song.fires || 0} · 🎯 {song.bullseyes || 0} · 😢 {song.sads || 0} · 📥 {song.jams || 0}
+                  ❤️ 23 · 😢 5 · 🎯 9 · 👁 102
                 </div>
 
+                {/* Stripe Tickle Button */}
                 <SendTickleButton
                   songId={song.id}
                   songTitle={song.title}
-                  artistId={user.id} // You can adjust this to song.owner_id if needed
+                  artistId={user.id} // for now, pass current user; adjust if needed
                   artistStripeId={song.stripe_account_id}
                   senderId={user.id}
                 />
