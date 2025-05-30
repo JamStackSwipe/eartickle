@@ -1,3 +1,5 @@
+// src/screens/RewardsScreen.js
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -17,23 +19,18 @@ const RewardsScreen = () => {
   }, [user]);
 
   const fetchTickles = async () => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('tickles')
-    .eq('id', user.id)
-    .single();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('tickles')
+      .eq('id', user.id)
+      .single();
 
-  if (error) {
-    console.error('❌ Error fetching tickle balance from profile:', error);
-    setTickles(0);
-  } else {
-    setTickles(data.tickles || 0);
-  }
-};
-
-
-    const total = data.reduce((sum, row) => sum + (row.amount || 0), 0);
-    setTickles(total);
+    if (error) {
+      console.error('❌ Error fetching tickle balance from profile:', error);
+      setTickles(0);
+    } else {
+      setTickles(data.tickles || 0);
+    }
   };
 
   const fetchRewards = async () => {
