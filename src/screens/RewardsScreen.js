@@ -1,46 +1,39 @@
-// src/screens/RewardsScreen.js
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
+import { playTickle, playTickleSpecial } from '../utils/tickleSound';
 
 const RewardsScreen = () => {
   const { user } = useUser();
   const [tickles, setTickles] = useState(0);
   const [rewards, setRewards] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     if (user) {
-      fetchBalance();
+      fetchTickles();
       fetchRewards();
     }
   }, [user]);
 
-  const fetchBalance = async () => {
-    try {
-      const { data: purchases } = await supabase
-        .from('tickle_purchases')
-        .select('amount')
-        .eq('buyer_id', user.id)
-        .eq('completed', true);
+  const fetchTickles = async () => {
+    const { data, error } = await supabase
+      .from('tickle_purchases')
+      .select('amount')
+      .eq('user_id', user.id)
+      .eq('completed', true);
 
-      const { data: sent } = await supabase
-        .from('rewards')
-        .select('amount')
-        .eq('sender_id', user.id);
-
-      const totalPurchased = purchases?.reduce((sum, row) => sum + (row.amount || 0), 0) || 0;
-      const totalSent = sent?.reduce((sum, row) => sum + (row.amount || 0), 0) || 0;
-
-      setTickles(totalPurchased - totalSent);
-    } catch (err) {
-      console.error('Balance error:', err);
+    if (error) {
+      console.error('❌ Error fetching tickles:', error);
+      setTickles(0);
+      return;
     }
+
+    const total = data.reduce((sum, row) => sum + (row.amount || 0), 0);
+    setTickles(total);
   };
 
   const fetchRewards = async () => {
-    setLoading(true);
     const { data, error } = await supabase
       .from('rewards')
       .select('*')
@@ -48,12 +41,16 @@ const RewardsScreen = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error(error);
-      setError('Could not load rewards.');
-    } else {
-      setRewards(data);
+      console.error('❌ Error fetching rewards:', error);
+      return;
     }
 
+    setRewards(data);
+    if (data.length > 0) {
+      const latest = data[0];
+      if (latest.amount >= 20) playTickleSpecial();
+      else playTickle();
+    }
     setLoading(false);
   };
 
@@ -67,57 +64,80 @@ const RewardsScreen = () => {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ user_id: user.id, amount }),
+      body: JSON.stringify({
+        user_id: user.id,
+        amount,
+      }),
     });
 
     const data = await res.json();
     if (data?.url) window.location.href = data.url;
-    else alert('Stripe session failed.');
+    else alert('⚠️ Failed to create Stripe session');
   };
 
-  if (!user) return <p className="text-center mt-10">Log in to view Tickles.</p>;
-  if (loading) return <p className="text-center mt-10">Loading...</p>;
+  if (!user) return <p className="text-center mt-10">Please log in to view your Tickles.</p>;
+  if (loading) return <p className="text-center mt-10">Loading Tickles...</p>;
 
   return (
     <div className="max-w-2xl mx-auto mt-10 p-4">
-      <h2 className="text-2xl font-bold text-center mb-6">🎁 My Tickles</h2>
+      <h2 className="text-2xl font-bold mb-6 text-center">🎁 My Tickles & Balance</h2>
 
-      <div className="text-center mb-6">
-        <p className="text-lg">Available:</p>
-        <p className="text-3xl font-bold text-purple-600">{tickles} Tickles</p>
+      <div className="mb-6 text-center">
+        <p className="text-lg mb-2">Your current balance:</p>
+        <p className="text-3xl font-bold text-purple-700">{tickles} Tickles</p>
 
-        <div className="mt-4 space-x-2">
-          {[5, 10, 25].map((amt) => (
+        <div className="mt-4 space-x-3">
+          {[5, 10, 25].map((amount) => (
             <button
-              key={amt}
-              onClick={() => handleBuy(amt)}
-              className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+              key={amount}
+              onClick={() => handleBuy(amount)}
+              className="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded text-sm"
             >
-              Buy {amt} for ${amt}
+              Buy {amount} for ${amount}
             </button>
           ))}
         </div>
       </div>
 
       <hr className="my-6" />
-
       <h3 className="text-xl font-semibold mb-4 text-center">Received Tickles</h3>
 
-      {error && <p className="text-center text-red-500">{error}</p>}
       {rewards.length === 0 ? (
         <p className="text-center text-gray-500">You haven’t been tickled yet 😢</p>
       ) : (
         <ul className="space-y-4">
-          {rewards.map((r) => (
-            <li key={r.id} className="p-4 bg-white border rounded shadow">
-              <p className="text-lg">🎉 {r.amount} Tickles</p>
-              <p className="text-sm text-gray-600">
-                From: {r.sender_id?.slice(0, 8)}<br />
-                Song: {r.song_id?.slice(0, 8)}<br />
-                {new Date(r.created_at).toLocaleString()}
-              </p>
-            </li>
-          ))}
+          {rewards.map((reward) => {
+            const pts = reward.amount || 0;
+            let icon = '🪙';
+            let message = 'A tiny tickle!';
+
+            if (pts >= 5 && pts < 10) {
+              icon = '🎧';
+              message = 'You got someone grooving 🎶';
+            } else if (pts >= 10 && pts < 20) {
+              icon = '💎';
+              message = 'You made someone laugh out loud!';
+            } else if (pts >= 20) {
+              icon = '👑';
+              message = 'Your jam tickled ears all the way to the moon 🚀';
+            }
+
+            return (
+              <li key={reward.id} className="p-4 bg-white rounded shadow border">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-xl">{icon} {pts} Tickles</p>
+                    <p className="text-sm text-gray-600">
+                      From: {reward.sender_id?.slice(0, 8) || 'Unknown'}<br />
+                      Song: {reward.song_id?.slice(0, 8) || '—'}<br />
+                      {new Date(reward.created_at).toLocaleString()}
+                    </p>
+                    {pts >= 1 && <p className="mt-2 text-green-600 italic">{message}</p>}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
