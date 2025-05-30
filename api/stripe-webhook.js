@@ -10,10 +10,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 });
 
 const supabase = createClient(
-  process.env.SUPABASE_URL,               // ✅ Backend use only
-  process.env.SUPABASE_SERVICE_ROLE_KEY   // ✅ Secure role key
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
-
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -36,8 +35,9 @@ export default async function handler(req, res) {
     const metadata = session.metadata || {};
     const { user_id, amount } = metadata;
     const parsedAmount = parseInt(amount, 10);
+    const sessionId = session.id;
 
-    console.log('🧾 Session ID:', session.id);
+    console.log('🧾 Session ID:', sessionId);
     console.log('👤 User ID:', user_id);
     console.log('💰 Amount:', parsedAmount);
 
@@ -46,33 +46,33 @@ export default async function handler(req, res) {
       return res.status(400).send('Invalid metadata');
     }
 
-    // ✅ Step 1: Update balance
+    // ✅ Update balance via RPC
     const { error: balanceError } = await supabase.rpc('increment_tickles_balance', {
       uid: user_id,
       tickle_count: parsedAmount,
     });
 
     if (balanceError) {
-      console.error('❌ Balance update failed:', balanceError.message);
+      console.error('❌ Balance RPC failed:', balanceError);
       return res.status(500).send('Balance update failed');
     }
 
-    // ✅ Step 2: Mark purchase as completed
+    // ✅ Mark purchase as completed — safer version with .maybeSingle()
     const { data, error: updateError } = await supabase
       .from('tickle_purchases')
       .update({ completed: true })
-      .eq('stripe_session_id', session.id)
-      .select();
+      .eq('stripe_session_id', sessionId)
+      .maybeSingle();
 
     if (updateError) {
-      console.error('❌ Purchase update failed:', updateError.message);
+      console.error('❌ Failed to mark purchase completed:', updateError);
       return res.status(500).send('Purchase update failed');
     }
 
-    if (!data || data.length === 0) {
-      console.warn('⚠️ No matching tickle_purchases row found for session:', session.id);
+    if (!data) {
+      console.warn('⚠️ No purchase row found for session ID:', sessionId);
     } else {
-      console.log('✅ Purchase marked completed:', data[0]);
+      console.log('✅ Marked purchase completed:', data);
     }
   }
 
