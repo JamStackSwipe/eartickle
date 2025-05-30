@@ -32,48 +32,32 @@ export default async function handler(req, res) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const metadata = session.metadata || {};
-    const { user_id, amount } = metadata;
+    const { user_id, amount } = session.metadata || {};
     const parsedAmount = parseInt(amount, 10);
-    const sessionId = session.id;
 
-    console.log('🧾 Session ID:', sessionId);
+    console.log('✅ Stripe Webhook: Payment complete');
     console.log('👤 User ID:', user_id);
     console.log('💰 Amount:', parsedAmount);
 
     if (!user_id || isNaN(parsedAmount)) {
-      console.warn('⚠️ Invalid metadata:', metadata);
+      console.warn('⚠️ Missing or invalid metadata:', session.metadata);
       return res.status(400).send('Invalid metadata');
     }
 
-    // ✅ Update balance via RPC
-    const { error: balanceError } = await supabase.rpc('increment_tickles_balance', {
-      uid: user_id,
-      tickle_count: parsedAmount,
-    });
+    // ✅ Add a new row to tickle_purchases
+    const { error } = await supabase.from('tickle_purchases').insert([{
+      user_id,
+      amount: parsedAmount,
+      completed: true,
+      stripe_session_id: session.id,
+    }]);
 
-    if (balanceError) {
-      console.error('❌ Balance RPC failed:', balanceError);
-      return res.status(500).send('Balance update failed');
+    if (error) {
+      console.error('❌ Failed to insert tickle purchase:', error.message);
+      return res.status(500).send('Database insert failed');
     }
 
-    // ✅ Mark purchase as completed — safer version with .maybeSingle()
-    const { data, error: updateError } = await supabase
-      .from('tickle_purchases')
-      .update({ completed: true })
-      .eq('stripe_session_id', sessionId)
-      .maybeSingle();
-
-    if (updateError) {
-      console.error('❌ Failed to mark purchase completed:', updateError);
-      return res.status(500).send('Purchase update failed');
-    }
-
-    if (!data) {
-      console.warn('⚠️ No purchase row found for session ID:', sessionId);
-    } else {
-      console.log('✅ Marked purchase completed:', data);
-    }
+    console.log('✅ Tickle purchase recorded');
   }
 
   return res.status(200).json({ received: true });
