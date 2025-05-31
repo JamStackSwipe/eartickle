@@ -1,11 +1,10 @@
-// Stacker Screen
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 
 const JamStackScreen = () => {
-  const { user } = useAuth();
+  const { user } = useUser();
   const [songs, setSongs] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const audioRef = useRef(null);
@@ -18,7 +17,7 @@ const JamStackScreen = () => {
   const fetchJamStackSongs = async () => {
     const { data, error } = await supabase
       .from('jamstacksongs')
-      .select('id, songs ( id, title, artist, artist_id, genre, cover, audio )')
+      .select('id, songs ( id, title, artist, artist_id, cover, audio )')
       .eq('user_id', user.id);
 
     if (error) {
@@ -30,13 +29,13 @@ const JamStackScreen = () => {
   };
 
   const playNext = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % songs.length);
+    setCurrentIndex((prev) => (prev + 1) % songs.length);
   };
 
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.play().catch((e) => {
-        console.warn('Autoplay blocked:', e.message);
+      audioRef.current.play().catch((err) => {
+        console.warn('Autoplay blocked:', err.message);
       });
     }
   }, [currentIndex]);
@@ -56,7 +55,7 @@ const JamStackScreen = () => {
     <div className="max-w-xl mx-auto mt-10 text-center px-4">
       <h2 className="text-2xl font-bold mb-4">🔀 JamStack Stacker</h2>
 
-      {/* Clickable album cover */}
+      {/* Album cover = link to artist */}
       <img
         src={currentSong.cover}
         alt="cover"
@@ -83,16 +82,12 @@ const JamStackScreen = () => {
         ⏭️ Next Song
       </button>
 
-      {/* 🔮 Upcoming Song Preview */}
+      {/* Upcoming Song Preview */}
       {nextSong && (
         <div className="mt-6 text-left bg-gray-100 p-4 rounded">
           <p className="text-gray-700 font-semibold mb-1">Up Next:</p>
           <div className="flex items-center gap-4">
-            <img
-              src={nextSong.cover}
-              alt="next cover"
-              className="w-16 h-16 object-cover rounded"
-            />
+            <img src={nextSong.cover} alt="next" className="w-16 h-16 object-cover rounded" />
             <div>
               <p className="font-bold">{nextSong.title}</p>
               <p className="text-sm text-gray-600">{nextSong.artist}</p>
