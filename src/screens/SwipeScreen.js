@@ -162,15 +162,16 @@ const SwipeScreen = () => {
         <h2 className="text-2xl font-bold mb-1">{song.title}</h2>
         <p className="text-sm text-gray-600">{song.artist || 'Unknown Artist'}</p>
         <p className="text-xs italic text-gray-400 mb-3">{song.genre}</p>
-
-        <div className="flex justify-center gap-3 flex-wrap text-gray-600 text-xs mb-2">
-          <span>👁️ {song.views || 0}</span>
-          <span>❤️ {song.likes || 0}</span>
-          <span>🔥 {song.fires || 0}</span>
-          <span>😢 {song.sads || 0}</span>
-          <span>🎯 {song.bullseyes || 0}</span>
-          <span>📦 {song.jams || 0} Jams</span>
-        </div>
+              
+  <div className="flex justify-center gap-3 flex-wrap text-gray-600 text-xs mb-2">
+  <span>👁️ {song.views || 0}</span>
+  <span>❤️ {song.loves || 0}</span>     {/* ✅ fixed field */}
+  <span>🔥 {song.fires || 0}</span>
+  <span>😢 {song.sads || 0}</span>
+  <span>🎯 {song.bullseyes || 0}</span>
+  <span>📦 {song.jams || 0} Jams</span>
+  </div>
+  
 
         <audio ref={audioRef} src={song.audio} controls className="w-full mb-4" />
 
