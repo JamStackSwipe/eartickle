@@ -13,6 +13,8 @@ import ProfileScreen from './screens/ProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import ArtistProfileScreen from './screens/ArtistProfileScreen';
 import HomePage from './screens/HomePage'; // ✅ NEW
+import ChartsScreen from './screens/ChartsScreen';
+
 
 function App() {
   return (
@@ -28,6 +30,7 @@ function App() {
         <Route path="/rewards" element={<RewardsScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/settings" element={<SettingsScreen />} />
+        <Route path="/charts" element={<ChartsScreen />} />
         <Route path="/artist/:id" element={<ArtistProfileScreen />} />
       </Routes>
     </>
