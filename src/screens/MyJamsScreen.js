@@ -1,5 +1,3 @@
-// src/screens/MyJamsScreen.js
-
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -11,11 +9,11 @@ const MyJamsScreen = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchMyJams();
+    if (user) fetchMyJams();
   }, [user]);
 
   const fetchMyJams = async () => {
-    if (!user) return;
+    setLoading(true);
 
     const { data: jamData, error } = await supabase
       .from('jamstacksongs')
@@ -39,33 +37,33 @@ const MyJamsScreen = () => {
 
     if (error) {
       console.error('❌ Error fetching JamStack songs:', error);
-    } else {
-      // Fetch reactions and counts for each song
-      const enriched = await Promise.all(
-        jamData.map(async (jam) => {
-          const song = jam.songs;
-
-          const { data: reactions } = await supabase
-            .from('reactions')
-            .select('emoji')
-            .eq('song_id', song.id);
-
-          const emojiCounts = { '❤️': 0, '🔥': 0, '😢': 0, '🎯': 0 };
-          reactions?.forEach((r) => {
-            if (emojiCounts[r.emoji] !== undefined) emojiCounts[r.emoji]++;
-          });
-
-          return {
-            ...jam,
-            emojiCounts,
-            views: song.views || 0,
-          };
-        })
-      );
-
-      setJams(enriched);
+      setLoading(false);
+      return;
     }
 
+    const enriched = await Promise.all(
+      jamData.map(async (jam) => {
+        const song = jam.songs;
+
+        const { data: reactions } = await supabase
+          .from('reactions')
+          .select('emoji')
+          .eq('song_id', song.id);
+
+        const emojiCounts = { '❤️': 0, '🔥': 0, '😢': 0, '🎯': 0 };
+        reactions?.forEach((r) => {
+          if (emojiCounts[r.emoji] !== undefined) emojiCounts[r.emoji]++;
+        });
+
+        return {
+          ...jam,
+          emojiCounts,
+          views: song.views || 0,
+        };
+      })
+    );
+
+    setJams(enriched);
     setLoading(false);
   };
 
@@ -129,7 +127,6 @@ const MyJamsScreen = () => {
                   </button>
                 </div>
 
-                {/* Real-time stats */}
                 <div className="text-xs text-gray-400 mt-1 flex gap-4 flex-wrap">
                   ❤️ {stats['❤️']} · 🔥 {stats['🔥']} · 😢 {stats['😢']} · 🎯 {stats['🎯']} · 👁 {jam.views}
                 </div>
