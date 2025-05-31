@@ -7,13 +7,13 @@ const ProfileScreen = () => {
   const { user } = useUser();
   const [profile, setProfile] = useState({});
   const [songs, setSongs] = useState([]);
-  const [jamSongs, setJamSongs] = useState([]);
+  const [myJams, setMyJams] = useState([]);
   const [tickleStats, setTickleStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [showUploads, setShowUploads] = useState(false);
   const [showJams, setShowJams] = useState(false);
+  const [showUploads, setShowUploads] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -29,7 +29,6 @@ const ProfileScreen = () => {
       .select('*')
       .eq('id', user.id)
       .single();
-
     if (!error && data) setProfile(data);
   };
 
@@ -39,12 +38,10 @@ const ProfileScreen = () => {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
-
     if (!error) {
       setSongs(data);
       fetchTickleStats(data.map((s) => s.id));
     }
-
     setLoading(false);
   };
 
@@ -53,11 +50,7 @@ const ProfileScreen = () => {
       .from('jamstacksongs')
       .select('song_id, songs(*)')
       .eq('user_id', user.id);
-
-    if (!error && data) {
-      const jams = data.map((j) => j.songs).filter(Boolean);
-      setJamSongs(jams);
-    }
+    if (!error) setMyJams(data.map((item) => item.songs));
   };
 
   const fetchTickleStats = async (songIds) => {
@@ -66,7 +59,6 @@ const ProfileScreen = () => {
       .select('song_id, emoji, count')
       .in('song_id', songIds)
       .group('song_id, emoji');
-
     if (!error) {
       const grouped = {};
       data.forEach(({ song_id, emoji, count }) => {
@@ -94,19 +86,18 @@ const ProfileScreen = () => {
       tiktok: profile.tiktok || '',
       bandlab: profile.bandlab || '',
     };
-
-    const { error } = await supabase
-      .from('profiles')
-      .update(updates)
-      .eq('id', user.id);
-
-    setMessage(error ? 'Error saving.' : '✅ Profile saved!');
+    const { error } = await supabase.from('profiles').update(updates).eq('id', user.id);
+    if (error) {
+      console.error('❌ Error saving profile:', error.message);
+      setMessage('Error saving.');
+    } else {
+      setMessage('✅ Profile saved!');
+    }
   };
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-
     const filePath = `${user.id}/avatar.png`;
     const SUPABASE_URL = process.env.REACT_APP_SUPABASE_PROJECT_URL;
     setUploading(true);
@@ -114,27 +105,30 @@ const ProfileScreen = () => {
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(filePath, file, { upsert: true });
+      .upload(filePath, file, {
+        upsert: true,
+        cacheControl: 'public, max-age=3600',
+      });
 
     if (uploadError) {
-      console.error(uploadError.message);
+      console.error('❌ Upload error:', uploadError.message);
       setMessage('Upload failed.');
       setUploading(false);
       return;
     }
 
     const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${filePath}`;
-
     const { error: updateError } = await supabase
       .from('profiles')
       .update({ avatar_url: publicUrl })
       .eq('id', user.id);
 
-    if (!updateError) {
-      setMessage('✅ Avatar updated!');
-      setProfile((prev) => ({ ...prev, avatar_url: publicUrl }));
-    } else {
+    if (updateError) {
+      console.error('❌ Profile update error:', updateError.message);
       setMessage('Avatar saved but profile update failed.');
+    } else {
+      setProfile((prev) => ({ ...prev, avatar_url: publicUrl }));
+      setMessage('✅ Avatar updated!');
     }
 
     setUploading(false);
@@ -142,13 +136,8 @@ const ProfileScreen = () => {
 
   const handleDelete = async (songId) => {
     if (!confirm('Delete this song?')) return;
-    const { error } = await supabase
-      .from('songs')
-      .delete()
-      .eq('id', songId)
-      .eq('user_id', user.id);
-
-    if (!error) setSongs((prev) => prev.filter((s) => s.id !== songId));
+    await supabase.from('jamstacksongs').delete().eq('song_id', songId).eq('user_id', user.id);
+    setMyJams((prev) => prev.filter((s) => s.id !== songId));
   };
 
   const updateSong = async (id, updates) => {
@@ -158,21 +147,14 @@ const ProfileScreen = () => {
         .select('stripe_account_id')
         .eq('id', user.id)
         .maybeSingle();
-
       if (!profile?.stripe_account_id) {
         alert('You must connect Stripe in Settings to enable gifting.');
         return;
       }
-
       updates.stripe_account_id = profile.stripe_account_id;
     }
-
-    const { error } = await supabase
-      .from('songs')
-      .update(updates)
-      .eq('id', id);
-
-    if (!error) fetchUploads();
+    await supabase.from('songs').update(updates).eq('id', id);
+    fetchUploads();
   };
 
   const avatarSrc = profile.avatar_url?.trim()
@@ -183,50 +165,35 @@ const ProfileScreen = () => {
 
   return (
     <div className="min-h-screen bg-white text-black p-6 max-w-3xl mx-auto">
-      <div className="relative w-24 h-24 mb-4">
+      <div className="flex items-center space-x-4 mb-6 relative">
         <img
           src={avatarSrc}
           alt="avatar"
-          onError={(e) => (e.target.src = '/default-avatar.png')}
           className="w-24 h-24 rounded-full object-cover border shadow"
         />
-        <label className="absolute bottom-1 right-1 bg-white rounded-full p-1 cursor-pointer shadow">
+        <label className="absolute top-0 left-0 p-1 cursor-pointer bg-black bg-opacity-60 rounded-full">
           ✏️
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleAvatarChange}
-            className="hidden"
-            disabled={uploading}
-          />
+          <input type="file" accept="image/*" onChange={handleAvatarChange} hidden disabled={uploading} />
         </label>
+        <div className="flex-1">
+          <input
+            type="text"
+            value={profile.display_name || ''}
+            onChange={(e) => handleChange('display_name', e.target.value)}
+            placeholder="Display Name"
+            className="text-xl font-bold w-full border-b p-1"
+          />
+          <textarea
+            value={profile.bio || ''}
+            onChange={(e) => handleChange('bio', e.target.value)}
+            placeholder="Tell us about you..."
+            className="w-full mt-2 p-2 border rounded"
+            rows={3}
+          />
+        </div>
       </div>
 
-      <input
-        type="text"
-        value={profile.display_name || ''}
-        onChange={(e) => handleChange('display_name', e.target.value)}
-        placeholder="Display Name"
-        className="text-xl font-bold w-full border-b p-1"
-      />
-      <textarea
-        value={profile.bio || ''}
-        onChange={(e) => handleChange('bio', e.target.value)}
-        placeholder="Tell us about you..."
-        className="w-full mt-2 p-2 border rounded"
-        rows={3}
-      />
-
-      <label className="block text-sm mt-4 font-semibold">📩 Booking Email</label>
-      <input
-        type="email"
-        value={profile.booking_email || ''}
-        onChange={(e) => handleChange('booking_email', e.target.value)}
-        placeholder="you@email.com"
-        className="w-full p-2 border rounded mb-2"
-      />
-
-      {['website', 'spotify', 'youtube', 'instagram', 'soundcloud', 'tiktok', 'bandlab'].map((field) => (
+      {['booking_email', 'website', 'spotify', 'youtube', 'instagram', 'soundcloud', 'tiktok', 'bandlab'].map((field) => (
         <div key={field} className="mb-2">
           <label className="block text-sm font-semibold capitalize">{field}</label>
           <input
@@ -234,7 +201,6 @@ const ProfileScreen = () => {
             value={profile[field] || ''}
             onChange={(e) => handleChange(field, e.target.value)}
             className="w-full p-2 border rounded"
-            placeholder={`https://${field}.com/yourprofile`}
           />
         </div>
       ))}
@@ -245,37 +211,47 @@ const ProfileScreen = () => {
 
       {message && <p className="mt-2 text-green-600">{message}</p>}
 
-      {/* Collapsible My Jams */}
+      {/* My Jams Section */}
       <div className="mt-10">
-        <button
-          onClick={() => setShowJams((prev) => !prev)}
-          className="font-bold text-lg mb-2"
-        >
-          {showJams ? '▼' : '▶'} 🎧 My JamStack
+        <button onClick={() => setShowJams(!showJams)} className="text-lg font-bold mb-2">
+          🎧 My Jams {showJams ? '▾' : '▸'}
         </button>
         {showJams && (
-          <ul className="space-y-2">
-            {jamSongs.map((song) => (
-              <li key={song.id} className="p-2 border rounded bg-gray-50">
-                {song.title}
+          <ul className="space-y-4 mt-2">
+            {myJams.map((song) => (
+              <li key={song.id} className="bg-gray-100 p-4 rounded shadow">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
+                    <div>
+                      <div className="text-md font-semibold">{song.title}</div>
+                      <div className="text-xs text-gray-600">
+                        👁️ {song.views || 0} ❤️ {song.likes || 0} 🔥 {song.fires || 0} 🎯 {song.bullseyes || 0}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(song.id)}
+                    className="text-red-500 hover:text-red-700 text-sm"
+                  >
+                    🗑️
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      {/* Collapsible Uploaded Songs */}
-      <div className="mt-6">
-        <button
-          onClick={() => setShowUploads((prev) => !prev)}
-          className="font-bold text-lg mb-2"
-        >
-          {showUploads ? '▼' : '▶'} 📂 Your Uploaded Songs
+      {/* Uploaded Songs Section */}
+      <div className="mt-10">
+        <button onClick={() => setShowUploads(!showUploads)} className="text-lg font-bold mb-2">
+          ⬆️ My Uploaded Songs {showUploads ? '▾' : '▸'}
         </button>
         {showUploads && (
-          <ul className="space-y-4">
+          <ul className="space-y-4 mt-2">
             {songs.map((song) => (
-              <li key={song.id} className="bg-gray-100 p-4 rounded shadow space-y-2">
+              <li key={song.id} className="bg-gray-100 p-4 rounded shadow">
                 <div className="flex items-center space-x-4">
                   <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
                   <div className="flex-1 space-y-1">
@@ -292,7 +268,7 @@ const ProfileScreen = () => {
                       <option value="">Select genre</option>
                       {genreOptions.map((g) => (
                         <option key={g} value={g}>
-                          {g.charAt(0).toUpperCase() + g.slice(1)}
+                          {g}
                         </option>
                       ))}
                     </select>
@@ -306,24 +282,21 @@ const ProfileScreen = () => {
                           })
                         }
                       />
-                      <label className="text-sm text-gray-600">Enable Gifting</label>
+                      <label className="text-sm">Enable Gifting</label>
+                    </div>
+                    <div className="flex flex-wrap gap-4 text-xs text-gray-600 mt-1">
+                      <span>👁️ {song.views || 0}</span>
+                      <span>❤️ {song.likes || 0}</span>
+                      <span>🔥 {song.fires || 0}</span>
+                      <span>😢 {song.sads || 0}</span>
+                      <span>🎯 {song.bullseyes || 0}</span>
+                      <span>📦 {song.jams || 0} Jams</span>
+                      {tickleStats[song.id] &&
+                        Object.entries(tickleStats[song.id]).map(([emoji, count]) => (
+                          <span key={emoji}>{emoji} {count}</span>
+                        ))}
                     </div>
                   </div>
-                  <button onClick={() => handleDelete(song.id)} className="text-sm text-red-500 hover:text-red-700">
-                    🗑️
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-4 text-xs text-gray-600 mt-2">
-                  <span>👁️ {song.views || 0}</span>
-                  <span>❤️ {song.likes || 0}</span>
-                  <span>🔥 {song.fires || 0}</span>
-                  <span>😢 {song.sads || 0}</span>
-                  <span>🎯 {song.bullseyes || 0}</span>
-                  <span>📦 {song.jams || 0} Jams</span>
-                  {tickleStats[song.id] &&
-                    Object.entries(tickleStats[song.id]).map(([emoji, count]) => (
-                      <span key={emoji}>{emoji} {count}</span>
-                    ))}
                 </div>
               </li>
             ))}
