@@ -1,223 +1,80 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSwipeable } from 'react-swipeable';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
-import { useSwipeable } from 'react-swipeable';
-import { v4 as uuidv4 } from 'uuid';
-import { Link } from 'react-router-dom';
-import { getRecommendedSongs } from '../utils/recommendationEngine';
-
-const reactionEmojis = ['🔥', '❤️', '😢', '🎯'];
+import { useNavigate } from 'react-router-dom';
 
 const SwipeScreen = () => {
   const { user } = useUser();
   const [songs, setSongs] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [adding, setAdding] = useState(false);
-  const [showOverlay, setShowOverlay] = useState(true);
-  const audioRef = useRef();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchPersonalizedSongs = async () => {
-      if (!user) return;
-      const rankedSongs = await getRecommendedSongs(user.id);
-      setSongs(rankedSongs);
-    };
+    fetchSongs();
+  }, []);
 
-    fetchPersonalizedSongs();
-  }, [user]);
+  const fetchSongs = async () => {
+    const { data, error } = await supabase
+      .from('songs')
+      .select('id, title, artist, artist_id, cover, audio');
 
-  const song = songs[currentIndex];
-
-  const handleFirstTap = () => {
-    setShowOverlay(false);
-    if (audioRef.current) {
-      audioRef.current.play().catch((err) => {
-        console.warn('🎧 Autoplay failed:', err);
-      });
-    }
-  };
-
-  const handleNext = () => {
-    const nextIndex = Math.min(currentIndex + 1, songs.length - 1);
-    setCurrentIndex(nextIndex);
-    if (songs[nextIndex]) {
-      supabase.rpc('increment_song_views', { song_id: songs[nextIndex].id });
-    }
-  };
-
-  const handlePrevious = () => {
-    setCurrentIndex((prev) => Math.max(prev - 1, 0));
-  };
-
-  const handleAddToJamStack = async () => {
-    if (!user || adding || !song?.id) return;
-    setAdding(true);
-
-    const { data: existing } = await supabase
-      .from('jamstacksongs')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('song_id', song.id)
-      .maybeSingle();
-
-    if (existing) {
-      alert('🛑 Already in your JamStack!');
-      setAdding(false);
-      return;
-    }
-
-    const { error } = await supabase.from('jamstacksongs').insert([
-      {
-        id: uuidv4(),
-        user_id: user.id,
-        song_id: song.id,
-      },
-    ]);
-
-    if (!error) {
-      alert('🎵 Added to your JamStack!');
+    if (error) {
+      console.error('🚫 Failed to fetch songs:', error.message);
     } else {
-      console.error('❌ Error adding to JamStack:', error);
+      setSongs(data || []);
     }
-
-    setAdding(false);
   };
 
-  const handleReact = async (emoji) => {
-    if (!user || !song?.id) return;
+  const addToJamStack = async (songId) => {
+    if (!user?.id) return;
 
-    await supabase.from('reactions').insert([
-      {
-        id: uuidv4(),
-        user_id: user.id,
-        song_id: song.id,
-        emoji,
-      },
-    ]);
+    const { error } = await supabase
+      .from('jamstacksongs')
+      .insert({ user_id: user.id, song_id: songId })
+      .select();
 
-    const sound = {
-      '🔥': '/sounds/fire.mp3',
-      '❤️': '/sounds/love.mp3',
-      '😢': '/sounds/sad.mp3',
-      '🎯': '/sounds/bullseye.mp3',
-    }[emoji];
-
-    if (sound) new Audio(sound).play();
+    if (error) {
+      if (!error.message.includes('duplicate key')) {
+        console.error('🧨 Add to JamStack failed:', error.message);
+      }
+    }
   };
 
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => {
-      handleNext();
-      handleFirstTap();
-    },
-    onSwipedRight: () => {
-      handleAddToJamStack();
-      handleFirstTap();
-    },
-    onSwipedUp: () => {
-      handleNext();
-      handleFirstTap();
-    },
-    onSwipedDown: () => {
-      handlePrevious();
-      handleFirstTap();
-    },
-    preventScrollOnSwipe: true,
-    trackMouse: true,
-  });
-
-  if (songs.length === 0) {
-    return <div className="text-center mt-10 text-gray-400">No songs to swipe yet.</div>;
-  }
+  const handleSwipe = (dir, songId) => {
+    if (dir === 'Right') {
+      addToJamStack(songId);
+    }
+    // Optionally handle left swipe
+  };
 
   return (
-    <div
-      {...swipeHandlers}
-      onClick={handleFirstTap}
-      className="min-h-screen bg-black text-white flex justify-center items-center p-4 relative z-[90]"
-    >
-      {showOverlay && (
-        <div className="absolute inset-0 bg-black bg-opacity-70 z-[99] flex items-center justify-center text-center text-white pointer-events-auto">
-          <div className="space-y-2 text-lg">
-            <div>👈 Swipe left to skip</div>
-            <div>👉 Swipe right to add</div>
-            <div>↑ Swipe up for next</div>
-            <div>↓ Swipe down to go back</div>
-            <p className="text-sm text-gray-400 mt-4">(tap to start)</p>
+    <div className="overflow-y-scroll h-screen px-4 pt-20 space-y-8 pb-24">
+      {songs.map((song) => {
+        const swipeHandlers = useSwipeable({
+          onSwipedLeft: () => handleSwipe('Left', song.id),
+          onSwipedRight: () => handleSwipe('Right', song.id),
+          preventScrollOnSwipe: true,
+          trackMouse: true,
+        });
+
+        return (
+          <div
+            key={song.id}
+            {...swipeHandlers}
+            className="bg-white rounded-xl shadow-md p-4 transition-all duration-300"
+          >
+            <img
+              src={song.cover}
+              alt="cover"
+              onClick={() => navigate(`/artist/${song.artist_id}`)}
+              className="w-full aspect-square object-contain rounded mb-4 cursor-pointer"
+            />
+            <h3 className="text-xl font-bold">{song.title}</h3>
+            <p className="text-gray-600 text-sm mb-2">{song.artist}</p>
+            <audio controls src={song.audio} className="w-full" />
           </div>
-        </div>
-      )}
-
-      <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center z-[100] relative">
-        <Link
-          to={`/artist/${song.user_id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="block mb-4"
-        >
-          <img
-            src={song.cover || '/default-cover.png'}
-            alt="cover"
-            className="w-full h-64 object-contain rounded hover:opacity-90 transition"
-          />
-        </Link>
-
-        <h2 className="text-2xl font-bold mb-1">{song.title}</h2>
-        <p className="text-sm text-gray-600">{song.artist || 'Unknown Artist'}</p>
-        <p className="text-xs italic text-gray-400 mb-3">{song.genre}</p>
-
-        <div className="flex justify-center gap-3 flex-wrap text-gray-600 text-xs mb-2">
-          <span>👁️ {song.views || 0}</span>
-          <span>❤️ {song.likes || 0}</span>
-          <span>🔥 {song.fires || 0}</span>
-          <span>😢 {song.sads || 0}</span>
-          <span>🎯 {song.bullseyes || 0}</span>
-          <span>📦 {song.jams || 0} Jams</span>
-        </div>
-
-        <audio
-          ref={audioRef}
-          src={song.audio}
-          controls
-          className="w-full mb-4"
-        />
-
-        <div className="flex justify-center gap-4 text-2xl mb-4">
-          {reactionEmojis.map((emoji) => (
-            <button
-              key={emoji}
-              onClick={() => {
-                handleReact(emoji);
-                handleFirstTap();
-              }}
-              className="hover:scale-125 transition-transform duration-150"
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={() => {
-              handleAddToJamStack();
-              handleFirstTap();
-            }}
-            disabled={adding}
-            className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            ❤️ Add to JamStack
-          </button>
-          <button
-            onClick={() => {
-              handleNext();
-              handleFirstTap();
-            }}
-            className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            ⏭️ Next
-          </button>
-        </div>
-      </div>
+        );
+      })}
     </div>
   );
 };
