@@ -8,22 +8,18 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check session on load
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    // Immediately handle access_token in URL
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
-    };
+    });
 
-    getSession();
-
-    // Listen for login/logout changes
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
     return () => {
-      listener?.subscription.unsubscribe();
+      authListener.subscription.unsubscribe();
     };
   }, []);
 
