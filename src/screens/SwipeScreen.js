@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 import AddToJamStackButton from '../components/AddToJamStackButton';
@@ -7,6 +7,7 @@ const SwipeScreen = () => {
   const { user } = useUser();
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const audioRefs = useRef({});
 
   useEffect(() => {
     const fetchSongs = async () => {
@@ -31,6 +32,18 @@ const SwipeScreen = () => {
     await supabase.rpc('increment_song_view', { song_id_input: songId });
   };
 
+  const handlePlay = (currentId) => {
+    // Pause all other audio players
+    Object.keys(audioRefs.current).forEach((id) => {
+      if (id !== currentId && audioRefs.current[id]) {
+        audioRefs.current[id].pause();
+      }
+    });
+
+    // Increment views
+    incrementViews(currentId);
+  };
+
   if (loading) {
     return <div className="text-center mt-10 text-white">Loading songs...</div>;
   }
@@ -50,11 +63,11 @@ const SwipeScreen = () => {
           <h2 className="text-xl font-semibold text-white mb-1">{song.title}</h2>
           <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
           <audio
+            ref={(el) => (audioRefs.current[song.id] = el)}
             src={song.audio}
             controls
-            autoPlay
             className="w-full mb-2"
-            onPlay={() => incrementViews(song.id)}
+            onPlay={() => handlePlay(song.id)}
           />
           <AddToJamStackButton songId={song.id} />
           <div className="text-xs text-gray-400 mt-2">
