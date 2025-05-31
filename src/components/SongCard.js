@@ -1,60 +1,47 @@
-import React, { useRef } from 'react';
-import { useSwipeable } from 'react-swipeable';
-import { useUser } from './AuthProvider';
+import React, { useRef, useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import AddToJamStackButton from './AddToJamStackButton';
+import SendTickleButton from './SendTickleButton';
+import { useUser } from './AuthProvider';
 
 const SongCard = ({ song }) => {
   const { user } = useUser();
   const audioRef = useRef(null);
+  const cardRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const [manuallyPaused, setManuallyPaused] = useState(false);
 
-  const incrementViews = async (songId) => {
-    await supabase.rpc('increment_song_view', { song_id_input: songId });
-  };
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.5 }
+    );
 
-  const playSound = (file) => {
-    const sound = new Audio(`/sounds/${file}`);
-    sound.play();
-  };
+    if (cardRef.current) observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, []);
 
-  const handleSwipe = async (direction) => {
-    if (!user) return;
-
-    if (direction === 'Right') {
-      // Try to add to JamStack
-      const { data: existing, error } = await supabase
-        .from('jamstacksongs')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('song_id', song.id);
-
-      if (!error && existing.length === 0) {
-        await supabase.from('jamstacksongs').insert([
-          { user_id: user.id, song_id: song.id },
-        ]);
-        playSound('add.mp3');
-        alert('✅ Added To My Jams');
-      } else {
-        alert('✅ Already In My Jams. Keep Scrolling!');
-      }
-    } else if (direction === 'Left') {
-      playSound('meh.mp3');
-      alert('🙃 Meh');
+  useEffect(() => {
+    if (!audioRef.current) return;
+    if (isVisible && !manuallyPaused) {
+      audioRef.current.play().catch(() => {});
+    } else {
+      audioRef.current.pause();
     }
+  }, [isVisible, manuallyPaused]);
+
+  const handleManualPause = () => {
+    setManuallyPaused(true);
   };
 
-  const handlers = useSwipeable({
-    onSwipedLeft: () => handleSwipe('Left'),
-    onSwipedRight: () => handleSwipe('Right'),
-    preventDefaultTouchmoveEvent: true,
-    trackMouse: true,
-  });
+  const incrementViews = async () => {
+    await supabase.rpc('increment_song_view', { song_id_input: song.id });
+  };
 
   return (
-    <div
-      {...handlers}
-      className="bg-zinc-900 rounded-xl shadow-md p-4 mb-8"
-    >
+    <div ref={cardRef} className="bg-zinc-900 rounded-xl shadow-md p-4 mb-10">
       <a href={`/artist/${song.artist_id}`}>
         <img
           src={song.cover}
@@ -69,11 +56,13 @@ const SongCard = ({ song }) => {
         ref={audioRef}
         src={song.audio}
         controls
-        className="w-full mb-2"
+        className="w-full"
         onPlay={() => incrementViews(song.id)}
+        onPause={handleManualPause}
       />
-      <div className="flex justify-center">
+      <div className="flex flex-col items-center gap-2 mt-4">
         <AddToJamStackButton songId={song.id} />
+        <SendTickleButton song={song} />
       </div>
       <div className="text-xs text-gray-400 mt-2 text-center">
         👁️ {song.views || 0} | 🎧 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.loves || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
