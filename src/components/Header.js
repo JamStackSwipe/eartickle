@@ -57,6 +57,7 @@ const Header = () => {
             <Link to="/upload" className="hover:underline text-white">Upload</Link>
             <Link to="/stacker" className="hover:underline text-white">🎶 Stacker</Link>
             <Link to="/rewards" className="hover:underline text-white">🎁 Rewards</Link>
+            <Link to="/charts" className="hover:underline text-white">📈 Charts</Link>
             <Link to={`/artist/${user.id}`} className="hover:underline text-white">My Artist Page</Link>
           </div>
 
@@ -103,6 +104,7 @@ const Header = () => {
             <Link to="/upload" onClick={() => setMobileMenuOpen(false)}>Upload</Link>
             <Link to="/stacker" onClick={() => setMobileMenuOpen(false)}>🎶 Stacker</Link>
             <Link to="/rewards" onClick={() => setMobileMenuOpen(false)}>🎁 Rewards</Link>
+            <Link to="/charts" onClick={() => setMobileMenuOpen(false)}>📈 Charts</Link>
             <Link to={`/artist/${user.id}`} onClick={() => setMobileMenuOpen(false)}>My Artist Page</Link>
             <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>👤 My Profile</Link>
             <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>⚙️ Settings</Link>
