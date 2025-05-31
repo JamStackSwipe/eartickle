@@ -18,20 +18,21 @@ const RewardsScreen = () => {
     }
   }, [user]);
 
-  const fetchTickles = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('tickles')
-      .eq('id', user.id)
-      .single();
+const fetchTickles = async () => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('tickle_balance')
+    .eq('id', user.id)
+    .single();
 
-    if (error) {
-      console.error('❌ Error fetching tickle balance from profile:', error);
-      setTickles(0);
-    } else {
-      setTickles(data.tickles || 0);
-    }
-  };
+  if (error) {
+    console.error('❌ Error fetching tickle_balance from profiles:', error);
+    setTickles(0);
+  } else {
+    setTickles(data.tickle_balance || 0);
+  }
+};
+
 
   const fetchRewards = async () => {
     const { data, error } = await supabase
