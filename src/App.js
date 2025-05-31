@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
+import Footer from './components/Footer'; // ✅ Import Footer
 import { AuthProvider } from './components/AuthProvider';
 
 import LoginScreen from './screens/LoginScreen';
@@ -38,6 +39,7 @@ function App() {
         <Route path="/terms" element={<Terms />} />
         <Route path="/about" element={<AboutScreen />} />
       </Routes>
+      <Footer /> {/* ✅ Show footer on all pages */}
     </AuthProvider>
   );
 }
