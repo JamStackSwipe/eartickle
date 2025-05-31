@@ -24,9 +24,9 @@ const JamStackScreen = () => {
           id,
           title,
           artist,
-          artist_id,
           cover,
-          audio
+          audio,
+          artist_id
         )
       `)
       .eq('user_id', user.id);
@@ -67,18 +67,25 @@ const JamStackScreen = () => {
   const nextSong = songs[(currentIndex + 1) % songs.length];
 
   return (
-    <div className="max-w-xl mx-auto mt-10 text-center px-4">
-      <h2 className="text-2xl font-bold mb-4">🔀 JamStack Stacker</h2>
+    <div className="max-w-xl mx-auto mt-6 text-center px-4">
 
+      {/* ✅ EarTickle Logo */}
+      <img
+        src="/assets/eartickle-logo.png"
+        alt="EarTickle"
+        className="h-10 mx-auto mb-4 cursor-pointer"
+        onClick={() => navigate('/')}
+      />
+
+      {/* ✅ Current Song */}
       <img
         src={currentSong.cover}
         alt="cover"
-        className="w-full h-60 object-cover rounded mb-4 cursor-pointer transition-transform hover:scale-105"
+        className="w-full h-64 object-cover rounded-xl mb-4 cursor-pointer transition-transform hover:scale-105"
         onClick={() => navigate(`/artist/${currentSong.artist_id}`)}
       />
-
       <h3 className="text-xl font-semibold">{currentSong.title}</h3>
-      <p className="text-gray-600 mb-4">{currentSong.artist}</p>
+      <p className="text-sm text-gray-600 mb-3">{currentSong.artist}</p>
 
       <audio
         ref={audioRef}
@@ -91,19 +98,20 @@ const JamStackScreen = () => {
 
       <button
         onClick={playNext}
-        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 text-sm"
       >
-        ⏭️ Next Song
+        ⏭️ Skip to Next
       </button>
 
+      {/* ✅ Up Next Preview */}
       {nextSong && (
-        <div className="mt-6 text-left bg-gray-100 p-4 rounded">
-          <p className="text-gray-700 font-semibold mb-1">Up Next:</p>
-          <div className="flex items-center gap-4">
-            <img src={nextSong.cover} alt="next" className="w-16 h-16 object-cover rounded" />
+        <div className="mt-6 bg-gray-100 p-3 rounded-md text-left">
+          <p className="text-xs text-gray-500 uppercase font-medium mb-2">Up Next</p>
+          <div className="flex items-center gap-3">
+            <img src={nextSong.cover} alt="next" className="w-14 h-14 object-cover rounded" />
             <div>
-              <p className="font-bold">{nextSong.title}</p>
-              <p className="text-sm text-gray-600">{nextSong.artist}</p>
+              <p className="font-semibold text-sm">{nextSong.title}</p>
+              <p className="text-xs text-gray-500">{nextSong.artist}</p>
             </div>
           </div>
         </div>
