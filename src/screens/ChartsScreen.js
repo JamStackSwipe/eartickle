@@ -5,7 +5,7 @@ import { supabase } from '../supabase';
 import { Link } from 'react-router-dom';
 import SendTickleButton from '../components/SendTickleButton';
 import { useUser } from '../components/AuthProvider';
-import AddToJamStackButton from '../components/AddToJamStackButton';
+
 
 const chartViews = [
   { label: 'Weekly', table: 'weekly_top_songs' },
