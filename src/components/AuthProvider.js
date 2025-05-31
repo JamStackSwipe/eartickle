@@ -8,18 +8,18 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Immediately handle access_token in URL
+    // Handles session from URL hash (GitHub login)
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
 
     return () => {
-      authListener.subscription.unsubscribe();
+      listener?.subscription.unsubscribe();
     };
   }, []);
 
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
 
 export const useUser = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useUser must be used within an AuthProvider');
   }
   return context;
