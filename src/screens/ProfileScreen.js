@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -8,7 +7,6 @@ const ProfileScreen = () => {
   const { user } = useUser();
   const [profile, setProfile] = useState({});
   const [songs, setSongs] = useState([]);
-  const [jamStackSongs, setJamStackSongs] = useState([]);
   const [tickleStats, setTickleStats] = useState({});
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -18,7 +16,6 @@ const ProfileScreen = () => {
     if (user) {
       fetchProfile();
       fetchUploads();
-      fetchJamStack();
     }
   }, [user]);
 
@@ -45,18 +42,6 @@ const ProfileScreen = () => {
     }
 
     setLoading(false);
-  };
-
-  const fetchJamStack = async () => {
-    const { data, error } = await supabase
-      .from('jamstacksongs')
-      .select('id, song_id, songs:song_id(id, title, artist, artist_id, user_id, cover, audio, views, jams, fires, loves, sads, bullseyes)')
-      .eq('user_id', user.id);
-
-    if (!error) {
-      const filtered = data.map((item) => item.songs).filter((s) => s.user_id !== user.id);
-      setJamStackSongs(filtered);
-    }
   };
 
   const fetchTickleStats = async (songIds) => {
@@ -269,22 +254,64 @@ const ProfileScreen = () => {
           <h2 className="text-xl font-bold mt-10 mb-4">🎵 Your Uploaded Songs</h2>
           <ul className="space-y-4">
             {songs.map((song) => (
-              <li key={song.id} className="bg-gray-100 p-4 rounded shadow space-y-2">
+              <li
+                key={song.id}
+                className="bg-gray-100 p-4 rounded shadow space-y-2"
+              >
                 <div className="flex items-center space-x-4">
-                  <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
+                  <img
+                    src={song.cover}
+                    alt="cover"
+                    className="w-16 h-16 object-cover rounded"
+                  />
                   <div className="flex-1 space-y-1">
-                    <input value={song.title} onChange={(e) => updateSong(song.id, { title: e.target.value })} className="w-full border p-1 rounded" />
-                    <select value={song.genre} onChange={(e) => updateSong(song.id, { genre: e.target.value })} className="w-full border p-1 rounded">
+                    <input
+                      value={song.title}
+                      onChange={(e) =>
+                        updateSong(song.id, { title: e.target.value })
+                      }
+                      className="w-full border p-1 rounded"
+                    />
+
+                    <select
+                      value={song.genre}
+                      onChange={(e) =>
+                        updateSong(song.id, { genre: e.target.value })
+                      }
+                      className="w-full border p-1 rounded"
+                    >
                       <option value="">Select genre</option>
-                      {genreOptions.map((g) => (<option key={g} value={g}>{g.charAt(0).toUpperCase() + g.slice(1)}</option>))}
+                      {genreOptions.map((g) => (
+                        <option key={g} value={g}>
+                          {g.charAt(0).toUpperCase() + g.slice(1)}
+                        </option>
+                      ))}
                     </select>
+
                     <div className="flex items-center space-x-2">
-                      <input type="checkbox" checked={!!song.stripe_account_id} onChange={(e) => updateSong(song.id, { stripe_account_id: e.target.checked ? 'FETCH_FROM_PROFILE' : null })} />
+                      <input
+                        type="checkbox"
+                        checked={!!song.stripe_account_id}
+                        onChange={(e) =>
+                          updateSong(song.id, {
+                            stripe_account_id: e.target.checked
+                              ? 'FETCH_FROM_PROFILE'
+                              : null,
+                          })
+                        }
+                      />
                       <label className="text-sm text-gray-600">Enable Gifting</label>
                     </div>
                   </div>
-                  <button onClick={() => handleDelete(song.id)} className="text-sm text-red-500 hover:text-red-700">🗑️</button>
+
+                  <button
+                    onClick={() => handleDelete(song.id)}
+                    className="text-sm text-red-500 hover:text-red-700"
+                  >
+                    🗑️
+                  </button>
                 </div>
+
                 <div className="flex flex-wrap gap-4 text-xs text-gray-600 mt-2">
                   <span>👁️ {song.views || 0}</span>
                   <span>❤️ {song.likes || 0}</span>
@@ -292,36 +319,12 @@ const ProfileScreen = () => {
                   <span>😢 {song.sads || 0}</span>
                   <span>🎯 {song.bullseyes || 0}</span>
                   <span>📦 {song.jams || 0} Jams</span>
-                  {tickleStats[song.id] && Object.entries(tickleStats[song.id]).map(([emoji, count]) => (<span key={emoji}>{emoji} {count}</span>))}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
 
-      {jamStackSongs.length > 0 && (
-        <>
-          <h2 className="text-xl font-bold mt-10 mb-4">📦 Your JamStack Songs</h2>
-          <ul className="space-y-4">
-            {jamStackSongs.map((song) => (
-              <li key={song.id} className="bg-gray-100 p-4 rounded shadow space-y-2">
-                <div className="flex items-center space-x-4">
-                  <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
-                  <div className="flex-1 space-y-1">
-                    <p className="font-semibold">{song.title}</p>
-                    <p className="text-sm text-gray-500">by {song.artist}</p>
-                  </div>
-                  <a href={`/artist/${song.artist_id}`} className="text-blue-600 text-sm hover:underline">View Artist</a>
-                </div>
-                <audio src={song.audio} controls className="w-full mt-2" />
-                <div className="flex flex-wrap gap-4 text-xs text-gray-600 mt-2">
-                  <span>👁️ {song.views || 0}</span>
-                  <span>❤️ {song.loves || 0}</span>
-                  <span>🔥 {song.fires || 0}</span>
-                  <span>😢 {song.sads || 0}</span>
-                  <span>🎯 {song.bullseyes || 0}</span>
-                  <span>📦 {song.jams || 0} Jams</span>
+                  {/* New: live emoji gift counts */}
+                  {tickleStats[song.id] &&
+                    Object.entries(tickleStats[song.id]).map(([emoji, count]) => (
+                      <span key={emoji}>{emoji} {count}</span>
+                    ))}
                 </div>
               </li>
             ))}
