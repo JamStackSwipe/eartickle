@@ -1,7 +1,7 @@
 // Stacker Screen
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase';
-import { useAuth } from '../components/AuthProvider';
+import { useUser } from '../components/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 
 const JamStackScreen = () => {
