@@ -94,14 +94,6 @@ const JamStackScreen = () => {
   return (
     <div className="max-w-xl mx-auto mt-6 text-center px-4">
 
-      {/* ✅ EarTickle Logo */}
-      <img
-        src="/logo.png"
-        alt="EarTickle"
-        className="h-10 mx-auto mb-4 cursor-pointer"
-        onClick={() => navigate('/')}
-      />
-
       {/* ✅ Album Cover */}
       <img
         src={currentSong.cover}
