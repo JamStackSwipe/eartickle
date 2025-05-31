@@ -1,53 +1,78 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from '../components/AuthProvider';
 
-const MyJamsScreen = () => {
+const JamStackScreen = () => {
   const { user } = useAuth();
-  const [mySongs, setMySongs] = useState([]);
+  const [songs, setSongs] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const audioRef = useRef(null);
 
   useEffect(() => {
-    if (user?.id) fetchMyJamStack();
+    if (user?.id) fetchJamStackSongs();
   }, [user]);
 
-  const fetchMyJamStack = async () => {
+  const fetchJamStackSongs = async () => {
     const { data, error } = await supabase
       .from('jamstacksongs')
-      .select('id, songs ( id, title, artist, genre, cover, audio )')
+      .select('id, songs ( id, title, artist, cover, audio )')
       .eq('user_id', user.id);
 
     if (error) {
-      console.error('Error loading jamstack:', error.message);
+      console.error('Error loading JamStack:', error.message);
     } else {
-      setMySongs(data);
+      // Extract and shuffle songs
+      const shuffled = data.map((entry) => entry.songs).sort(() => Math.random() - 0.5);
+      setSongs(shuffled);
     }
   };
 
+  const playNext = () => {
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % songs.length);
+  };
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.play().catch((e) => {
+        console.warn('Autoplay prevented:', e.message);
+      });
+    }
+  }, [currentIndex]);
+
   if (!user) {
-    return <div className="text-center mt-10 text-gray-500">Please log in to view your JamStack.</div>;
+    return <div className="text-center mt-10 text-gray-500">Please log in to use the JamStack Stacker.</div>;
   }
 
-  if (mySongs.length === 0) {
-    return <div className="text-center mt-10 text-gray-500">You haven't added any songs yet.</div>;
+  if (songs.length === 0) {
+    return <div className="text-center mt-10 text-gray-500">You haven’t added any songs to your JamStack yet.</div>;
   }
+
+  const currentSong = songs[currentIndex];
 
   return (
-    <div className="max-w-2xl mx-auto mt-10 px-4">
-      <h2 className="text-2xl font-bold mb-6 text-center">🎵 My JamStack</h2>
-      {mySongs.map((entry) => {
-        const song = entry.songs;
-        return (
-          <div key={entry.id} className="bg-white shadow-md rounded p-4 mb-6">
-            <h3 className="text-xl font-bold mb-2">{song.title}</h3>
-            <img src={song.cover} alt="cover" className="w-full h-48 object-cover rounded mb-2" />
-            <p className="text-lg font-medium">{song.artist}</p>
-            <p className="text-sm text-gray-500 italic mb-2">{song.genre}</p>
-            <audio controls src={song.audio} className="w-full" />
-          </div>
-        );
-      })}
+    <div className="max-w-xl mx-auto mt-10 text-center px-4">
+      <h2 className="text-2xl font-bold mb-4">🔀 JamStack Stacker</h2>
+      <img src={currentSong.cover} alt="cover" className="w-full h-60 object-cover rounded mb-4" />
+      <h3 className="text-xl font-semibold">{currentSong.title}</h3>
+      <p className="text-gray-600 mb-4">{currentSong.artist}</p>
+
+      <audio
+        ref={audioRef}
+        src={currentSong.audio}
+        autoPlay
+        controls
+        onEnded={playNext}
+        className="w-full mb-4"
+      />
+
+      <button
+        onClick={playNext}
+        className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        ⏭️ Next Song
+      </button>
     </div>
   );
 };
 
-export default MyJamsScreen;
+export default JamStackScreen;
