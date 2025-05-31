@@ -65,11 +65,7 @@ const StackerScreen = () => {
   if (!currentSong) return <div className="text-white text-center mt-10">No songs in your JamStack yet.</div>;
 
   return (
-    <div className="p-4 max-w-xl mx-auto">
-      <div className="text-center text-white text-2xl font-bold mb-6">
-        <img src="/logo.png" alt="EarTickle Logo" className="w-10 h-10 inline-block mr-2 align-middle" />
-        🔀 JamStack Stacker
-      </div>
+  
       <div className="bg-zinc-900 rounded-xl shadow-md p-4 text-white">
         <a href={`/artist/${currentSong.artist_id}`}>
           <img src={currentSong.cover} alt={currentSong.title} className="w-full h-auto rounded-xl mb-4" />
