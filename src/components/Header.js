@@ -76,9 +76,6 @@ const Header = () => {
               >
                 <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100">👤 My Profile</Link>
                 <Link to="/settings" className="block px-4 py-2 hover:bg-gray-100">⚙️ Settings</Link>
-                <Link to="/privacy" className="block px-4 py-2 hover:bg-gray-100">🔒 Privacy</Link>
-                <Link to="/terms" className="block px-4 py-2 hover:bg-gray-100">📄 Terms</Link>
-                <Link to="/about" className="block px-4 py-2 hover:bg-gray-100">📖 About EarTickle</Link>
                 <button onClick={handleLogout} className="w-full text-left px-4 py-2 hover:bg-gray-100">🚪 Logout</button>
               </div>
             )}
