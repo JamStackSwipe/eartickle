@@ -1,46 +1,36 @@
+// src/App.js
+
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
-import Footer from './components/Footer'; // ✅ Import Footer
-import { AuthProvider } from './components/AuthProvider';
-
-import LoginScreen from './screens/LoginScreen';
-import ProfileScreen from './screens/ProfileScreen';
-import UploadScreen from './screens/UploadScreen';
 import SwipeScreen from './screens/SwipeScreen';
-import JamStackScreen from './screens/JamStackScreen';
-import RewardsScreen from './screens/RewardsScreen';
+import UploadScreen from './screens/UploadScreen';
 import MyJamsScreen from './screens/MyJamsScreen';
+import JamStackScreen from './screens/JamStackScreen';
+import AuthScreen from './screens/AuthScreen';
+import RewardsScreen from './screens/RewardsScreen';
+import ProfileScreen from './screens/ProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
-import JamStackPlayer from './screens/JamStackPlayer';
 import ArtistProfileScreen from './screens/ArtistProfileScreen';
-import Privacy from './screens/Privacy';
-import Terms from './screens/Terms';
-import AboutScreen from './screens/AboutScreen';
+import HomePage from './screens/HomePage'; // ✅ NEW
 
 function App() {
   return (
-    <AuthProvider>
+    <>
       <Header />
       <Routes>
-        <Route path="/" element={<LoginScreen />} />
-        <Route path="/auth" element={<LoginScreen />} />
-        <Route path="/login" element={<LoginScreen />} />
-        <Route path="/artist/:id" element={<ArtistProfileScreen />} />
-        <Route path="/stacker" element={<JamStackPlayer />} />
-        <Route path="/profile" element={<ProfileScreen />} />
-        <Route path="/upload" element={<UploadScreen />} />
+        <Route path="/" element={<HomePage />} /> {/* ✅ Set homepage */}
+        <Route path="/auth" element={<AuthScreen />} />
         <Route path="/swipe" element={<SwipeScreen />} />
-        <Route path="/jamstack" element={<JamStackScreen />} />
-        <Route path="/rewards" element={<RewardsScreen />} />
+        <Route path="/upload" element={<UploadScreen />} />
         <Route path="/myjams" element={<MyJamsScreen />} />
+        <Route path="/stacker" element={<JamStackScreen />} />
+        <Route path="/rewards" element={<RewardsScreen />} />
+        <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/settings" element={<SettingsScreen />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/about" element={<AboutScreen />} />
+        <Route path="/artist/:id" element={<ArtistProfileScreen />} />
       </Routes>
-      <Footer /> {/* ✅ Show footer on all pages */}
-    </AuthProvider>
+    </>
   );
 }
 
