@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 import { genreOptions } from '../utils/genreList';
@@ -11,6 +11,8 @@ const ProfileScreen = () => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [expandedSection, setExpandedSection] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (user) {
@@ -84,12 +86,7 @@ const ProfileScreen = () => {
       .update(updates)
       .eq('id', user.id);
 
-    if (error) {
-      console.error('❌ Error saving profile:', error.message);
-      setMessage('Error saving.');
-    } else {
-      setMessage('✅ Profile saved!');
-    }
+    setMessage(error ? 'Error saving.' : '✅ Profile saved!');
   };
 
   const handleAvatarChange = async (e) => {
@@ -105,7 +102,7 @@ const ProfileScreen = () => {
       .from('avatars')
       .upload(filePath, file, {
         upsert: true,
-        cacheControl: 'public, max-age=3600'
+        cacheControl: 'public, max-age=3600',
       });
 
     if (uploadError) {
@@ -122,12 +119,11 @@ const ProfileScreen = () => {
       .update({ avatar_url: publicUrl })
       .eq('id', user.id);
 
-    if (updateError) {
-      console.error('❌ Profile update error:', updateError.message);
-      setMessage('Avatar saved but profile update failed.');
-    } else {
-      setMessage('✅ Avatar updated!');
+    if (!updateError) {
       setProfile((prev) => ({ ...prev, avatar_url: publicUrl }));
+      setMessage('✅ Avatar updated!');
+    } else {
+      setMessage('Avatar saved but profile update failed.');
     }
 
     setUploading(false);
@@ -165,31 +161,48 @@ const ProfileScreen = () => {
       .update(updates)
       .eq('id', id);
 
-    if (error) {
-      console.error('❌ Error updating song:', error.message);
-    } else {
-      fetchUploads();
-    }
+    if (!error) fetchUploads();
   };
 
   const avatarSrc = profile.avatar_url?.trim()
     ? `${process.env.REACT_APP_SUPABASE_PROJECT_URL}/storage/v1/object/public/avatars/${user.id}/avatar.png`
     : user?.user_metadata?.avatar_url || '/default-avatar.png';
 
+  const toggleSection = (key) =>
+    setExpandedSection((prev) => (prev === key ? null : key));
+
   if (loading) return <div className="p-6">Loading profile...</div>;
 
   return (
     <div className="min-h-screen bg-white text-black p-6 max-w-3xl mx-auto">
-      <div className="flex items-center space-x-4 mb-6">
-        <img
-          src={avatarSrc}
-          alt="avatar"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = '/default-avatar.png';
-          }}
-          className="w-24 h-24 rounded-full object-cover border shadow"
-        />
+      <div className="flex items-start space-x-4 mb-6 relative">
+        <div className="relative">
+          <img
+            src={avatarSrc}
+            alt="avatar"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = '/default-avatar.png';
+            }}
+            className="w-24 h-24 rounded-full object-cover border shadow"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="absolute bottom-1 right-1 bg-white p-1 rounded-full shadow"
+            title="Edit Avatar"
+          >
+            ✏️
+          </button>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            ref={fileInputRef}
+            className="hidden"
+            disabled={uploading}
+          />
+        </div>
+
         <div className="flex-1">
           <input
             type="text"
@@ -205,16 +218,6 @@ const ProfileScreen = () => {
             className="w-full mt-2 p-2 border rounded"
             rows={3}
           />
-          <div className="mt-2">
-            <label className="block text-sm font-medium mb-1">Upload Avatar</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              className="text-sm"
-              disabled={uploading}
-            />
-          </div>
         </div>
       </div>
 
@@ -249,35 +252,29 @@ const ProfileScreen = () => {
 
       {message && <p className="mt-2 text-green-600">{message}</p>}
 
-      {songs.length > 0 && (
-        <>
-          <h2 className="text-xl font-bold mt-10 mb-4">🎵 Your Uploaded Songs</h2>
-          <ul className="space-y-4">
+      {/* Collapsible Uploaded Songs */}
+      <div className="mt-10">
+        <button
+          className="text-lg font-bold underline"
+          onClick={() => toggleSection('uploads')}
+        >
+          {expandedSection === 'uploads' ? '🔽 Hide Uploaded Songs' : '▶️ Show Uploaded Songs'}
+        </button>
+        {expandedSection === 'uploads' && (
+          <ul className="space-y-4 mt-4">
             {songs.map((song) => (
-              <li
-                key={song.id}
-                className="bg-gray-100 p-4 rounded shadow space-y-2"
-              >
+              <li key={song.id} className="bg-gray-100 p-4 rounded shadow space-y-2">
                 <div className="flex items-center space-x-4">
-                  <img
-                    src={song.cover}
-                    alt="cover"
-                    className="w-16 h-16 object-cover rounded"
-                  />
+                  <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
                   <div className="flex-1 space-y-1">
                     <input
                       value={song.title}
-                      onChange={(e) =>
-                        updateSong(song.id, { title: e.target.value })
-                      }
+                      onChange={(e) => updateSong(song.id, { title: e.target.value })}
                       className="w-full border p-1 rounded"
                     />
-
                     <select
                       value={song.genre}
-                      onChange={(e) =>
-                        updateSong(song.id, { genre: e.target.value })
-                      }
+                      onChange={(e) => updateSong(song.id, { genre: e.target.value })}
                       className="w-full border p-1 rounded"
                     >
                       <option value="">Select genre</option>
@@ -287,23 +284,19 @@ const ProfileScreen = () => {
                         </option>
                       ))}
                     </select>
-
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
                         checked={!!song.stripe_account_id}
                         onChange={(e) =>
                           updateSong(song.id, {
-                            stripe_account_id: e.target.checked
-                              ? 'FETCH_FROM_PROFILE'
-                              : null,
+                            stripe_account_id: e.target.checked ? 'FETCH_FROM_PROFILE' : null,
                           })
                         }
                       />
                       <label className="text-sm text-gray-600">Enable Gifting</label>
                     </div>
                   </div>
-
                   <button
                     onClick={() => handleDelete(song.id)}
                     className="text-sm text-red-500 hover:text-red-700"
@@ -319,8 +312,6 @@ const ProfileScreen = () => {
                   <span>😢 {song.sads || 0}</span>
                   <span>🎯 {song.bullseyes || 0}</span>
                   <span>📦 {song.jams || 0} Jams</span>
-
-                  {/* New: live emoji gift counts */}
                   {tickleStats[song.id] &&
                     Object.entries(tickleStats[song.id]).map(([emoji, count]) => (
                       <span key={emoji}>{emoji} {count}</span>
@@ -329,8 +320,8 @@ const ProfileScreen = () => {
               </li>
             ))}
           </ul>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 };
