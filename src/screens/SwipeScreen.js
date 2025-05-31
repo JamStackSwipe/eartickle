@@ -9,6 +9,7 @@ const SwipeScreen = () => {
   const [songs, setSongs] = useState([]);
   const [jamStackIds, setJamStackIds] = useState([]);
   const [tickleCounts, setTickleCounts] = useState({});
+  const [trendingIds, setTrendingIds] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,11 +51,20 @@ const SwipeScreen = () => {
 
     if (!error && data) {
       const counts = {};
+      const trending = new Set();
+
       for (const row of data) {
         if (!counts[row.song_id]) counts[row.song_id] = {};
         counts[row.song_id][row.emoji] = row.count;
+
+        // 🔥 Trending logic
+        if (row.emoji === '🔥' && row.count > 10) {
+          trending.add(row.song_id);
+        }
       }
+
       setTickleCounts(counts);
+      setTrendingIds([...trending]);
     }
   };
 
@@ -84,8 +94,7 @@ const SwipeScreen = () => {
     if (error) {
       console.error('❌ Emoji reaction failed:', error.message);
     } else {
-      // Refresh just this song's reactions
-      fetchTickleStats();
+      fetchTickleStats(); // 🔄 refresh
     }
   };
 
@@ -93,7 +102,6 @@ const SwipeScreen = () => {
     if (dir === 'Right') {
       addToJamStack(songId);
     }
-    // ⬅️ You could handle dislikes later
   };
 
   return (
@@ -108,12 +116,13 @@ const SwipeScreen = () => {
 
         const inJam = jamStackIds.includes(song.id);
         const reactions = tickleCounts[song.id] || {};
+        const isTrending = trendingIds.includes(song.id);
 
         return (
           <div
             key={song.id}
             {...swipeHandlers}
-            className="bg-white rounded-xl shadow-md p-4 transition-all duration-300"
+            className="bg-white rounded-xl shadow-md p-4 transition-all duration-300 relative"
           >
             <div className="relative">
               <img
@@ -122,8 +131,17 @@ const SwipeScreen = () => {
                 className="w-full aspect-square object-contain rounded mb-4 cursor-pointer"
                 onClick={() => navigate(`/artist/${song.artist_id}`)}
               />
+
+              {/* 🔥 Trending Badge */}
+              {isTrending && (
+                <div className="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded-full shadow">
+                  🔥 Trending
+                </div>
+              )}
+
+              {/* ✅ JamStack Badge */}
               {inJam && (
-                <div className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full">
+                <div className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded-full shadow">
                   In JamStack
                 </div>
               )}
@@ -134,7 +152,7 @@ const SwipeScreen = () => {
 
             <audio controls src={song.audio} className="w-full mb-3" />
 
-            {/* Emoji Reactions with Counts */}
+            {/* Emoji Reactions + Counts */}
             <div className="flex justify-center gap-5 text-2xl">
               {['🔥', '❤️', '🎯', '😢'].map((emoji) => (
                 <div key={emoji} className="flex flex-col items-center">
