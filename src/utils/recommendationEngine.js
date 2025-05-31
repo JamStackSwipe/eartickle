@@ -64,6 +64,14 @@ export async function getRecommendedSongs(userId) {
         .from('songs')
         .update({ score })
         .eq('id', song.id);
+      await supabase.from('song_score_snapshots').insert([
+  {
+    song_id: song.id,
+    score,
+    snapshot_type: 'daily',
+  },
+]);
+
 
       return {
         ...song,
