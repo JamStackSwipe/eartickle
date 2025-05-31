@@ -9,16 +9,17 @@ const ProfileScreen = () => {
   const [songs, setSongs] = useState([]);
   const [jamSongs, setJamSongs] = useState([]);
   const [tickleStats, setTickleStats] = useState({});
-  const [showJams, setShowJams] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [showUploads, setShowUploads] = useState(false);
+  const [showJams, setShowJams] = useState(false);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
       fetchUploads();
-      fetchJamStack();
+      fetchMyJams();
     }
   }, [user]);
 
@@ -28,6 +29,7 @@ const ProfileScreen = () => {
       .select('*')
       .eq('id', user.id)
       .single();
+
     if (!error && data) setProfile(data);
   };
 
@@ -37,25 +39,24 @@ const ProfileScreen = () => {
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
+
     if (!error) {
       setSongs(data);
       fetchTickleStats(data.map((s) => s.id));
     }
+
     setLoading(false);
   };
 
-  const fetchJamStack = async () => {
+  const fetchMyJams = async () => {
     const { data, error } = await supabase
       .from('jamstacksongs')
       .select('song_id, songs(*)')
       .eq('user_id', user.id);
 
     if (!error && data) {
-      const songs = data.map((entry) => ({
-        ...entry.songs,
-        artist_name: entry.songs.artist_name || '',
-      }));
-      setJamSongs(songs);
+      const jams = data.map((j) => j.songs).filter(Boolean);
+      setJamSongs(jams);
     }
   };
 
@@ -65,6 +66,7 @@ const ProfileScreen = () => {
       .select('song_id, emoji, count')
       .in('song_id', songIds)
       .group('song_id, emoji');
+
     if (!error) {
       const grouped = {};
       data.forEach(({ song_id, emoji, count }) => {
@@ -92,16 +94,19 @@ const ProfileScreen = () => {
       tiktok: profile.tiktok || '',
       bandlab: profile.bandlab || '',
     };
+
     const { error } = await supabase
       .from('profiles')
       .update(updates)
       .eq('id', user.id);
+
     setMessage(error ? 'Error saving.' : '✅ Profile saved!');
   };
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+
     const filePath = `${user.id}/avatar.png`;
     const SUPABASE_URL = process.env.REACT_APP_SUPABASE_PROJECT_URL;
     setUploading(true);
@@ -109,13 +114,10 @@ const ProfileScreen = () => {
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(filePath, file, {
-        upsert: true,
-        cacheControl: 'public, max-age=3600',
-      });
+      .upload(filePath, file, { upsert: true });
 
     if (uploadError) {
-      console.error('❌ Upload error:', uploadError.message);
+      console.error(uploadError.message);
       setMessage('Upload failed.');
       setUploading(false);
       return;
@@ -128,12 +130,11 @@ const ProfileScreen = () => {
       .update({ avatar_url: publicUrl })
       .eq('id', user.id);
 
-    if (updateError) {
-      console.error('❌ Profile update error:', updateError.message);
-      setMessage('Avatar saved but profile update failed.');
-    } else {
+    if (!updateError) {
       setMessage('✅ Avatar updated!');
       setProfile((prev) => ({ ...prev, avatar_url: publicUrl }));
+    } else {
+      setMessage('Avatar saved but profile update failed.');
     }
 
     setUploading(false);
@@ -146,23 +147,31 @@ const ProfileScreen = () => {
       .delete()
       .eq('id', songId)
       .eq('user_id', user.id);
+
     if (!error) setSongs((prev) => prev.filter((s) => s.id !== songId));
   };
 
   const updateSong = async (id, updates) => {
     if ('stripe_account_id' in updates && updates.stripe_account_id === 'FETCH_FROM_PROFILE') {
-      const { data: profile, error } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('stripe_account_id')
         .eq('id', user.id)
         .maybeSingle();
+
       if (!profile?.stripe_account_id) {
         alert('You must connect Stripe in Settings to enable gifting.');
         return;
       }
+
       updates.stripe_account_id = profile.stripe_account_id;
     }
-    const { error } = await supabase.from('songs').update(updates).eq('id', id);
+
+    const { error } = await supabase
+      .from('songs')
+      .update(updates)
+      .eq('id', id);
+
     if (!error) fetchUploads();
   };
 
@@ -174,27 +183,23 @@ const ProfileScreen = () => {
 
   return (
     <div className="min-h-screen bg-white text-black p-6 max-w-3xl mx-auto">
-      {/* Avatar + Display */}
-      <div className="relative inline-block mb-4">
+      <div className="relative w-24 h-24 mb-4">
         <img
           src={avatarSrc}
           alt="avatar"
           onError={(e) => (e.target.src = '/default-avatar.png')}
           className="w-24 h-24 rounded-full object-cover border shadow"
         />
-        <label htmlFor="avatar-upload">
-          <div className="absolute top-0 right-0 bg-white p-1 rounded-full shadow cursor-pointer">
-            ✏️
-          </div>
+        <label className="absolute bottom-1 right-1 bg-white rounded-full p-1 cursor-pointer shadow">
+          ✏️
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            className="hidden"
+            disabled={uploading}
+          />
         </label>
-        <input
-          type="file"
-          id="avatar-upload"
-          accept="image/*"
-          onChange={handleAvatarChange}
-          className="hidden"
-          disabled={uploading}
-        />
       </div>
 
       <input
@@ -204,7 +209,6 @@ const ProfileScreen = () => {
         placeholder="Display Name"
         className="text-xl font-bold w-full border-b p-1"
       />
-
       <textarea
         value={profile.bio || ''}
         onChange={(e) => handleChange('bio', e.target.value)}
@@ -213,11 +217,12 @@ const ProfileScreen = () => {
         rows={3}
       />
 
-      <label className="block text-sm font-semibold mt-4">📩 Booking Email</label>
+      <label className="block text-sm mt-4 font-semibold">📩 Booking Email</label>
       <input
         type="email"
         value={profile.booking_email || ''}
         onChange={(e) => handleChange('booking_email', e.target.value)}
+        placeholder="you@email.com"
         className="w-full p-2 border rounded mb-2"
       />
 
@@ -234,19 +239,40 @@ const ProfileScreen = () => {
         </div>
       ))}
 
-      <button
-        onClick={handleSave}
-        className="mt-4 bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700"
-      >
+      <button onClick={handleSave} className="mt-4 bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700">
         Save Profile
       </button>
 
       {message && <p className="mt-2 text-green-600">{message}</p>}
 
-      {/* Uploaded Songs */}
-      {songs.length > 0 && (
-        <>
-          <h2 className="text-xl font-bold mt-10 mb-4">🎵 Your Uploaded Songs</h2>
+      {/* Collapsible My Jams */}
+      <div className="mt-10">
+        <button
+          onClick={() => setShowJams((prev) => !prev)}
+          className="font-bold text-lg mb-2"
+        >
+          {showJams ? '▼' : '▶'} 🎧 My JamStack
+        </button>
+        {showJams && (
+          <ul className="space-y-2">
+            {jamSongs.map((song) => (
+              <li key={song.id} className="p-2 border rounded bg-gray-50">
+                {song.title}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Collapsible Uploaded Songs */}
+      <div className="mt-6">
+        <button
+          onClick={() => setShowUploads((prev) => !prev)}
+          className="font-bold text-lg mb-2"
+        >
+          {showUploads ? '▼' : '▶'} 📂 Your Uploaded Songs
+        </button>
+        {showUploads && (
           <ul className="space-y-4">
             {songs.map((song) => (
               <li key={song.id} className="bg-gray-100 p-4 rounded shadow space-y-2">
@@ -283,14 +309,10 @@ const ProfileScreen = () => {
                       <label className="text-sm text-gray-600">Enable Gifting</label>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleDelete(song.id)}
-                    className="text-sm text-red-500 hover:text-red-700"
-                  >
+                  <button onClick={() => handleDelete(song.id)} className="text-sm text-red-500 hover:text-red-700">
                     🗑️
                   </button>
                 </div>
-
                 <div className="flex flex-wrap gap-4 text-xs text-gray-600 mt-2">
                   <span>👁️ {song.views || 0}</span>
                   <span>❤️ {song.likes || 0}</span>
@@ -302,37 +324,6 @@ const ProfileScreen = () => {
                     Object.entries(tickleStats[song.id]).map(([emoji, count]) => (
                       <span key={emoji}>{emoji} {count}</span>
                     ))}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      {/* My Jams (JamStack) Collapsible */}
-      <div className="mt-10">
-        <button
-          onClick={() => setShowJams(!showJams)}
-          className="text-lg font-semibold mb-2 text-blue-600"
-        >
-          🎧 {showJams ? 'Hide' : 'Show'} My JamStack Songs
-        </button>
-
-        {showJams && (
-          <ul className="space-y-4 mt-4">
-            {jamSongs.length === 0 && <p className="text-gray-500">No songs in your JamStack yet.</p>}
-            {jamSongs.map((song) => (
-              <li key={song.id} className="bg-gray-50 p-4 rounded shadow">
-                <div className="flex items-center space-x-4">
-                  <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
-                  <div className="flex-1">
-                    <div className="font-semibold">{song.title}</div>
-                    <div className="text-sm text-gray-600">{song.artist_name}</div>
-                    <audio controls className="w-full mt-1">
-                      <source src={song.audio} type="audio/mpeg" />
-                      Your browser does not support the audio element.
-                    </audio>
-                  </div>
                 </div>
               </li>
             ))}
