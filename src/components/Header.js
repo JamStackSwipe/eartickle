@@ -36,9 +36,16 @@ const Header = () => {
 
   return (
     <header className="w-full px-4 py-3 bg-black text-white flex justify-between items-center shadow relative z-10">
-      <div className="flex flex-col cursor-pointer" onClick={handleLogoClick}>
-        <div className="text-xl font-bold text-white hover:text-gray-300">🎵 EarTickle</div>
-        <div className="text-xs text-gray-400 -mt-1 ml-1">Swipe. Stack. Play.</div>
+      <div className="flex items-center space-x-2 cursor-pointer" onClick={handleLogoClick}>
+        <img
+          src="/logo-icon.png"
+          alt="EarTickle Icon"
+          className="w-8 h-8 object-contain"
+        />
+        <div className="flex flex-col">
+          <div className="text-xl font-bold text-white hover:text-gray-300">Ear Tickle</div>
+          <div className="text-xs text-gray-400 -mt-1 ml-1">Scroll. Stack. Play.</div>
+        </div>
       </div>
 
       {user && (
@@ -61,7 +68,11 @@ const Header = () => {
           </div>
 
           {/* Avatar + Dropdown Menu */}
-          <div className="relative hidden sm:block" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+          <div
+            className="relative hidden sm:block"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
             <img
               src={user.user_metadata?.avatar_url || '/default-avatar.png'}
               alt="avatar"
