@@ -13,7 +13,6 @@ const SwipeScreen = () => {
   const [songs, setSongs] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [adding, setAdding] = useState(false);
-  const [userHasTapped, setUserHasTapped] = useState(false);
   const [showOverlay, setShowOverlay] = useState(true);
   const audioRef = useRef();
 
@@ -30,14 +29,19 @@ const SwipeScreen = () => {
   const song = songs[currentIndex];
 
   const handleFirstTap = () => {
-    setUserHasTapped(true);
     setShowOverlay(false);
+    if (audioRef.current) {
+      audioRef.current.play().catch((err) => {
+        console.warn('🎧 Autoplay failed:', err);
+      });
+    }
   };
 
   const handleNext = () => {
-    setCurrentIndex((prev) => Math.min(prev + 1, songs.length - 1));
-    if (songs[currentIndex + 1]) {
-      supabase.rpc('increment_song_views', { song_id: songs[currentIndex + 1].id });
+    const nextIndex = Math.min(currentIndex + 1, songs.length - 1);
+    setCurrentIndex(nextIndex);
+    if (songs[nextIndex]) {
+      supabase.rpc('increment_song_views', { song_id: songs[nextIndex].id });
     }
   };
 
@@ -127,16 +131,14 @@ const SwipeScreen = () => {
   }
 
   return (
-
     <div
-  {...swipeHandlers}
-  onClick={handleFirstTap}
-  className="min-h-screen bg-black text-white flex justify-center items-center p-4 relative z-0"
->      
-
+      {...swipeHandlers}
+      onClick={handleFirstTap}
+      className="min-h-screen bg-black text-white flex justify-center items-center p-4 relative z-[90]"
+    >
       {showOverlay && (
-        <div className="absolute inset-0 bg-black bg-opacity-70 pointer-events-none z-[98]">
-          <div className="flex flex-col items-center justify-center h-full text-white text-center space-y-2 text-lg pointer-events-auto">
+        <div className="absolute inset-0 bg-black bg-opacity-70 z-[99] flex items-center justify-center text-center text-white pointer-events-auto">
+          <div className="space-y-2 text-lg">
             <div>👈 Swipe left to skip</div>
             <div>👉 Swipe right to add</div>
             <div>↑ Swipe up for next</div>
@@ -146,7 +148,7 @@ const SwipeScreen = () => {
         </div>
       )}
 
-      <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center z-[99] relative">
+      <div className="bg-white text-black rounded-xl shadow-lg w-full max-w-md p-6 text-center z-[100] relative">
         <Link
           to={`/artist/${song.user_id}`}
           onClick={(e) => e.stopPropagation()}
@@ -162,18 +164,22 @@ const SwipeScreen = () => {
         <h2 className="text-2xl font-bold mb-1">{song.title}</h2>
         <p className="text-sm text-gray-600">{song.artist || 'Unknown Artist'}</p>
         <p className="text-xs italic text-gray-400 mb-3">{song.genre}</p>
-              
-  <div className="flex justify-center gap-3 flex-wrap text-gray-600 text-xs mb-2">
-  <span>👁️ {song.views || 0}</span>
-  <span>❤️ {song.loves || 0}</span>     {/* ✅ fixed field */}
-  <span>🔥 {song.fires || 0}</span>
-  <span>😢 {song.sads || 0}</span>
-  <span>🎯 {song.bullseyes || 0}</span>
-  <span>📦 {song.jams || 0} Jams</span>
-  </div>
-  
 
-        <audio ref={audioRef} src={song.audio} controls className="w-full mb-4" />
+        <div className="flex justify-center gap-3 flex-wrap text-gray-600 text-xs mb-2">
+          <span>👁️ {song.views || 0}</span>
+          <span>❤️ {song.likes || 0}</span>
+          <span>🔥 {song.fires || 0}</span>
+          <span>😢 {song.sads || 0}</span>
+          <span>🎯 {song.bullseyes || 0}</span>
+          <span>📦 {song.jams || 0} Jams</span>
+        </div>
+
+        <audio
+          ref={audioRef}
+          src={song.audio}
+          controls
+          className="w-full mb-4"
+        />
 
         <div className="flex justify-center gap-4 text-2xl mb-4">
           {reactionEmojis.map((emoji) => (
