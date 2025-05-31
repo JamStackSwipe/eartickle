@@ -7,7 +7,7 @@ const SwipeScreen = () => {
   const { user } = useUser();
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const audioRefs = useRef({});
+  const audioRef = useRef(null);
 
   useEffect(() => {
     const fetchSongs = async () => {
@@ -32,16 +32,12 @@ const SwipeScreen = () => {
     await supabase.rpc('increment_song_view', { song_id_input: songId });
   };
 
-  const handlePlay = (currentId) => {
-    // Pause all other audio players
-    Object.keys(audioRefs.current).forEach((id) => {
-      if (id !== currentId && audioRefs.current[id]) {
-        audioRefs.current[id].pause();
-      }
-    });
-
-    // Increment views
-    incrementViews(currentId);
+  const handlePlay = (e, songId) => {
+    if (audioRef.current && audioRef.current !== e.target) {
+      audioRef.current.pause();
+    }
+    audioRef.current = e.target;
+    incrementViews(songId);
   };
 
   if (loading) {
@@ -63,15 +59,16 @@ const SwipeScreen = () => {
           <h2 className="text-xl font-semibold text-white mb-1">{song.title}</h2>
           <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
           <audio
-            ref={(el) => (audioRefs.current[song.id] = el)}
             src={song.audio}
             controls
             className="w-full mb-2"
-            onPlay={() => handlePlay(song.id)}
+            onPlay={(e) => handlePlay(e, song.id)}
           />
-          <AddToJamStackButton songId={song.id} />
-          <div className="text-xs text-gray-400 mt-2">
-            👁️ {song.views || 0} | 🎧 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.loves || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
+          <div className="flex flex-col items-center">
+            <AddToJamStackButton songId={song.id} />
+            <div className="text-xs text-gray-400 mt-2 text-center">
+              👁️ {song.views || 0} | 🎧 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.loves || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
+            </div>
           </div>
         </div>
       ))}
