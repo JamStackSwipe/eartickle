@@ -1,4 +1,5 @@
 // /api/stripe-webhook.js
+
 import Stripe from 'stripe';
 import { buffer } from 'micro';
 import { createClient } from '@supabase/supabase-js';
@@ -11,7 +12,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY // ✅ Needs service role to insert/update
 );
 
 export default async function handler(req, res) {
@@ -44,21 +45,20 @@ export default async function handler(req, res) {
       return res.status(400).send('Invalid metadata');
     }
 
-    // ✅ Add a new row to tickle_purchases
-   const { error } = await supabase.from('tickle_purchases').insert([{
-  buyer_id: user_id, // <-- FIXED: use buyer_id
-  amount: parsedAmount,
-  completed: true,
-  stripe_session_id: session.id,
-}]);
-
+    // ✅ Insert into tickle_purchases using correct column name
+    const { data, error } = await supabase.from('tickle_purchases').insert([{
+      buyer_id: user_id, // ✅ Use correct column
+      amount: parsedAmount,
+      completed: true,
+      stripe_session_id: session.id,
+    }]);
 
     if (error) {
       console.error('❌ Failed to insert tickle purchase:', error.message);
       return res.status(500).send('Database insert failed');
     }
 
-    console.log('✅ Tickle purchase recorded');
+    console.log('✅ Tickle purchase recorded:', data);
   }
 
   return res.status(200).json({ received: true });
