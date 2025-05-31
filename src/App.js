@@ -7,7 +7,7 @@ import SwipeScreen from './screens/SwipeScreen';
 import UploadScreen from './screens/UploadScreen';
 import MyJamsScreen from './screens/MyJamsScreen';
 import JamStackScreen from './screens/JamStackScreen';
-import AuthScreen from './screens/AuthScreen';
+import LoginScreen from './screens/LoginScreen';
 import RewardsScreen from './screens/RewardsScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import SettingsScreen from './screens/SettingsScreen';
@@ -20,7 +20,7 @@ function App() {
       <Header />
       <Routes>
         <Route path="/" element={<HomePage />} /> {/* ✅ Set homepage */}
-        <Route path="/auth" element={<AuthScreen />} />
+        <Route path="/auth" element={<LoginScreen />} />
         <Route path="/swipe" element={<SwipeScreen />} />
         <Route path="/upload" element={<UploadScreen />} />
         <Route path="/myjams" element={<MyJamsScreen />} />
