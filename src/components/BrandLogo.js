@@ -5,13 +5,21 @@ const BrandLogo = ({ to = '/swipe', className = '' }) => {
 
   return (
     <div
-      className={`flex flex-col cursor-pointer select-none active:opacity-80 ${className}`}
       onClick={() => navigate(to)}
+      className={`flex items-center gap-3 cursor-pointer select-none ${className}`}
     >
-      <div className="text-xl sm:text-2xl font-bold text-white hover:text-gray-300">🎵 EarTickle</div>
-      <div className="text-[10px] sm:text-xs text-gray-400 -mt-0.5 sm:ml-1">Swipe. Stack. Play.</div>
+      <img
+        src="/logo-icon.png" // ✅ This should be your ear+headphones icon
+        alt="EarTickle Icon"
+        className="w-10 h-10 sm:w-12 sm:h-12"
+      />
+      <div className="flex flex-col leading-tight">
+        <span className="text-xl sm:text-2xl font-bold text-white">EAR TICKLE</span>
+        <span className="text-xs sm:text-sm text-gray-400 -mt-1">Scroll. Stack. Play.</span>
+      </div>
     </div>
   );
 };
 
 export default BrandLogo;
+
