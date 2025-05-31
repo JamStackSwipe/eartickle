@@ -1,154 +1,152 @@
-import { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
-import SongCard from '../components/SongCard';
 import AddToJamStackButton from '../components/AddToJamStackButton';
+import SendTickleButton from '../components/SendTickleButton';
 
 const ProfileScreen = () => {
   const { user } = useUser();
-  const [profile, setProfile] = useState({});
-  const [songs, setSongs] = useState([]);
-  const [jamSongs, setJamSongs] = useState([]);
-  const [editing, setEditing] = useState(false);
-  const [expanded, setExpanded] = useState({ uploads: false, jams: false });
+  const [profile, setProfile] = useState({ display_name: '', bio: '', avatar_url: '' });
+  const [isEditing, setIsEditing] = useState(false);
+  const [jams, setJams] = useState([]);
+  const [uploads, setUploads] = useState([]);
+  const [showUploads, setShowUploads] = useState(true);
+  const [showJams, setShowJams] = useState(true);
 
   useEffect(() => {
     if (user) {
       fetchProfile();
-      fetchMySongs();
-      fetchJamStack();
+      fetchJams();
+      fetchUploads();
     }
   }, [user]);
 
   const fetchProfile = async () => {
     const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    setProfile(data || {});
+    if (data) setProfile(data);
   };
 
-  const fetchMySongs = async () => {
-    const { data } = await supabase.from('songs').select('*').eq('artist_id', user.id);
-    setSongs(data || []);
-  };
-
-  const fetchJamStack = async () => {
+  const fetchJams = async () => {
     const { data } = await supabase
       .from('jamstacksongs')
-      .select('songs:song_id(*)')
+      .select('id, songs:song_id(*)')
       .eq('user_id', user.id);
-    setJamSongs(data.map(j => j.songs));
+    if (data) setJams(data.map(item => item.songs));
   };
 
-  const handleSave = async () => {
-    await supabase.from('profiles').update(profile).eq('id', user.id);
-    setEditing(false);
+  const fetchUploads = async () => {
+    const { data } = await supabase.from('songs').select('*').eq('artist_id', user.id);
+    if (data) setUploads(data);
   };
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}.${fileExt}`;
-    const filePath = `${fileName}`;
-
-    await supabase.storage.from('avatars').upload(filePath, file, {
-      upsert: true,
-      contentType: file.type,
+    const filePath = `${user.id}/${file.name}`;
+    const { error } = await supabase.storage.from('avatars').upload(filePath, file, {
+      upsert: true
     });
+    if (!error) {
+      const { data: publicURLData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const avatarUrl = publicURLData.publicUrl;
+      await supabase.from('profiles').update({ avatar_url: filePath }).eq('id', user.id);
+      setProfile((prev) => ({ ...prev, avatar_url: filePath }));
+    }
+  };
 
-    const publicUrl = `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/avatars/${filePath}`;
-    setProfile((prev) => ({ ...prev, avatar_url: publicUrl }));
-
-    await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+  const handleSave = async () => {
+    await supabase.from('profiles').update({
+      display_name: profile.display_name,
+      bio: profile.bio
+    }).eq('id', user.id);
+    setIsEditing(false);
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-4 text-white">
+    <div className="p-4 text-white">
       <div className="flex items-center space-x-4">
-        <div className="relative">
+        <label htmlFor="avatar-upload" className="relative cursor-pointer">
           <img
-            src={profile.avatar_url || '/default-avatar.png'}
-            alt="Avatar"
-            className="w-20 h-20 rounded-full border border-gray-400 object-cover"
-            onClick={() => document.getElementById('avatarUpload').click()}
+            src={profile.avatar_url ? `${process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/avatars/${profile.avatar_url}` : '/default-avatar.png'}
+            alt="avatar"
+            className="w-20 h-20 rounded-full border border-white"
           />
-          <input
-            type="file"
-            id="avatarUpload"
-            className="hidden"
-            onChange={handleAvatarChange}
-          />
-          <div className="absolute bottom-0 right-0 text-xs bg-gray-700 px-1 rounded">✏️</div>
-        </div>
+          <span className="absolute bottom-0 right-0 bg-gray-800 p-1 rounded-full text-xs">✏️</span>
+          <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+        </label>
         <div>
-          {editing ? (
-            <>
-              <input
-                value={profile.display_name || ''}
-                onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
-                className="bg-gray-800 px-2 py-1 rounded mb-1 w-full"
-                placeholder="Display name"
-              />
-              <textarea
-                value={profile.bio || ''}
-                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                className="bg-gray-800 px-2 py-1 rounded w-full"
-                placeholder="Bio"
-              />
-            </>
+          {isEditing ? (
+            <input
+              className="text-lg font-bold bg-black border border-white rounded p-1"
+              value={profile.display_name}
+              onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
+            />
           ) : (
-            <>
-              <h2 className="text-xl font-bold">{profile.display_name}</h2>
-              <p className="text-gray-400 text-sm">{profile.bio}</p>
-            </>
+            <h1 className="text-2xl font-bold">{profile.display_name || 'No Name'}</h1>
           )}
+          {isEditing ? (
+            <textarea
+              className="text-sm bg-black border border-white rounded p-1 mt-1"
+              value={profile.bio}
+              onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+            />
+          ) : (
+            <p className="text-sm text-gray-400">{profile.bio}</p>
+          )}
+          <button
+            onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+            className="mt-2 text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded"
+          >
+            {isEditing ? 'Save' : 'Edit Profile'}
+          </button>
         </div>
       </div>
 
-      <div className="mt-4">
-        {editing ? (
-          <button className="bg-green-600 px-4 py-1 rounded" onClick={handleSave}>Save</button>
-        ) : (
-          <button className="bg-blue-600 px-4 py-1 rounded" onClick={() => setEditing(true)}>Edit Profile</button>
-        )}
-      </div>
-
-      {/* Uploaded Songs */}
       <div className="mt-6">
         <div
-          className="cursor-pointer bg-zinc-800 px-4 py-2 rounded-t font-bold"
-          onClick={() => setExpanded(prev => ({ ...prev, uploads: !prev.uploads }))}
+          className="cursor-pointer text-lg font-semibold mb-2"
+          onClick={() => setShowUploads(!showUploads)}
         >
-          🎵 Uploaded Songs ({songs.length}) {expanded.uploads ? '▲' : '▼'}
+          🎤 My Uploads {showUploads ? '▼' : '▶'}
         </div>
-        {expanded.uploads && (
-          <div className="bg-zinc-900 p-4 rounded-b space-y-4">
-            {songs.length === 0 && <div>No uploads yet.</div>}
-            {songs.map((song) => (
-              <SongCard key={song.id} song={song} />
-            ))}
+        {showUploads && uploads.map((song) => (
+          <div key={song.id} className="mb-4 border border-zinc-700 p-2 rounded">
+            <a href={`/artist/${song.artist_id}`}>
+              <img src={song.cover} alt={song.title} className="w-full rounded mb-2" />
+            </a>
+            <h2 className="text-xl font-bold">{song.title}</h2>
+            <p className="text-sm text-gray-400">by {song.artist}</p>
+            <audio src={song.audio} controls className="w-full mt-2" />
+            <SendTickleButton songId={song.id} artistId={song.artist_id} />
+            <div className="text-xs text-gray-400 mt-2">
+              👁️ {song.views || 0} | 🎧 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.loves || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
+            </div>
           </div>
-        )}
+        ))}
       </div>
 
-      {/* My Jams */}
       <div className="mt-6">
         <div
-          className="cursor-pointer bg-zinc-800 px-4 py-2 rounded-t font-bold"
-          onClick={() => setExpanded(prev => ({ ...prev, jams: !prev.jams }))}
+          className="cursor-pointer text-lg font-semibold mb-2"
+          onClick={() => setShowJams(!showJams)}
         >
-          🎧 My JamStack ({jamSongs.length}) {expanded.jams ? '▲' : '▼'}
+          💽 My Jams {showJams ? '▼' : '▶'}
         </div>
-        {expanded.jams && (
-          <div className="bg-zinc-900 p-4 rounded-b space-y-4">
-            {jamSongs.length === 0 && <div>No songs in your stack yet.</div>}
-            {jamSongs.map((song) => (
-              <SongCard key={song.id} song={song}>
-                <AddToJamStackButton songId={song.id} />
-              </SongCard>
-            ))}
+        {showJams && jams.map((song) => (
+          <div key={song.id} className="mb-4 border border-zinc-700 p-2 rounded">
+            <a href={`/artist/${song.artist_id}`}>
+              <img src={song.cover} alt={song.title} className="w-full rounded mb-2" />
+            </a>
+            <h2 className="text-xl font-bold">{song.title}</h2>
+            <p className="text-sm text-gray-400">by {song.artist}</p>
+            <audio src={song.audio} controls className="w-full mt-2" />
+            <AddToJamStackButton songId={song.id} />
+            <SendTickleButton songId={song.id} artistId={song.artist_id} />
+            <div className="text-xs text-gray-400 mt-2">
+              👁️ {song.views || 0} | 🎧 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.loves || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
+            </div>
           </div>
-        )}
+        ))}
       </div>
     </div>
   );
