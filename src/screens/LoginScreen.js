@@ -46,12 +46,12 @@ const LoginScreen = () => {
 
       {/* Overlay Content */}
       <div className="relative z-10 flex flex-col items-center justify-center px-4 py-20 text-center">
-        {/* ✅ Inline Logo + Tagline */}
-        <div className="text-center mb-10">
+        {/* ✅ Logo + Tagline */}
+        <div className="text-center mb-10 select-none">
           <img
             src="/logo.png"
             alt="EarTickle Logo"
-            className="w-24 h-24 mx-auto mb-2"
+            className="w-24 h-24 mx-auto mb-2 rounded-lg shadow"
           />
           <h1 className="text-4xl font-bold text-white tracking-wide">EarTickle</h1>
           <p className="text-sm text-teal-300 mt-1">Swipe. Stack. Play.</p>
