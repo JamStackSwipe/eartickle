@@ -45,12 +45,13 @@ export default async function handler(req, res) {
     }
 
     // ✅ Add a new row to tickle_purchases
-    const { error } = await supabase.from('tickle_purchases').insert([{
-      user_id,
-      amount: parsedAmount,
-      completed: true,
-      stripe_session_id: session.id,
-    }]);
+   const { error } = await supabase.from('tickle_purchases').insert([{
+  buyer_id: user_id, // <-- FIXED: use buyer_id
+  amount: parsedAmount,
+  completed: true,
+  stripe_session_id: session.id,
+}]);
+
 
     if (error) {
       console.error('❌ Failed to insert tickle purchase:', error.message);
