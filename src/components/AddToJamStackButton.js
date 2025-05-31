@@ -1,58 +1,62 @@
-import { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
 
 const AddToJamStackButton = ({ songId }) => {
   const { user } = useUser();
-  const [isInJamStack, setIsInJamStack] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [added, setAdded] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
+  const handleAddToJamStack = async () => {
     if (!user || !songId) return;
+    setLoading(true);
 
-    const check = async () => {
-      const { data, error } = await supabase
-        .from('jamstacksongs')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('song_id', songId)
-        .single();
-
-      setIsInJamStack(!!data);
-      setLoading(false);
-    };
-
-    check();
-  }, [user, songId]);
-
-  const handleAdd = async () => {
-    if (!user || !songId) return;
-
-    const { error } = await supabase
+    // Check for duplicates
+    const { data: existing, error: checkError } = await supabase
       .from('jamstacksongs')
-      .insert([{ user_id: user.id, song_id: songId }]);
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('song_id', songId);
+
+    if (checkError) {
+      console.error('Error checking JamStack:', checkError.message);
+      setLoading(false);
+      return;
+    }
+
+    if (existing.length > 0) {
+      console.log('Song already in JamStack.');
+      setAdded(true);
+      setLoading(false);
+      return;
+    }
+
+    // Insert if not found
+    const { error } = await supabase.from('jamstacksongs').insert([
+      { user_id: user.id, song_id: songId },
+    ]);
 
     if (error) {
-      alert('❌ Error adding to JamStack.');
+      console.error('Error adding to JamStack:', error.message);
     } else {
-      setIsInJamStack(true);
-      alert('✅ Added to your JamStack!');
+      console.log('✅ Song added to JamStack!');
+      setAdded(true);
     }
-  };
 
-  if (loading) return null;
+    setLoading(false);
+  };
 
   return (
     <button
-      onClick={handleAdd}
-      disabled={isInJamStack}
-      className={`w-full py-2 mt-2 rounded font-semibold ${
-        isInJamStack
-          ? 'bg-gray-500 text-white cursor-not-allowed'
-          : 'bg-green-600 text-white hover:bg-green-700'
+      onClick={handleAddToJamStack}
+      disabled={loading || added}
+      className={`px-4 py-2 mt-2 text-sm font-semibold rounded ${
+        added
+          ? 'bg-green-400 text-white cursor-not-allowed'
+          : 'bg-blue-500 hover:bg-blue-600 text-white'
       }`}
     >
-      {isInJamStack ? '✔️ In JamStack' : '❤️ Add to JamStack'}
+      {added ? '✅ In JamStack' : loading ? 'Adding...' : '➕ Add to JamStack'}
     </button>
   );
 };
