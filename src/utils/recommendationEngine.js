@@ -29,7 +29,7 @@ export async function getRecommendedSongs(userId) {
     .select('song_id')
     .eq('sender_id', userId);
 
-  // Step 4: Enrich each song with score + public stats
+  // Step 4: Enrich each song
   const enriched = await Promise.all(
     songs.map(async (song) => {
       let score = 0;
@@ -39,7 +39,7 @@ export async function getRecommendedSongs(userId) {
       if (tickles?.some((t) => t.song_id === song.id)) score += 25;
       if (profile?.preferred_genres?.includes(song.genre)) score += 5;
 
-      // Public stats (emoji reactions)
+      // Emoji counts
       const { data: allTickles } = await supabase
         .from('tickles')
         .select('emoji')
@@ -53,9 +53,9 @@ export async function getRecommendedSongs(userId) {
       });
 
       // Jam count
-      const { data: jamCountData } = await supabase
+      const { count: jamCount } = await supabase
         .from('jamstacksongs')
-        .select('id', { count: 'exact', head: true })
+        .select('*', { count: 'exact', head: true })
         .eq('song_id', song.id);
 
       return {
@@ -65,7 +65,8 @@ export async function getRecommendedSongs(userId) {
         fires: emojiCounts['🔥'],
         sads: emojiCounts['😢'],
         bullseyes: emojiCounts['🎯'],
-        jams: jamCountData?.length || 0,
+        jams: jamCount || 0,
+        views: song.views || 0, // pull from songs table if column exists
       };
     })
   );
