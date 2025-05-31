@@ -1,3 +1,5 @@
+// src/screens/MyJamsScreen.js
+
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -22,11 +24,11 @@ const MyJamsScreen = () => {
         song_id,
         songs (
           id,
-          user_id,
           title,
           artist,
           cover,
           audio,
+          genre,
           views,
           stripe_account_id
         )
@@ -35,59 +37,35 @@ const MyJamsScreen = () => {
       .order('id', { ascending: false })
       .limit(50);
 
-    if (error || !jamData) {
+    if (error) {
       console.error('❌ Error fetching JamStack songs:', error);
-      setLoading(false);
-      return;
+    } else {
+      // Fetch reactions and counts for each song
+      const enriched = await Promise.all(
+        jamData.map(async (jam) => {
+          const song = jam.songs;
+
+          const { data: reactions } = await supabase
+            .from('reactions')
+            .select('emoji')
+            .eq('song_id', song.id);
+
+          const emojiCounts = { '❤️': 0, '🔥': 0, '😢': 0, '🎯': 0 };
+          reactions?.forEach((r) => {
+            if (emojiCounts[r.emoji] !== undefined) emojiCounts[r.emoji]++;
+          });
+
+          return {
+            ...jam,
+            emojiCounts,
+            views: song.views || 0,
+          };
+        })
+      );
+
+      setJams(enriched);
     }
 
-    // Gather song IDs
-    const songIds = jamData.map((jam) => jam.song_id);
-
-    // Pull emoji reactions in one batch
-    const { data: allReactions } = await supabase
-      .from('reactions')
-      .select('song_id, emoji')
-      .in('song_id', songIds);
-
-    const reactionStats = {};
-    allReactions?.forEach((r) => {
-      const sid = r.song_id;
-      if (!reactionStats[sid]) {
-        reactionStats[sid] = { '❤️': 0, '🔥': 0, '🎯': 0, '😢': 0 };
-      }
-      if (reactionStats[sid][r.emoji] !== undefined) {
-        reactionStats[sid][r.emoji]++;
-      }
-    });
-
-    // Jam counts
-    const jamCounts = {};
-    for (const songId of songIds) {
-      const { count } = await supabase
-        .from('jamstacksongs')
-        .select('*', { count: 'exact', head: true })
-        .eq('song_id', songId);
-      jamCounts[songId] = count || 0;
-    }
-
-    const enriched = jamData.map((jam) => {
-      const song = jam.songs;
-      const reactions = reactionStats[song.id] || {};
-      return {
-        ...jam,
-        stats: {
-          likes: reactions['❤️'] || 0,
-          fires: reactions['🔥'] || 0,
-          sads: reactions['😢'] || 0,
-          bullseyes: reactions['🎯'] || 0,
-          views: song.views || 0,
-          jams: jamCounts[song.id] || 0,
-        },
-      };
-    });
-
-    setJams(enriched);
     setLoading(false);
   };
 
@@ -100,11 +78,13 @@ const MyJamsScreen = () => {
       .eq('user_id', user.id)
       .eq('song_id', songId);
 
-    if (!error) {
-      setJams((prev) => prev.filter((jam) => jam.song_id !== songId));
-    } else {
+    if (error) {
+      console.error('❌ Error deleting song:', error);
       alert('Could not remove this song.');
+      return;
     }
+
+    setJams((prev) => prev.filter((jam) => jam.song_id !== songId));
   };
 
   return (
@@ -119,7 +99,7 @@ const MyJamsScreen = () => {
         <ul className="space-y-4">
           {jams.map((jam) => {
             const song = jam.songs;
-            const stats = jam.stats;
+            const stats = jam.emojiCounts;
 
             return (
               <li key={jam.id} className="bg-gray-900 p-4 rounded-lg shadow space-y-2">
@@ -149,20 +129,18 @@ const MyJamsScreen = () => {
                   </button>
                 </div>
 
-                <div className="text-xs text-gray-400 mt-1 flex gap-3 flex-wrap">
-                  ❤️ {stats.likes} · 🔥 {stats.fires} · 😢 {stats.sads} · 🎯 {stats.bullseyes} · 👁 {stats.views} · 🎧 {stats.jams}
+                {/* Real-time stats */}
+                <div className="text-xs text-gray-400 mt-1 flex gap-4 flex-wrap">
+                  ❤️ {stats['❤️']} · 🔥 {stats['🔥']} · 😢 {stats['😢']} · 🎯 {stats['🎯']} · 👁 {jam.views}
                 </div>
 
-                {/* Only allow tickles to other artists */}
-                {user.id !== song.user_id && (
-                  <SendTickleButton
-                    songId={song.id}
-                    songTitle={song.title}
-                    artistId={song.user_id}
-                    artistStripeId={song.stripe_account_id}
-                    senderId={user.id}
-                  />
-                )}
+                <SendTickleButton
+                  songId={song.id}
+                  songTitle={song.title}
+                  artistId={user.id}
+                  artistStripeId={song.stripe_account_id}
+                  senderId={user.id}
+                />
               </li>
             );
           })}
