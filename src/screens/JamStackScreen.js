@@ -17,14 +17,29 @@ const JamStackScreen = () => {
   const fetchJamStackSongs = async () => {
     const { data, error } = await supabase
       .from('jamstacksongs')
-      .select('id, songs ( id, title, artist, artist_id, cover, audio )')
+      .select(`
+        id,
+        song_id,
+        songs:song_id (
+          id,
+          title,
+          artist,
+          artist_id,
+          cover,
+          audio
+        )
+      `)
       .eq('user_id', user.id);
 
     if (error) {
-      console.error('Error loading JamStack:', error.message);
+      console.error('❌ Error loading JamStack:', error.message);
     } else {
-      const shuffled = data.map((entry) => entry.songs).sort(() => Math.random() - 0.5);
-      setSongs(shuffled);
+      const extractedSongs = data
+        .map((entry) => entry.songs)
+        .filter(Boolean)
+        .sort(() => Math.random() - 0.5);
+
+      setSongs(extractedSongs);
     }
   };
 
@@ -55,7 +70,6 @@ const JamStackScreen = () => {
     <div className="max-w-xl mx-auto mt-10 text-center px-4">
       <h2 className="text-2xl font-bold mb-4">🔀 JamStack Stacker</h2>
 
-      {/* Album cover = link to artist */}
       <img
         src={currentSong.cover}
         alt="cover"
@@ -82,7 +96,6 @@ const JamStackScreen = () => {
         ⏭️ Next Song
       </button>
 
-      {/* Upcoming Song Preview */}
       {nextSong && (
         <div className="mt-6 text-left bg-gray-100 p-4 rounded">
           <p className="text-gray-700 font-semibold mb-1">Up Next:</p>
