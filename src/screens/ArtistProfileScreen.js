@@ -1,8 +1,11 @@
+// src/screens/ArtistProfileScreen.js
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { useUser } from '../components/AuthProvider';
+import SendTickleButton from '../components/SendTickleButton';
+import EmojiReactionGiftBox from '../components/EmojiReactionGiftBox';
 
 const ArtistProfileScreen = () => {
   const { id } = useParams();
@@ -11,6 +14,7 @@ const ArtistProfileScreen = () => {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [tickleBalance, setTickleBalance] = useState(0);
 
   useEffect(() => {
     const fetchArtist = async () => {
@@ -43,6 +47,23 @@ const ArtistProfileScreen = () => {
 
     fetchArtist();
   }, [id]);
+
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('tickle_balance')
+        .eq('id', user.id)
+        .single();
+
+      if (!error && data) {
+        setTickleBalance(data.tickle_balance || 0);
+      }
+    };
+
+    fetchBalance();
+  }, [user]);
 
   const handleAddToJamStack = async (songId) => {
     if (!user || adding) return;
@@ -128,6 +149,26 @@ const ArtistProfileScreen = () => {
             >
               📩 Book This Artist
             </a>
+          )}
+
+          {user && user.id !== artist.id && (
+            <div className="mt-4 space-y-2">
+              <SendTickleButton
+                songId={songs[0]?.id}
+                songTitle={songs[0]?.title}
+                artistId={artist.id}
+                artistStripeId={artist.stripe_id}
+                senderId={user.id}
+              />
+              {songs[0] && (
+                <EmojiReactionGiftBox
+                  song={songs[0]}
+                  user={user}
+                  tickleBalance={tickleBalance}
+                  setTickleBalance={setTickleBalance}
+                />
+              )}
+            </div>
           )}
         </div>
       </div>
