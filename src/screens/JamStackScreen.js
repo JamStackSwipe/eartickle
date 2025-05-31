@@ -23,8 +23,10 @@ const StackerScreen = () => {
       }
     };
 
-    fetchJamStack();
-  }, [user.id]);
+    if (user?.id) {
+      fetchJamStack();
+    }
+  }, [user?.id]);
 
   const playSound = (emoji) => {
     let sound;
@@ -62,10 +64,12 @@ const StackerScreen = () => {
 
   const currentSong = songs[currentSongIndex];
 
-  if (!currentSong) return <div className="text-white text-center mt-10">No songs in your JamStack yet.</div>;
+  if (!currentSong) {
+    return <div className="text-white text-center mt-10">No songs in your JamStack yet.</div>;
+  }
 
   return (
-  
+    <div className="p-4 max-w-xl mx-auto">
       <div className="bg-zinc-900 rounded-xl shadow-md p-4 text-white">
         <a href={`/artist/${currentSong.artist_id}`}>
           <img src={currentSong.cover} alt={currentSong.title} className="w-full h-auto rounded-xl mb-4" />
@@ -90,7 +94,9 @@ const StackerScreen = () => {
             </button>
           ))}
         </div>
-        <AddToJamStackButton songId={currentSong.id} />
+        <div className="flex justify-center">
+          <AddToJamStackButton songId={currentSong.id} />
+        </div>
         <div className="text-center text-xs text-gray-400 mt-2">
           👁️ {currentSong.views || 0} | 🎧 {currentSong.jams || 0} | 🔥 {currentSong.fires || 0} | ❤️ {currentSong.loves || 0} | 😢 {currentSong.sads || 0} | 🎯 {currentSong.bullseyes || 0}
         </div>
