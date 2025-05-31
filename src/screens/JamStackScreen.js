@@ -21,12 +21,7 @@ const JamStackScreen = () => {
         id,
         song_id,
         songs:song_id (
-          id,
-          title,
-          artist,
-          cover,
-          audio,
-          artist_id
+          id, title, artist, artist_id, cover, audio, views
         )
       `)
       .eq('user_id', user.id);
@@ -34,19 +29,30 @@ const JamStackScreen = () => {
     if (error) {
       console.error('❌ Error loading JamStack:', error.message);
     } else {
-      const extractedSongs = data
-        .map((entry) => entry.songs)
-        .filter(Boolean)
-        .sort(() => Math.random() - 0.5);
-
-      setSongs(extractedSongs);
+      const extracted = data.map((entry) => entry.songs).filter(Boolean);
+      const shuffled = extracted.sort(() => Math.random() - 0.5);
+      setSongs(shuffled);
     }
   };
 
-  const playNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % songs.length);
-  };
+  // ⬆️ Count views when song loads
+  useEffect(() => {
+    if (songs.length === 0) return;
 
+    const currentSong = songs[currentIndex];
+    if (!currentSong?.id) return;
+
+    supabase
+      .from('songs')
+      .update({ views: (currentSong.views || 0) + 1 })
+      .eq('id', currentSong.id)
+      .then(({ error }) => {
+        if (error) console.error('📉 View update failed:', error.message);
+      });
+
+  }, [currentIndex]);
+
+  // ⏭️ Autoplay next on song end
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.play().catch((err) => {
@@ -54,6 +60,25 @@ const JamStackScreen = () => {
       });
     }
   }, [currentIndex]);
+
+  const playNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % songs.length);
+  };
+
+  const sendReaction = async (emoji) => {
+    const currentSong = songs[currentIndex];
+    if (!currentSong || !user?.id) return;
+
+    const { error } = await supabase.from('tickles').insert({
+      emoji,
+      song_id: currentSong.id,
+      sender_id: user.id,
+    });
+
+    if (error) {
+      console.error('🧨 Failed to send reaction:', error.message);
+    }
+  };
 
   if (!user) {
     return <div className="text-center mt-10 text-gray-500">Please log in to use the JamStack Stacker.</div>;
@@ -70,21 +95,21 @@ const JamStackScreen = () => {
     <div className="max-w-xl mx-auto mt-6 text-center px-4">
 
       {/* ✅ EarTickle Logo */}
-    <img
-  src="/logo.png"
-  alt="EarTickle"
-  className="h-10 mx-auto mb-4 cursor-pointer"
-  onClick={() => navigate('/')}
-/>
+      <img
+        src="/logo.png"
+        alt="EarTickle"
+        className="h-10 mx-auto mb-4 cursor-pointer"
+        onClick={() => navigate('/')}
+      />
 
-
-      {/* ✅ Current Song */}
+      {/* ✅ Album Cover */}
       <img
         src={currentSong.cover}
         alt="cover"
-        className="w-full h-64 object-cover rounded-xl mb-4 cursor-pointer transition-transform hover:scale-105"
+        className="w-full max-w-md aspect-square object-contain rounded-xl mb-4 cursor-pointer transition-transform hover:scale-105 mx-auto"
         onClick={() => navigate(`/artist/${currentSong.artist_id}`)}
       />
+
       <h3 className="text-xl font-semibold">{currentSong.title}</h3>
       <p className="text-sm text-gray-600 mb-3">{currentSong.artist}</p>
 
@@ -97,9 +122,23 @@ const JamStackScreen = () => {
         className="w-full mb-4"
       />
 
+      {/* ✅ Reaction Buttons */}
+      <div className="flex justify-center gap-5 mt-2 text-2xl">
+        {['🔥', '❤️', '🎯', '😢'].map((emoji) => (
+          <button
+            key={emoji}
+            onClick={() => sendReaction(emoji)}
+            className="hover:scale-125 transition-transform"
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+
+      {/* ✅ Skip Button */}
       <button
         onClick={playNext}
-        className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 text-sm"
+        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 text-sm"
       >
         ⏭️ Skip to Next
       </button>
