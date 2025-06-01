@@ -378,7 +378,7 @@ const ProfileScreen = () => {
       </div>
 
       {/* ─── Collapsible My Jam Stack Songs ───────────────────────────────────── */}
-      {/* ─── Collapsible My Jam Stack Songs ───────────────────────────────────── */}
+    {/* ─── Collapsible My Jam Stack Songs ───────────────────────────────────── */}
 <div className="mt-10">
   <button
     className="text-lg font-bold underline"
@@ -388,6 +388,7 @@ const ProfileScreen = () => {
       ? '🔽 Hide My Jam Stack'
       : '▶️ Show My Jam Stack'}
   </button>
+
   {expandedSection === 'jamstack' && (
     <ul className="space-y-4 mt-4">
       {jamStackSongs.map((song) => (
@@ -402,18 +403,13 @@ const ProfileScreen = () => {
               rel="noopener noreferrer"
               className="block hover:opacity-80 transition"
             >
-            <a
-  href={`/artist/${song.user_id}`}
-  target="_blank"
-  rel="noopener noreferrer"
-  className="block hover:opacity-80 transition"
->
-  <img
-    src={song.cover}
-    alt="cover"
-    className="w-16 h-16 object-cover rounded"
-  />
+              <img
+                src={song.cover}
+                alt="cover"
+                className="w-16 h-16 object-cover rounded"
+              />
             </a>
+
             <div className="flex-1 space-y-1">
               <input
                 value={song.title}
@@ -435,6 +431,7 @@ const ProfileScreen = () => {
                 Your browser does not support the audio element.
               </audio>
             </div>
+
             <button
               onClick={() => handleDeleteJam(song.id)}
               className="text-sm text-red-500 hover:text-red-700"
