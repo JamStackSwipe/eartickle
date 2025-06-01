@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
-import AddToJamStackButton from './AddToJamStackButton'; // ✅ Keep shared button
+import AddToJamStackButton from './AddToJamStackButton';
 
 const emojis = ['🔥', '❤️', '😢', '🎯'];
 
@@ -65,9 +65,12 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
     await supabase.rpc('increment_song_view', { song_id_input: song.id });
   };
 
-  // ✅ Safely prevents duplicate emoji reactions
+  // ✅ Duplicate-safe and stable reaction handler
   const handleReaction = async (emoji) => {
-    if (!user) return toast.error('Please sign in to react.');
+    if (!user || !user.id) {
+      toast.error('Please sign in to react.');
+      return;
+    }
 
     const statKey = emojiToStatKey(emoji);
 
