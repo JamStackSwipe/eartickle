@@ -125,16 +125,14 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
         controls
         className="w-full"
       />
-      <div className="flex items-center flex-wrap gap-4 text-xl mt-2">
-        {emojis.map((emoji) => (
-          <button
-            key={emoji}
-            onClick={() => handleReaction(emoji)}
-            className="hover:scale-110 transition-transform"
-          >
-            {emoji} {localReactions[emojiToStatKey(emoji)] || 0}
-          </button>
-        ))}
+
+      <div className="flex flex-wrap items-center justify-between text-lg text-white mt-4">
+        <div className="flex flex-wrap gap-4">
+          <span onClick={() => handleReaction('🔥')} className="cursor-pointer">🔥 {localReactions.fires}</span>
+          <span onClick={() => handleReaction('❤️')} className="cursor-pointer">❤️ {localReactions.loves}</span>
+          <span onClick={() => handleReaction('😢')} className="cursor-pointer">😢 {localReactions.sads}</span>
+          <span onClick={() => handleReaction('🎯')} className="cursor-pointer">🎯 {localReactions.bullseyes}</span>
+        </div>
 
         <button
           onClick={handleSendTickle}
@@ -145,15 +143,16 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
         </button>
       </div>
 
+      <div className="text-xs text-gray-400 mt-3 text-center">
+        👁️ {song.views || 0} | 📥 {song.jams || 0}
+      </div>
+
       <button
         onClick={handleAddToJamStack}
         className="mt-3 text-sm px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
       >
         ❤️ Add to JamStack
       </button>
-      <div className="text-xs text-gray-400 mt-2 text-center">
-        👁️ {song.views || 0} | 📥 {song.jams || 0} | 🔥 {localReactions.fires} | ❤️ {localReactions.loves} | 😢 {localReactions.sads} | 🎯 {localReactions.bullseyes}
-      </div>
     </div>
   );
 };
