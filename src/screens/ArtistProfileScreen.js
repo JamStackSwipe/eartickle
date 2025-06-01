@@ -4,8 +4,7 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { useUser } from '../components/AuthProvider';
-import SendTickleButton from '../components/SendTickleButton';
-import EmojiReactionGiftBox from '../components/EmojiReactionGiftBox';
+import SongCard from '../components/SongCard';
 
 const ArtistProfileScreen = () => {
   const { id } = useParams();
@@ -13,7 +12,6 @@ const ArtistProfileScreen = () => {
   const [artist, setArtist] = useState(null);
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [adding, setAdding] = useState(false);
   const [tickleBalance, setTickleBalance] = useState(0);
 
   useEffect(() => {
@@ -64,40 +62,6 @@ const ArtistProfileScreen = () => {
 
     fetchBalance();
   }, [user]);
-
-  const handleAddToJamStack = async (songId) => {
-    if (!user || adding) return;
-    setAdding(true);
-
-    const { data: existing } = await supabase
-      .from('jamstacksongs')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('song_id', songId)
-      .maybeSingle();
-
-    if (existing) {
-      alert('🛑 Already in your JamStack!');
-      setAdding(false);
-      return;
-    }
-
-    const { error } = await supabase.from('jamstacksongs').insert([
-      {
-        id: uuidv4(),
-        user_id: user.id,
-        song_id: songId,
-      },
-    ]);
-
-    if (!error) {
-      alert('🎵 Added to your JamStack!');
-    } else {
-      console.error('❌ Error adding to JamStack:', error);
-    }
-
-    setAdding(false);
-  };
 
   if (loading) return <div className="p-6">Loading artist page...</div>;
   if (!artist) return <div className="p-6 text-center text-gray-500">Artist not found.</div>;
@@ -150,26 +114,6 @@ const ArtistProfileScreen = () => {
               📩 Book This Artist
             </a>
           )}
-
-          {user && user.id !== artist.id && (
-            <div className="mt-4 space-y-2">
-              <SendTickleButton
-                songId={songs[0]?.id}
-                songTitle={songs[0]?.title}
-                artistId={artist.id}
-                artistStripeId={artist.stripe_id}
-                senderId={user.id}
-              />
-              {songs[0] && (
-                <EmojiReactionGiftBox
-                  song={songs[0]}
-                  user={user}
-                  tickleBalance={tickleBalance}
-                  setTickleBalance={setTickleBalance}
-                />
-              )}
-            </div>
-          )}
         </div>
       </div>
 
@@ -179,28 +123,14 @@ const ArtistProfileScreen = () => {
       ) : (
         <ul className="space-y-4">
           {songs.map((song) => (
-            <li key={song.id} className="bg-gray-100 p-4 rounded shadow">
-              <div className="flex items-center space-x-4 mb-2">
-                <img
-                  src={song.cover}
-                  alt="cover"
-                  className="w-16 h-16 object-cover rounded"
-                />
-                <div>
-                  <h3 className="text-lg font-semibold">{song.title}</h3>
-                  <p className="text-sm text-gray-500">{song.artist}</p>
-                  <div className="text-xs text-gray-600 mt-1">
-                    👁️ {song.views || 0} | 📥 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.loves || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
-                  </div>
-                </div>
-              </div>
-              <audio controls src={song.audio} className="w-full my-2 rounded" />
-              <button
-                onClick={() => handleAddToJamStack(song.id)}
-                className="mt-1 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                ❤️ Add to JamStack
-              </button>
+            <li key={song.id}>
+              <SongCard
+                song={song}
+                user={user}
+                artist={artist}
+                tickleBalance={tickleBalance}
+                setTickleBalance={setTickleBalance}
+              />
             </li>
           ))}
         </ul>
