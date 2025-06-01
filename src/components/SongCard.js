@@ -24,9 +24,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
 
   useEffect(() => {
     if (!audioRef.current) return;
-    const isMobile = window.innerWidth < 768;
-
-    if (isMobile && isVisible) {
+    if (isVisible) {
       audioRef.current.play().catch(() => {});
       incrementViews();
     } else {
@@ -99,25 +97,23 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
   };
 
   return (
-    <div ref={cardRef} className="bg-gray-100 p-4 rounded shadow">
-      <div className="flex items-center space-x-4 mb-2">
+    <div ref={cardRef} className="bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md">
+      <a href={`/artist/${song.artist_id}`}>
         <img
           src={song.cover}
-          alt="cover"
-          className="w-16 h-16 object-cover rounded"
-          onClick={incrementViews}
+          alt={song.title}
+          className="w-full h-auto rounded-xl mb-4"
+          onClick={() => incrementViews(song.id)}
         />
-        <div>
-          <h3 className="text-lg font-bold">{song.title}</h3>
-          <p className="text-sm text-gray-600">{song.artist}</p>
-          <div className="text-sm text-gray-500">
-            👁️ {song.views || 0} 📥 {song.jams || 0}
-          </div>
-        </div>
-      </div>
-
-      <audio ref={audioRef} controls src={song.audio} className="w-full rounded my-2" />
-
+      </a>
+      <h2 className="text-xl font-semibold mb-1">{song.title}</h2>
+      <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
+      <audio
+        ref={audioRef}
+        src={song.audio}
+        controls
+        className="w-full"
+      />
       <div className="flex items-center flex-wrap gap-4 text-xl mt-2">
         {emojis.map((emoji) => (
           <button
@@ -144,6 +140,9 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
       >
         ❤️ Add to JamStack
       </button>
+      <div className="text-xs text-gray-400 mt-2 text-center">
+        👁️ {song.views || 0} | 📥 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.loves || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
+      </div>
     </div>
   );
 };
