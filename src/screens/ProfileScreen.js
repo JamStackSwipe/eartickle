@@ -58,29 +58,32 @@ const ProfileScreen = () => {
     }
   };
 
- const fetchTickleStats = async (songIds) => {
-  if (!songIds.length) return;
+  const fetchTickleStats = async (songIds) => {
+    if (!songIds.length) return;
 
-  const { data, error } = await supabase
-    .from('tickles')
-    .select('song_id, emoji');
+    const { data, error } = await supabase
+      .from('tickles')
+      .select('song_id, emoji');
 
-  if (error) {
-    console.error('❌ Error fetching tickles:', error.message);
-    return;
-  }
+    if (error) {
+      console.error('❌ Error fetching tickles:', error.message);
+      return;
+    }
 
-  const stats = {};
-  data
-    .filter((t) => songIds.includes(t.song_id))
-    .forEach(({ song_id, emoji }) => {
-      if (!stats[song_id]) stats[song_id] = {};
-      stats[song_id][emoji] = (stats[song_id][emoji] || 0) + 1;
-    });
+    const stats = {};
+    data
+      .filter((t) => songIds.includes(t.song_id))
+      .forEach(({ song_id, emoji }) => {
+        if (!stats[song_id]) stats[song_id] = {};
+        stats[song_id][emoji] = (stats[song_id][emoji] || 0) + 1;
+      });
 
-  setTickleStats(stats);
-};
+    setTickleStats(stats);
+  };
 
+  const handleChange = (field, value) => {
+    setProfile((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleSave = async () => {
     const updates = {
