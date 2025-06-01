@@ -240,18 +240,10 @@ const ProfileScreen = () => {
                   </a>
 
                   <div className="flex-1 space-y-1">
-                    <input
-                      value={song.title}
-                      readOnly
-                      className="w-full border p-1 rounded bg-gray-50"
-                    />
-                    <select
-                      value={song.genre}
-                      disabled
-                      className="w-full border p-1 rounded bg-gray-50 text-gray-500"
-                    >
-                      <option value="">{song.genre || 'Unknown Genre'}</option>
-                    </select>
+                    <p className="font-semibold">{song.title}</p>
+                    <p className="text-sm text-gray-600">
+                      {song.genre || 'Unknown Genre'}
+                    </p>
                     <audio
                       controls
                       className="w-full mt-1"
