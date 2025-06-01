@@ -6,6 +6,8 @@ import { genreOptions } from '../utils/genreList';
 const ProfileScreen = () => {
   const { user } = useUser();
   const fileInputRef = useRef();
+
+  // ─── Your existing state hooks ─────────────────────────────────────────────
   const [profile, setProfile] = useState({});
   const [songs, setSongs] = useState([]);
   const [jamStackSongs, setJamStackSongs] = useState([]);
@@ -16,12 +18,12 @@ const ProfileScreen = () => {
   const [showUploads, setShowUploads] = useState(true);
   const [showJamStack, setShowJamStack] = useState(false);
 
-// 👇 Added to fix ReferenceError
-const [expandedSection, setExpandedSection] = useState('uploads');
-const toggleSection = (section) => {
-  setExpandedSection((prev) => (prev === section ? null : section));
-};
-
+  // ─── Added to fix ReferenceError and toggle sections ────────────────────────
+  const [expandedSection, setExpandedSection] = useState('uploads');
+  const toggleSection = (section) => {
+    setExpandedSection((prev) => (prev === section ? null : section));
+  };
+  // ────────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (user) {
@@ -32,7 +34,11 @@ const toggleSection = (section) => {
   }, [user]);
 
   const fetchProfile = async () => {
-    const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
     if (!error && data) setProfile(data);
   };
 
@@ -55,23 +61,30 @@ const toggleSection = (section) => {
       .select('*, songs(*)')
       .eq('user_id', user.id);
     if (!error && data) {
-      const filtered = data.map((item) => item.songs).filter((s) => s.user_id !== user.id);
+      // extract the nested `songs` object, filter out any you uploaded yourself
+      const filtered = data
+        .map((item) => item.songs)
+        .filter((s) => s.user_id !== user.id);
       setJamStackSongs(filtered);
     }
   };
 
   const fetchTickleStats = async (songIds) => {
     if (!songIds.length) return;
-    const { data, error } = await supabase.from('tickles').select('song_id, emoji');
+    const { data, error } = await supabase
+      .from('tickles')
+      .select('song_id, emoji');
     if (error) {
       console.error('❌ Error fetching tickles:', error.message);
       return;
     }
     const stats = {};
-    data.filter((t) => songIds.includes(t.song_id)).forEach(({ song_id, emoji }) => {
-      if (!stats[song_id]) stats[song_id] = {};
-      stats[song_id][emoji] = (stats[song_id][emoji] || 0) + 1;
-    });
+    data
+      .filter((t) => songIds.includes(t.song_id))
+      .forEach(({ song_id, emoji }) => {
+        if (!stats[song_id]) stats[song_id] = {};
+        stats[song_id][emoji] = (stats[song_id][emoji] || 0) + 1;
+      });
     setTickleStats(stats);
   };
 
@@ -122,9 +135,12 @@ const toggleSection = (section) => {
       return;
     }
 
+    // small delay to ensure Supabase has processed it
     await new Promise((r) => setTimeout(r, 300));
 
-    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from('avatars').getPublicUrl(filePath);
     const avatarWithCacheBust = `${publicUrl}?t=${Date.now()}`;
 
     const { error: updateError } = await supabase
@@ -166,7 +182,10 @@ const toggleSection = (section) => {
   };
 
   const updateSong = async (id, updates) => {
-    if ('stripe_account_id' in updates && updates.stripe_account_id === 'FETCH_FROM_PROFILE') {
+    if (
+      'stripe_account_id' in updates &&
+      updates.stripe_account_id === 'FETCH_FROM_PROFILE'
+    ) {
       const { data: profile } = await supabase
         .from('profiles')
         .select('stripe_account_id')
@@ -192,6 +211,7 @@ const toggleSection = (section) => {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
+      {/* ─── Profile Header ────────────────────────────────────────────────────── */}
       <div className="flex items-center space-x-4 mb-6">
         <img
           src={avatarSrc}
@@ -224,9 +244,21 @@ const toggleSection = (section) => {
         </div>
       </div>
 
-      {["booking_email", "website", "spotify", "youtube", "instagram", "soundcloud", "tiktok", "bandlab"].map((field) => (
+      {/* ─── Social / Links Fields ─────────────────────────────────────────────── */}
+      {[
+        'booking_email',
+        'website',
+        'spotify',
+        'youtube',
+        'instagram',
+        'soundcloud',
+        'tiktok',
+        'bandlab',
+      ].map((field) => (
         <div key={field} className="mb-2">
-          <label className="block text-sm font-semibold capitalize">{field.replace('_', ' ')}</label>
+          <label className="block text-sm font-semibold capitalize">
+            {field.replace('_', ' ')}
+          </label>
           <input
             type="text"
             value={profile[field] || ''}
@@ -236,7 +268,7 @@ const toggleSection = (section) => {
           />
         </div>
       ))}
-        
+
       <button
         onClick={handleSave}
         className="mt-4 bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700"
@@ -246,29 +278,42 @@ const toggleSection = (section) => {
 
       {message && <p className="mt-2 text-green-600">{message}</p>}
 
-      {/* Collapsible Uploaded Songs */}
+      {/* ─── Collapsible Uploaded Songs ────────────────────────────────────────── */}
       <div className="mt-10">
         <button
           className="text-lg font-bold underline"
           onClick={() => toggleSection('uploads')}
         >
-          {expandedSection === 'uploads' ? '🔽 Hide Uploaded Songs' : '▶️ Show Uploaded Songs'}
+          {expandedSection === 'uploads'
+            ? '🔽 Hide Uploaded Songs'
+            : '▶️ Show Uploaded Songs'}
         </button>
         {expandedSection === 'uploads' && (
           <ul className="space-y-4 mt-4">
             {songs.map((song) => (
-              <li key={song.id} className="bg-gray-100 p-4 rounded shadow space-y-2">
+              <li
+                key={song.id}
+                className="bg-gray-100 p-4 rounded shadow space-y-2"
+              >
                 <div className="flex items-center space-x-4">
-                  <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
+                  <img
+                    src={song.cover}
+                    alt="cover"
+                    className="w-16 h-16 object-cover rounded"
+                  />
                   <div className="flex-1 space-y-1">
                     <input
                       value={song.title}
-                      onChange={(e) => updateSong(song.id, { title: e.target.value })}
+                      onChange={(e) =>
+                        updateSong(song.id, { title: e.target.value })
+                      }
                       className="w-full border p-1 rounded"
                     />
                     <select
                       value={song.genre}
-                      onChange={(e) => updateSong(song.id, { genre: e.target.value })}
+                      onChange={(e) =>
+                        updateSong(song.id, { genre: e.target.value })
+                      }
                       className="w-full border p-1 rounded"
                     >
                       <option value="">Select genre</option>
@@ -284,12 +329,24 @@ const toggleSection = (section) => {
                         checked={!!song.stripe_account_id}
                         onChange={(e) =>
                           updateSong(song.id, {
-                            stripe_account_id: e.target.checked ? 'FETCH_FROM_PROFILE' : null,
+                            stripe_account_id: e.target.checked
+                              ? 'FETCH_FROM_PROFILE'
+                              : null,
                           })
                         }
                       />
-                      <label className="text-sm text-gray-600">Enable Gifting</label>
+                      <label className="text-sm text-gray-600">
+                        Enable Gifting
+                      </label>
                     </div>
+                    {/* ─── Audio player for each uploaded song ───────────────────── */}
+                    <audio
+                      controls
+                      className="w-full mt-1"
+                      src={song.audio_url}
+                    >
+                      Your browser does not support the audio element.
+                    </audio>
                   </div>
                   <button
                     onClick={() => handleDelete(song.id)}
@@ -307,74 +364,96 @@ const toggleSection = (section) => {
                   <span>🎯 {song.bullseyes || 0}</span>
                   <span>📦 {song.jams || 0} Jams</span>
                   {tickleStats[song.id] &&
-                    Object.entries(tickleStats[song.id]).map(([emoji, count]) => (
-                      <span key={emoji}>{emoji} {count}</span>
-                    ))}
+                    Object.entries(tickleStats[song.id]).map(
+                      ([emoji, count]) => (
+                        <span key={emoji}>
+                          {emoji} {count}
+                        </span>
+                      )
+                    )}
                 </div>
-                 
               </li>
             ))}
           </ul>
         )}
       </div>
-          {/* Collapsible Jam Stack Songs */}
-<div className="mt-10">
-  <button
-    className="text-lg font-bold underline"
-    onClick={() => toggleSection('jamstack')}
-  >
-    {expandedSection === 'jamstack' ? '🔽 Hide My Jam Stack' : '▶️ Show My Jam Stack'}
-  </button>
-  {expandedSection === 'jamstack' && (
-    <ul className="space-y-4 mt-4">
-      {jamStackSongs.map((song) => (
-        <li key={song.id} className="bg-gray-100 p-4 rounded shadow space-y-2">
-          <div className="flex items-center space-x-4">
-            <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
-            <div className="flex-1 space-y-1">
-              <input
-                value={song.title}
-                readOnly
-                className="w-full border p-1 rounded bg-gray-50"
-              />
-              <select
-                value={song.genre}
-                disabled
-                className="w-full border p-1 rounded bg-gray-50 text-gray-500"
+
+      {/* ─── Collapsible My Jam Stack Songs ───────────────────────────────────── */}
+      <div className="mt-10">
+        <button
+          className="text-lg font-bold underline"
+          onClick={() => toggleSection('jamstack')}
+        >
+          {expandedSection === 'jamstack'
+            ? '🔽 Hide My Jam Stack'
+            : '▶️ Show My Jam Stack'}
+        </button>
+        {expandedSection === 'jamstack' && (
+          <ul className="space-y-4 mt-4">
+            {jamStackSongs.map((song) => (
+              <li
+                key={song.id}
+                className="bg-gray-100 p-4 rounded shadow space-y-2"
               >
-                <option value="">{song.genre || 'Unknown Genre'}</option>
-              </select>
-              {/* 🎵 Audio player added */}
-              <audio controls className="w-full mt-1" src={song.audio_url}>
-                Your browser does not support the audio element.
-              </audio>
-            </div>
-            <button
-              onClick={() => handleDeleteJam(song.id)}
-              className="text-sm text-red-500 hover:text-red-700"
-            >
-              🗑️
-            </button>
-          </div>
+                <div className="flex items-center space-x-4">
+                  <img
+                    src={song.cover}
+                    alt="cover"
+                    className="w-16 h-16 object-cover rounded"
+                  />
+                  <div className="flex-1 space-y-1">
+                    <input
+                      value={song.title}
+                      readOnly
+                      className="w-full border p-1 rounded bg-gray-50"
+                    />
+                    <select
+                      value={song.genre}
+                      disabled
+                      className="w-full border p-1 rounded bg-gray-50 text-gray-500"
+                    >
+                      <option value="">
+                        {song.genre || 'Unknown Genre'}
+                      </option>
+                    </select>
+                    {/* ─── Audio player for each jam‐stack song ─────────────────── */}
+                    <audio
+                      controls
+                      className="w-full mt-1"
+                      src={song.audio_url}
+                    >
+                      Your browser does not support the audio element.
+                    </audio>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteJam(song.id)}
+                    className="text-sm text-red-500 hover:text-red-700"
+                  >
+                    🗑️
+                  </button>
+                </div>
 
-          <div className="flex flex-wrap gap-4 text-xs text-gray-600 mt-2">
-            <span>👁️ {song.views || 0}</span>
-            <span>❤️ {song.likes || 0}</span>
-            <span>🔥 {song.fires || 0}</span>
-            <span>😢 {song.sads || 0}</span>
-            <span>🎯 {song.bullseyes || 0}</span>
-            <span>📦 {song.jams || 0} Jams</span>
-            {tickleStats[song.id] &&
-              Object.entries(tickleStats[song.id]).map(([emoji, count]) => (
-                <span key={emoji}>{emoji} {count}</span>
-              ))}
-          </div>
-        </li>
-      ))}
-    </ul>
-  )}
-</div>
-
+                <div className="flex flex-wrap gap-4 text-xs text-gray-600 mt-2">
+                  <span>👁️ {song.views || 0}</span>
+                  <span>❤️ {song.likes || 0}</span>
+                  <span>🔥 {song.fires || 0}</span>
+                  <span>😢 {song.sads || 0}</span>
+                  <span>🎯 {song.bullseyes || 0}</span>
+                  <span>📦 {song.jams || 0} Jams</span>
+                  {tickleStats[song.id] &&
+                    Object.entries(tickleStats[song.id]).map(
+                      ([emoji, count]) => (
+                        <span key={emoji}>
+                          {emoji} {count}
+                        </span>
+                      )
+                    )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 };
