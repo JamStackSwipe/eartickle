@@ -58,17 +58,29 @@ const ProfileScreen = () => {
     }
   };
 
-  const fetchTickleStats = async (songIds) => {
+ const fetchTickleStats = async (songIds) => {
+  if (!songIds.length) return;
+
   const { data, error } = await supabase
     .from('tickles')
-    .select('song_id, emoji, count') // ❌ 'count' doesn't work this way
-    .in('song_id', songIds)
-    .group('song_id, emoji');        // ❌ Supabase doesn't support this
+    .select('song_id, emoji');
 
+  if (error) {
+    console.error('❌ Error fetching tickles:', error.message);
+    return;
+  }
 
-  const handleChange = (field, value) => {
-    setProfile((prev) => ({ ...prev, [field]: value }));
-  };
+  const stats = {};
+  data
+    .filter((t) => songIds.includes(t.song_id))
+    .forEach(({ song_id, emoji }) => {
+      if (!stats[song_id]) stats[song_id] = {};
+      stats[song_id][emoji] = (stats[song_id][emoji] || 0) + 1;
+    });
+
+  setTickleStats(stats);
+};
+
 
   const handleSave = async () => {
     const updates = {
