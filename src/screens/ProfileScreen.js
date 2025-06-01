@@ -56,18 +56,17 @@ const ProfileScreen = () => {
   };
 
   const fetchJamStack = async () => {
-    const { data, error } = await supabase
-      .from('jamstacksongs')
-      .select('*, songs(*)')
-      .eq('user_id', user.id);
-    if (!error && data) {
-      // extract the nested `songs` object, filter out any you uploaded yourself
-      const filtered = data
-        .map((item) => item.songs)
-        //.filter((s) => s.user_id !== user.id);
-      setJamStackSongs(filtered);
-    }
-  };
+  const { data, error } = await supabase
+    .from('jamstacksongs')
+    .select('*, songs(*)')
+    .eq('user_id', user.id);
+
+  if (!error && data) {
+    const songsOnly = data.map((item) => item.songs); // ✅ keep your own songs too
+    setJamStackSongs(songsOnly);
+  }
+};
+
 
   const fetchTickleStats = async (songIds) => {
     if (!songIds.length) return;
