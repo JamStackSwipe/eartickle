@@ -7,10 +7,10 @@ const SettingsScreen = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
-  const [isArtist, setIsArtist] = useState(false);
   const [availableGenres, setAvailableGenres] = useState([]);
   const [selectedGenres, setSelectedGenres] = useState([]);
   const [sentTickles, setSentTickles] = useState([]);
+  const [songs, setSongs] = useState([]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -21,23 +21,12 @@ const SettingsScreen = () => {
         setUserEmail(email);
         fetchPreferences(id);
         fetchGenresFromSongs();
-        checkIfArtist(id);
-        fetchSentTickles(id); // ✅ added this
+        fetchSentTickles(id);
+        fetchSongs(id);
       }
     };
     fetchUser();
   }, []);
-
-  const checkIfArtist = async (uid) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('is_artist')
-      .eq('id', uid)
-      .maybeSingle();
-
-    if (error) console.error('❌ Error checking artist status:', error);
-    setIsArtist(data?.is_artist === true);
-  };
 
   const fetchGenresFromSongs = async () => {
     const { data, error } = await supabase
@@ -64,13 +53,23 @@ const SettingsScreen = () => {
     const { data, error } = await supabase
       .from('tickles')
       .select('song_id')
-      .eq('user_id', uid); // ✅ fixed key from sender_id → user_id
+      .eq('user_id', uid);
 
     if (error) {
       console.error('❌ Error fetching sent tickles:', error);
     } else {
       setSentTickles(data || []);
     }
+  };
+
+  const fetchSongs = async (uid) => {
+    const { data, error } = await supabase
+      .from('songs')
+      .select('id')
+      .eq('user_id', uid);
+
+    if (error) console.error('❌ Error fetching songs:', error);
+    setSongs(data || []);
   };
 
   const toggleGenre = (genre) => {
@@ -174,7 +173,7 @@ const SettingsScreen = () => {
 
       <hr className="my-6" />
 
-      {isArtist && (
+      {songs?.length > 0 && (
         <div className="my-6">
           <h2 className="text-lg font-semibold mb-2">💸 Artist Payments</h2>
           <p className="text-sm text-gray-400 mb-3">
@@ -187,19 +186,19 @@ const SettingsScreen = () => {
       <div className="mt-8">
         <p className="text-sm text-gray-300 mb-1">Want to share your artist profile?</p>
         <div className="flex items-center gap-2 bg-gray-800 text-white text-sm px-4 py-2 rounded-lg">
-      <button
-  onClick={handleClick}
-  className="w-full text-lg bg-green-600 font-bold px-6 py-4 rounded-lg shadow-xl hover:bg-green-700 animate-bounce"
->
-  🚀 Connect Stripe & Get Paid!
-</button>
-    <input
+          <input
             readOnly
             value={`${window.location.origin}/artist/${userId}`}
             className="flex-1 bg-transparent outline-none text-white text-sm"
             onClick={(e) => e.target.select()}
           />
-      
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(`${window.location.origin}/artist/${userId}`);
+              alert('✅ Profile link copied!');
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded"
+          >
             Copy
           </button>
         </div>
