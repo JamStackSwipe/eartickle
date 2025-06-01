@@ -122,7 +122,12 @@ const ReactionStatsBar = ({ song }) => {
       </div>
 
       <div className="flex items-center justify-between mt-3">
-        <AddToJamStackButton songId={song.id} user={user} />
+        <AddToJamStackButton
+  songId={song.id}
+  user={user}
+  className="px-3 py-1 bg-yellow-400 rounded text-black text-sm font-medium hover:bg-yellow-500"
+/>
+
         <div className="text-xs text-yellow-300 font-semibold bg-zinc-800 px-2 py-1 rounded shadow">
           🎶 Tickles Left: {loading ? '...' : tickleBalance}
         </div>
