@@ -13,7 +13,6 @@ const ProfileScreen = () => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [expandedSection, setExpandedSection] = useState(null);
   const [showUploads, setShowUploads] = useState(true);
   const [showJamStack, setShowJamStack] = useState(false);
 
