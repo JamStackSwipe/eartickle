@@ -10,6 +10,7 @@ const ReactionStatsBar = ({ song }) => {
   const { user } = useUser();
   const [stats, setStats] = useState({});
   const [showConfirm, setShowConfirm] = useState(null);
+  
   const [tickleBalance, setTickleBalance] = useState(null);const handleSendTickle = async () => {
   console.log("🎯 Send Tickle button clicked", user);
   if (!user) return;
