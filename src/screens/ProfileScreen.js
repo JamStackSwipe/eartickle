@@ -402,11 +402,19 @@ const ProfileScreen = () => {
               rel="noopener noreferrer"
               className="block hover:opacity-80 transition"
             >
-              <img
-                src={song.cover}
-                alt="cover"
-                className="w-16 h-16 object-cover rounded"
-              />
+            <a
+  href={`/artist/${song.user_id}`}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="block hover:opacity-80 transition"
+>
+  <img
+    src={song.cover}
+    alt="cover"
+    className="w-16 h-16 object-cover rounded"
+  />
+</a>
+
             </a>
             <div className="flex-1 space-y-1">
               <input
