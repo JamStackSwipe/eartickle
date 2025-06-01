@@ -1,24 +1,20 @@
 // src/components/SongCard.js
-import React, { useRef, useEffect, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
-import { useUser } from './AuthProvider';
 
 const emojis = ['🔥', '❤️', '😢', '🎯'];
 
-const SongCard = ({ song, user, artist, tickleBalance, setTickleBalance }) => {
+const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
+  const [confirmation, setConfirmation] = useState({ show: false, emoji: null });
+  const [sending, setSending] = useState(false);
   const audioRef = useRef(null);
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [manuallyPaused, setManuallyPaused] = useState(false);
-  const [confirmation, setConfirmation] = useState({ show: false, emoji: null });
-  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsVisible(entry.isIntersecting);
-      },
+      ([entry]) => setIsVisible(entry.isIntersecting),
       { threshold: 0.5 }
     );
 
@@ -28,31 +24,35 @@ const SongCard = ({ song, user, artist, tickleBalance, setTickleBalance }) => {
 
   useEffect(() => {
     if (!audioRef.current) return;
-    if (isVisible && !manuallyPaused) {
+    if (isVisible) {
       audioRef.current.play().catch(() => {});
+      incrementViews();
     } else {
       audioRef.current.pause();
     }
-  }, [isVisible, manuallyPaused]);
+  }, [isVisible]);
 
-  const handleManualPause = () => {
-    setManuallyPaused(true);
+  const incrementViews = async () => {
+    await supabase.rpc('increment_song_view', { song_id_input: song.id });
   };
 
   const handleReaction = async (emoji) => {
     if (!user) return toast.error('Please sign in to react.');
 
-    await supabase.from('song_reactions').insert([
+    const { error } = await supabase.from('song_reactions').insert([
       { user_id: user.id, song_id: song.id, emoji },
     ]);
 
-    setConfirmation({ show: true, emoji });
+    if (!error) {
+      toast.success(`You reacted with ${emoji}`);
+    } else {
+      toast.error('Failed to react');
+    }
   };
 
   const handleSendTickle = async () => {
     if (tickleBalance < 1) {
       toast.error('Not enough Tickles. Buy more in Rewards.');
-      setConfirmation({ ...confirmation, show: false });
       return;
     }
 
@@ -64,7 +64,7 @@ const SongCard = ({ song, user, artist, tickleBalance, setTickleBalance }) => {
         receiver_id: song.profile_id,
         song_id: song.id,
         amount: 1,
-        emoji: confirmation.emoji,
+        emoji: null,
       },
     ]);
 
@@ -75,7 +75,6 @@ const SongCard = ({ song, user, artist, tickleBalance, setTickleBalance }) => {
       toast.error('Failed to send Tickle.');
     }
 
-    setConfirmation({ show: false, emoji: null });
     setSending(false);
   };
 
@@ -98,30 +97,26 @@ const SongCard = ({ song, user, artist, tickleBalance, setTickleBalance }) => {
   };
 
   return (
-    <div ref={cardRef} className="bg-zinc-900 rounded-xl shadow-md p-4 mb-10">
-      <a href={`/artist/${song.artist_id}`}>
+    <div ref={cardRef} className="bg-gray-100 p-4 rounded shadow">
+      <div className="flex items-center space-x-4 mb-2">
         <img
           src={song.cover}
-          alt={song.title}
-          className="w-full h-auto rounded-xl mb-4"
-          onClick={() =>
-            supabase.rpc('increment_song_view', { song_id_input: song.id })
-          }
+          alt="cover"
+          className="w-16 h-16 object-cover rounded"
+          onClick={incrementViews}
         />
-      </a>
-      <h2 className="text-xl font-semibold text-white mb-1">{song.title}</h2>
-      <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
-      <audio
-        ref={audioRef}
-        src={song.audio}
-        controls
-        className="w-full"
-        onPlay={() =>
-          supabase.rpc('increment_song_view', { song_id_input: song.id })
-        }
-        onPause={handleManualPause}
-      />
-      <div className="flex items-center gap-4 text-xl mt-3 text-white">
+        <div>
+          <h3 className="text-lg font-bold">{song.title}</h3>
+          <p className="text-sm text-gray-600">{song.artist}</p>
+          <div className="text-sm text-gray-500">
+            👁️ {song.views || 0} 📥 {song.jams || 0}
+          </div>
+        </div>
+      </div>
+
+      <audio ref={audioRef} controls src={song.audio} className="w-full rounded my-2" />
+
+      <div className="flex items-center flex-wrap gap-4 text-xl mt-2">
         {emojis.map((emoji) => (
           <button
             key={emoji}
@@ -131,34 +126,22 @@ const SongCard = ({ song, user, artist, tickleBalance, setTickleBalance }) => {
             {emoji} {song[emojiToStatKey(emoji)] || 0}
           </button>
         ))}
+
         <button
-          onClick={handleAddToJamStack}
-          className="ml-auto text-sm px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+          onClick={handleSendTickle}
+          disabled={sending}
+          className="ml-auto px-3 py-1 bg-yellow-500 text-black text-sm rounded hover:bg-yellow-600"
         >
-          ❤️ Add to JamStack
+          🎁 Send Tickle
         </button>
       </div>
 
-      {confirmation.show && (
-        <div className="mt-4 bg-white border p-4 rounded shadow text-black">
-          <p className="mb-2">Send 1 Tickle with your {confirmation.emoji}?</p>
-          <div className="flex space-x-3">
-            <button
-              onClick={handleSendTickle}
-              disabled={sending}
-              className="bg-purple-600 text-white px-4 py-1 rounded hover:bg-purple-700"
-            >
-              {sending ? 'Sending...' : 'Send'}
-            </button>
-            <button
-              onClick={() => setConfirmation({ show: false, emoji: null })}
-              className="border px-4 py-1 rounded"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      <button
+        onClick={handleAddToJamStack}
+        className="mt-3 text-sm px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+      >
+        ❤️ Add to JamStack
+      </button>
     </div>
   );
 };
