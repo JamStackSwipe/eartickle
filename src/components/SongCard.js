@@ -108,7 +108,10 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
   };
 
   return (
-    <div ref={cardRef} className="bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md">
+    <div
+      ref={cardRef}
+      className="bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md"
+    >
       <a href={`/artist/${song.artist_id}`}>
         <img
           src={song.cover}
@@ -117,51 +120,57 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
           onClick={() => incrementViews(song.id)}
         />
       </a>
+
       <h2 className="text-xl font-semibold mb-1">{song.title}</h2>
       <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
-      <audio
-        ref={audioRef}
-        src={song.audio}
-        controls
-        className="w-full"
-      />
 
-      <div className="flex flex-wrap items-center justify-between text-lg text-white mt-4">
-        <div className="flex flex-wrap gap-4 items-center">
+      <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
+
+      <div className="flex flex-wrap items-center justify-between text-lg text-white">
+        <div className="flex gap-4 flex-wrap">
           <span onClick={() => handleReaction('🔥')} className="cursor-pointer">🔥 {localReactions.fires}</span>
           <span onClick={() => handleReaction('❤️')} className="cursor-pointer">❤️ {localReactions.loves}</span>
           <span onClick={() => handleReaction('😢')} className="cursor-pointer">😢 {localReactions.sads}</span>
           <span onClick={() => handleReaction('🎯')} className="cursor-pointer">🎯 {localReactions.bullseyes}</span>
-          <span className="cursor-default">👁️ {song.views || 0}</span>
-          <span className="cursor-default">📥 {song.jams || 0}</span>
+          <span className="text-sm text-gray-300">👁️ {song.views || 0}</span>
+          <span className="text-sm text-gray-300">📥 {song.jams || 0}</span>
         </div>
+      </div>
+
+      <hr className="my-4 border-t border-gray-600" />
+
+      <div className="flex items-center justify-between">
+        <button
+          onClick={handleAddToJamStack}
+          className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          ❤️ Add to JamStack
+        </button>
 
         <button
           onClick={handleSendTickle}
           disabled={sending}
-          className="ml-auto px-3 py-1 bg-yellow-500 text-black text-sm rounded hover:bg-yellow-600"
+          className="px-3 py-1 text-sm bg-yellow-500 text-black rounded hover:bg-yellow-600"
         >
           🎁 Send Tickle
         </button>
       </div>
-
-      <button
-        onClick={handleAddToJamStack}
-        className="mt-3 text-sm px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-      >
-        ❤️ Add to JamStack
-      </button>
     </div>
   );
 };
 
 const emojiToStatKey = (emoji) => {
   switch (emoji) {
-    case '🔥': return 'fires';
-    case '❤️': return 'loves';
-    case '😢': return 'sads';
-    case '🎯': return 'bullseyes';
-    default: return '';
+    case '🔥':
+      return 'fires';
+    case '❤️':
+      return 'loves';
+    case '😢':
+      return 'sads';
+    case '🎯':
+      return 'bullseyes';
+    default:
+      return '';
   }
 };
 
