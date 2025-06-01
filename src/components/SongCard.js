@@ -17,7 +17,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
-  // Detect when the card is visible (auto-play + view count)
+  // 👁️ Trigger view tracking
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
@@ -38,7 +38,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
     }
   }, [isVisible]);
 
-  // ✅ Fetch latest emoji stats from Supabase on load
+  // 🔁 Fetch fresh emoji counts on mount
   useEffect(() => {
     const fetchLatestStats = async () => {
       const { data, error } = await supabase
@@ -55,7 +55,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
           bullseyes: data.bullseyes || 0,
         });
       } else {
-        console.error('Failed to fetch live reaction stats', error);
+        console.error('Failed to fetch emoji stats:', error);
       }
     };
 
@@ -77,17 +77,13 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
 
     if (!error) {
       toast.success(`You reacted with ${emoji}`);
-
-      // Instantly update local count
       setLocalReactions((prev) => ({
         ...prev,
         [statKey]: (prev[statKey] || 0) + 1,
       }));
-
-      // Optional: Re-fetch true count from DB
-      // await fetchLatestStats(); // Uncomment if needed for consistency
     } else {
-      toast.error('Failed to react');
+      toast.error('Failed to react.');
+      console.error('Insert error:', error);
     }
   };
 
