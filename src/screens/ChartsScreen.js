@@ -39,9 +39,10 @@ const ChartsScreen = () => {
 
   return (
     <div className="p-4 max-w-xl mx-auto">
-      <h1 className="text-center text-2xl font-bold mb-4 text-black dark:text-white">
-        {FILTER_OPTIONS.find((f) => f.key === filter)?.label} Top 20 Chart
-      </h1>
+      <h1 className="text-2xl font-bold mb-6 text-zinc-900 text-center">
+  {emojiMap[filter]} {filter.charAt(0).toUpperCase() + filter.slice(1)} Top 20 Chart
+</h1>
+
 
       <div className="flex flex-wrap justify-center gap-2 mb-4">
         {FILTER_OPTIONS.map((f) => (
