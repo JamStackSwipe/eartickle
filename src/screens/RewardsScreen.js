@@ -26,12 +26,13 @@ const fetchTickles = async () => {
     .single();
 
   if (error) {
-    console.error('❌ Error fetching tickle_balance from profiles:', error);
+    console.error('❌ Error fetching tickle balance from profile:', error);
     setTickles(0);
   } else {
     setTickles(data.tickle_balance || 0);
   }
 };
+
 
 
   const fetchRewards = async () => {
