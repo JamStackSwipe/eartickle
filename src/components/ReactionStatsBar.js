@@ -10,7 +10,9 @@ const ReactionStatsBar = ({ song }) => {
   const { user } = useUser();
   const [stats, setStats] = useState({});
   const [showConfirm, setShowConfirm] = useState(null);
+  const [tickleBalance, setTickleBalance] = useState(null);
 
+  // Load emoji counts + user balance
   useEffect(() => {
     const loadReactions = async () => {
       const { data, error } = await supabase
@@ -28,9 +30,21 @@ const ReactionStatsBar = ({ song }) => {
       }
     };
 
-    loadReactions();
-  }, [song.id]);
+    const loadBalance = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('tickle_balance')
+        .eq('id', user.id)
+        .maybeSingle();
+      setTickleBalance(data?.tickle_balance ?? 0);
+    };
 
+    loadReactions();
+    loadBalance();
+  }, [song.id, user]);
+
+  // Handle emoji reaction
   const handleEmojiClick = async (emoji) => {
     if (!user) {
       toast.error('Login required to react');
@@ -49,6 +63,7 @@ const ReactionStatsBar = ({ song }) => {
     setShowConfirm(emoji);
   };
 
+  // Send tickle via secure API
   const handleSendTickle = async () => {
     if (!user) return;
 
@@ -79,6 +94,7 @@ const ReactionStatsBar = ({ song }) => {
     if (res.ok) {
       playTickle();
       toast.success('1 Tickle sent to the artist!');
+      setTickleBalance((prev) => (prev || 1) - 1);
     } else {
       toast.error(result.error || 'Failed to send tickle.');
     }
@@ -87,25 +103,38 @@ const ReactionStatsBar = ({ song }) => {
   };
 
   return (
-    <div className="flex items-center flex-wrap gap-4 text-lg mt-2">
-      {emojis.map((emoji) => (
-        <button
-          key={emoji}
-          onClick={() => handleEmojiClick(emoji)}
-          className="flex items-center space-x-1 hover:scale-110 transition-transform"
-        >
-          <span>{emoji}</span>
-          <span className="text-sm">{stats[emoji] || 0}</span>
-        </button>
-      ))}
+    <div className="flex flex-col gap-2 text-lg mt-2 w-full">
 
+      {/* Emoji Reactions */}
+      <div className="flex flex-wrap gap-4">
+        {emojis.map((emoji) => (
+          <button
+            key={emoji}
+            onClick={() => handleEmojiClick(emoji)}
+            className="flex items-center space-x-1 hover:scale-110 transition-transform"
+          >
+            <span>{emoji}</span>
+            <span className="text-sm">{stats[emoji] || 0}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Tickle Balance */}
+      {user && (
+        <div className="text-xs text-gray-600 text-right mr-1">
+          Tickles Left: {tickleBalance ?? '...'}
+        </div>
+      )}
+
+      {/* Gift Button */}
       <button
         onClick={() => setShowConfirm('🎁')}
-        className="ml-auto px-3 py-1 bg-yellow-400 rounded text-black text-sm font-medium"
+        className="self-end px-3 py-1 bg-yellow-400 rounded text-black text-sm font-medium"
       >
         🎁 Send Tickle
       </button>
 
+      {/* Confirm Tickle Modal */}
       {showConfirm && showConfirm !== '🎁' && (
         <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-white p-4 shadow-lg rounded z-50">
           <p className="text-center text-lg mb-3">
