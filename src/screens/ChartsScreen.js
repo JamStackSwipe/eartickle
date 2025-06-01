@@ -1,3 +1,4 @@
+// src/screens/ChartsScreen.js
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import SongCard from '../components/SongCard';
@@ -8,8 +9,9 @@ const FILTER_OPTIONS = [
   { key: 'loves', label: '❤️ Loved' },
   { key: 'fires', label: '🔥 Fire' },
   { key: 'bullseyes', label: '🎯 Bullseye' },
+  { key: 'sads', label: '😢 Sad' },
   { key: 'jams', label: '📥 Jammed' },
-  { key: 'tickles', label: '🎁 Tickled' } // optional if tracked
+  { key: 'tickles', label: '🎁 Tickled' }
 ];
 
 const emojiMap = {
@@ -17,6 +19,7 @@ const emojiMap = {
   loves: '❤️',
   fires: '🔥',
   bullseyes: '🎯',
+  sads: '😢',
   jams: '📥',
   tickles: '🎁'
 };
@@ -36,11 +39,8 @@ const ChartsScreen = () => {
         .order(filter, { ascending: false })
         .limit(20);
 
-      if (error) {
-        console.error('Error fetching chart songs:', error.message);
-      } else {
-        setSongs(data);
-      }
+      if (error) console.error('Error fetching chart songs:', error.message);
+      else setSongs(data);
 
       setLoading(false);
     };
@@ -74,8 +74,8 @@ const ChartsScreen = () => {
         <div className="text-center text-white">Loading songs...</div>
       ) : (
         <div className="space-y-6">
-          {songs.map((song) => (
-            <SongCard key={song.id} song={song} user={user} />
+          {songs.map((song, index) => (
+            <SongCard key={song.id} song={song} user={user} rank={index + 1} filter={filter} />
           ))}
         </div>
       )}
