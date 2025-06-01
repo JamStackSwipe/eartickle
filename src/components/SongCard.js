@@ -155,22 +155,21 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
       ref={cardRef}
       className="bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md"
     >
-    <a
-  href={`/artist/${song.artist_id}`}
-  onClick={(e) => {
-    e.preventDefault(); // prevent default jump
-    incrementViews().finally(() => {
-      window.location.href = `/artist/${song.artist_id}`; // manually navigate after RPC call
-    });
-  }}
->
-  <img
-    src={song.cover}
-    alt={song.title}
-    className="w-full h-auto rounded-xl mb-4"
-  />
-</a>
-
+      <a
+        href={`/artist/${song.artist_id}`}
+        onClick={(e) => {
+          e.preventDefault();
+          incrementViews().finally(() => {
+            window.location.href = `/artist/${song.artist_id}`;
+          });
+        }}
+      >
+        <img
+          src={song.cover}
+          alt={song.title}
+          className="w-full h-auto rounded-xl mb-4"
+        />
+      </a>
 
       <h2 className="text-xl font-semibold mb-1">{song.title}</h2>
       <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
