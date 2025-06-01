@@ -1,4 +1,3 @@
-// src/screens/ChartsScreen.js
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import SongCard from '../components/SongCard';
@@ -12,6 +11,15 @@ const FILTER_OPTIONS = [
   { key: 'jams', label: '📥 Jammed' },
   { key: 'tickles', label: '🎁 Tickled' } // optional if tracked
 ];
+
+const emojiMap = {
+  views: '🔥',
+  loves: '❤️',
+  fires: '🔥',
+  bullseyes: '🎯',
+  jams: '📥',
+  tickles: '🎁'
+};
 
 const ChartsScreen = () => {
   const { user } = useUser();
@@ -28,8 +36,11 @@ const ChartsScreen = () => {
         .order(filter, { ascending: false })
         .limit(20);
 
-      if (error) console.error('Error fetching chart songs:', error.message);
-      else setSongs(data);
+      if (error) {
+        console.error('Error fetching chart songs:', error.message);
+      } else {
+        setSongs(data);
+      }
 
       setLoading(false);
     };
@@ -40,9 +51,8 @@ const ChartsScreen = () => {
   return (
     <div className="p-4 max-w-xl mx-auto">
       <h1 className="text-2xl font-bold mb-6 text-zinc-900 text-center">
-  {emojiMap[filter]} {filter.charAt(0).toUpperCase() + filter.slice(1)} Top 20 Chart
-</h1>
-
+        {emojiMap[filter]} {filter.charAt(0).toUpperCase() + filter.slice(1)} Top 20 Chart
+      </h1>
 
       <div className="flex flex-wrap justify-center gap-2 mb-4">
         {FILTER_OPTIONS.map((f) => (
