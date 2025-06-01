@@ -13,9 +13,16 @@ const ProfileScreen = () => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [showUploads, setShowUploads] = useState(true);
   const [expandedSection, setExpandedSection] = useState(null);
+  const [showUploads, setShowUploads] = useState(true);
   const [showJamStack, setShowJamStack] = useState(false);
+
+// 👇 Added to fix ReferenceError
+const [expandedSection, setExpandedSection] = useState('uploads');
+const toggleSection = (section) => {
+  setExpandedSection((prev) => (prev === section ? null : section));
+};
+
 
   useEffect(() => {
     if (user) {
