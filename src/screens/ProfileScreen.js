@@ -205,9 +205,9 @@ const ProfileScreen = () => {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      {/* ... other profile UI content here ... */}
+      {/* Your original UI content including Profile header, social links, uploads, etc. would go here. */}
 
-      {/* ─── Collapsible My Jam Stack Songs ───────────────────────────────────── */}
+      {/* ─── Collapsible My Jam Stack Songs ────────────────────────────────────────────── */}
       <div className="mt-10">
         <button
           className="text-lg font-bold underline"
