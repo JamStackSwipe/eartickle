@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
+import AddToJamStackButton from './AddToJamStackButton'; // ✅ Import shared button
 
 const emojis = ['🔥', '❤️', '😢', '🎯'];
 
@@ -17,7 +18,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
-  // 👁️ Trigger view tracking
+  // Detect when the card is visible (auto-play + view count)
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
@@ -38,7 +39,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
     }
   }, [isVisible]);
 
-  // 🔁 Fetch fresh emoji counts on mount
+  // Fetch latest emoji stats from Supabase on load
   useEffect(() => {
     const fetchLatestStats = async () => {
       const { data, error } = await supabase
@@ -55,7 +56,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
           bullseyes: data.bullseyes || 0,
         });
       } else {
-        console.error('Failed to fetch emoji stats:', error);
+        console.error('Failed to fetch live reaction stats', error);
       }
     };
 
@@ -82,8 +83,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
         [statKey]: (prev[statKey] || 0) + 1,
       }));
     } else {
-      toast.error('Failed to react.');
-      console.error('Insert error:', error);
+      toast.error('Failed to react');
     }
   };
 
@@ -113,24 +113,6 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
     }
 
     setSending(false);
-  };
-
-  const handleAddToJamStack = async () => {
-    const { data: existing } = await supabase
-      .from('jamstacksongs')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('song_id', song.id)
-      .maybeSingle();
-
-    if (existing) return toast('Already in JamStack');
-
-    const { error } = await supabase.from('jamstacksongs').insert([
-      { user_id: user.id, song_id: song.id },
-    ]);
-
-    if (!error) toast.success('Added to JamStack!');
-    else toast.error('Error adding to JamStack');
   };
 
   return (
@@ -166,12 +148,8 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
       <hr className="my-4 border-t border-gray-600" />
 
       <div className="flex items-center justify-between">
-        <button
-          onClick={handleAddToJamStack}
-          className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          ❤️ Add to JamStack
-        </button>
+        {/* ✅ Use shared button component */}
+        <AddToJamStackButton songId={song.id} />
 
         <button
           onClick={handleSendTickle}
