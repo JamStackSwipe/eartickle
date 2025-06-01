@@ -70,7 +70,6 @@ const avatarSrc = artist.avatar_url?.trim()
   ? artist.avatar_url
   : '/default-avatar.png';
 
-
   return (
     <div className="min-h-screen bg-white text-black p-6">
       <div className="flex items-center space-x-6 mb-6">
