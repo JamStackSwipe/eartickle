@@ -402,19 +402,17 @@ const ProfileScreen = () => {
                   />
                   <div className="flex-1 space-y-1">
                     <input
-                      value={song.title}
-                      readOnly
-                      className="w-full border p-1 rounded bg-gray-50"
-                    />
-                    <select
-                      value={song.genre}
-                      disabled
-                      className="w-full border p-1 rounded bg-gray-50 text-gray-500"
-                    >
-                      <option value="">
-                        {song.genre || 'Unknown Genre'}
-                      </option>
-                    </select>
+  value={song.title}
+  readOnly
+  className="w-full border p-1 rounded bg-gray-50"
+/>
+<select
+  value={song.genre}
+  disabled
+  className="w-full border p-1 rounded bg-gray-50 text-gray-500"
+>
+  <option value="">{song.genre || 'Unknown Genre'}</option>
+</select>
                     {/* ─── Audio player for each jam‐stack song ─────────────────── */}
                     <audio
                       controls
