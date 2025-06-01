@@ -160,7 +160,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
           src={song.cover}
           alt={song.title}
           className="w-full h-auto rounded-xl mb-4"
-          onClick={() => incrementViews(song.id)}
+          + onClick={incrementViews}
         />
       </a>
 
