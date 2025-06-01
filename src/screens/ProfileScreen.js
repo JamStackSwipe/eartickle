@@ -311,6 +311,60 @@ const toggleSection = (section) => {
                       <span key={emoji}>{emoji} {count}</span>
                     ))}
                 </div>
+                  {/* Collapsible Jam Stack Songs */}
+<div className="mt-10">
+  <button
+    className="text-lg font-bold underline"
+    onClick={() => toggleSection('jamstack')}
+  >
+    {expandedSection === 'jamstack' ? '🔽 Hide My Jam Stack' : '▶️ Show My Jam Stack'}
+  </button>
+  {expandedSection === 'jamstack' && (
+    <ul className="space-y-4 mt-4">
+      {jamStackSongs.map((song) => (
+        <li key={song.id} className="bg-gray-100 p-4 rounded shadow space-y-2">
+          <div className="flex items-center space-x-4">
+            <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
+            <div className="flex-1 space-y-1">
+              <input
+                value={song.title}
+                readOnly
+                className="w-full border p-1 rounded bg-gray-50"
+              />
+              <select
+                value={song.genre}
+                disabled
+                className="w-full border p-1 rounded bg-gray-50 text-gray-500"
+              >
+                <option value="">{song.genre || 'Unknown Genre'}</option>
+              </select>
+            </div>
+            <button
+              onClick={() => handleDeleteJam(song.id)}
+              className="text-sm text-red-500 hover:text-red-700"
+            >
+              🗑️
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-4 text-xs text-gray-600 mt-2">
+            <span>👁️ {song.views || 0}</span>
+            <span>❤️ {song.likes || 0}</span>
+            <span>🔥 {song.fires || 0}</span>
+            <span>😢 {song.sads || 0}</span>
+            <span>🎯 {song.bullseyes || 0}</span>
+            <span>📦 {song.jams || 0} Jams</span>
+            {tickleStats[song.id] &&
+              Object.entries(tickleStats[song.id]).map(([emoji, count]) => (
+                <span key={emoji}>{emoji} {count}</span>
+              ))}
+          </div>
+        </li>
+      ))}
+    </ul>
+  )}
+</div>
+
               </li>
             ))}
           </ul>
