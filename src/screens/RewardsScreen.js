@@ -36,7 +36,10 @@ const RewardsScreen = () => {
   const fetchRewards = async () => {
     const { data, error } = await supabase
       .from('rewards')
-      .select('*')
+      .select(`
+        *,
+        songs ( title )
+      `)
       .eq('receiver_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -129,7 +132,7 @@ const RewardsScreen = () => {
                     <p className="text-xl font-bold">{icon} {pts} Tickles</p>
                     <p className="text-sm text-gray-600 mt-1">
                       From: <span className="font-mono">{reward.sender_id?.slice(0, 8) || 'Unknown'}</span><br />
-                      Song: <span className="font-mono">{reward.song_id?.slice(0, 8) || '—'}</span><br />
+                      Song: <span className="font-semibold">{reward.songs?.title || '—'}</span><br />
                       {new Date(reward.created_at).toLocaleString()}
                     </p>
                     <p className="mt-2 text-green-600 italic">{message}</p>
