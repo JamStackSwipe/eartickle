@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
 
-const AddToJamStackButton = ({ songId }) => {
-  const { user } = useUser();
+const AddToJamStackButton = ({ songId, user }) => {
+
   const [added, setAdded] = useState(false);
   const [loading, setLoading] = useState(false);
 
