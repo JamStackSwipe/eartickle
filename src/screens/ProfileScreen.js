@@ -1,5 +1,3 @@
-// Full ProfileScreen.js with avatar upload triggered by clicking avatar image + Jam Stack + Uploaded Songs + Full Profile Edit + Tickle Stats
-
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -238,11 +236,11 @@ const ProfileScreen = () => {
       >
         Save Profile
       </button>
-{message && <p className="mt-2 text-green-600">{message}</p>}
+      {message && <p className="mt-2 text-green-600">{message}</p>}
 
       {songs.length > 0 && (
-        <>
-          <h2 className="text-xl font-bold mt-10 mb-4">🎵 Your Uploaded Songs</h2>
+        <div className="mt-10">
+          <h2 className="text-xl font-bold mb-4">🎵 Your Uploaded Songs</h2>
           <ul className="space-y-4">
             {songs.map((song) => (
               <li
@@ -317,10 +315,9 @@ const ProfileScreen = () => {
               </li>
             ))}
           </ul>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Collapsible Jam Stack Songs */}
       <div className="mt-10">
         <button
           onClick={() => setShowJamStack(!showJamStack)}
@@ -341,7 +338,9 @@ const ProfileScreen = () => {
                   <button
                     onClick={() => handleDeleteJam(song.id)}
                     className="text-red-500 hover:text-red-700"
-                  >🗑️</button>
+                  >
+                    🗑️
+                  </button>
                 </div>
               </li>
             ))}
