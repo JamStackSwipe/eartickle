@@ -18,22 +18,21 @@ const RewardsScreen = () => {
     }
   }, [user]);
 
-const fetchTickles = async () => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('tickle_balance')
-    .eq('id', user.id)
-    .single();
+  const fetchTickles = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('tickle_balance')
+      .eq('id', user.id)
+      .single();
 
-  if (error) {
-    console.error('❌ Error fetching tickle balance from profile:', error);
-    setTickles(0);
-  } else {
-    setTickles(data.tickle_balance || 0);
-  }
-};
-
-
+    if (error) {
+      console.error('❌ Error fetc
+      hing tickle balance from profile:', error);
+      setTickles(0);
+    } else {
+      setTickles(data.tickle_balance || 0);
+    }
+  };
 
   const fetchRewards = async () => {
     const { data, error } = await supabase
@@ -82,18 +81,18 @@ const fetchTickles = async () => {
 
   return (
     <div className="max-w-2xl mx-auto mt-10 p-4">
-      <h2 className="text-2xl font-bold mb-6 text-center">🎁 My Tickles & Balance</h2>
+      <h2 className="text-3xl font-bold mb-6 text-center text-purple-600">🎁 Tickles</h2>
 
       <div className="mb-6 text-center">
         <p className="text-lg mb-2">Your current balance:</p>
-        <p className="text-3xl font-bold text-purple-700">{tickles} Tickles</p>
+        <p className="text-4xl font-extrabold text-yellow-500 shadow-sm">{tickles} Tickles</p>
 
-        <div className="mt-4 space-x-3">
+        <div className="mt-6 flex justify-center gap-4">
           {[5, 10, 25].map((amount) => (
             <button
               key={amount}
               onClick={() => handleBuy(amount)}
-              className="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded text-sm"
+              className="bg-yellow-400 hover:bg-yellow-500 text-black py-2 px-4 rounded-full text-sm shadow-md"
             >
               Buy {amount} for ${amount}
             </button>
@@ -101,8 +100,8 @@ const fetchTickles = async () => {
         </div>
       </div>
 
-      <hr className="my-6" />
-      <h3 className="text-xl font-semibold mb-4 text-center">Received Tickles</h3>
+      <hr className="my-8 border-gray-300" />
+      <h3 className="text-2xl font-semibold mb-4 text-center">Recent Tickles Received</h3>
 
       {rewards.length === 0 ? (
         <p className="text-center text-gray-500">You haven’t been tickled yet 😢</p>
@@ -125,16 +124,16 @@ const fetchTickles = async () => {
             }
 
             return (
-              <li key={reward.id} className="p-4 bg-white rounded shadow border">
-                <div className="flex justify-between items-center">
+              <li key={reward.id} className="p-4 bg-white rounded-xl shadow border border-gray-200">
+                <div className="flex justify-between items-start">
                   <div>
-                    <p className="text-xl">{icon} {pts} Tickles</p>
-                    <p className="text-sm text-gray-600">
-                      From: {reward.sender_id?.slice(0, 8) || 'Unknown'}<br />
-                      Song: {reward.song_id?.slice(0, 8) || '—'}<br />
+                    <p className="text-xl font-bold">{icon} {pts} Tickles</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      From: <span className="font-mono">{reward.sender_id?.slice(0, 8) || 'Unknown'}</span><br />
+                      Song: <span className="font-mono">{reward.song_id?.slice(0, 8) || '—'}</span><br />
                       {new Date(reward.created_at).toLocaleString()}
                     </p>
-                    {pts >= 1 && <p className="mt-2 text-green-600 italic">{message}</p>}
+                    <p className="mt-2 text-green-600 italic">{message}</p>
                   </div>
                 </div>
               </li>
