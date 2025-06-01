@@ -12,13 +12,14 @@ const SwipeScreen = () => {
     const fetchSongs = async () => {
       const { data, error } = await supabase
         .from('songs')
-        .select('*')
+        .select('id, title, cover, audio, artist, genre, artist_id, profile_id, fires, loves, sads, bullseyes, views, jams')
         .order('created_at', { ascending: false })
         .limit(20);
 
       if (error) {
         console.error('Error loading songs:', error.message);
       } else {
+        console.log('👀 Songs from Supabase:', data); // Optional debug
         setSongs(data);
       }
       setLoading(false);
@@ -34,7 +35,7 @@ const SwipeScreen = () => {
   return (
     <div className="p-4 max-w-xl mx-auto space-y-10">
       {songs.map((song) => (
-      <SongCard key={song.id} song={song} user={user} />
+        <SongCard key={song.id} song={song} user={user} />
       ))}
     </div>
   );
