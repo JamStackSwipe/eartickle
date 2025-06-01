@@ -4,11 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import AddToJamStackButton from './AddToJamStackButton';
+import ReactionStatsBar from './ReactionStatsBar'; // ✅ added
 
 const tickleSound = new Audio('/sounds/tickle.mp3');
 
-const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
-  const [sending, setSending] = useState(false);
+const SongCard = ({ song, user }) => {
   const [localReactions, setLocalReactions] = useState({
     fires: song.fires || 0,
     loves: song.loves || 0,
@@ -124,35 +124,6 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
     }
   };
 
-  const handleSendTickle = async () => {
-    if (tickleBalance < 1) {
-      toast.error('Not enough Tickles. Buy more in Rewards.');
-      return;
-    }
-
-    setSending(true);
-
-    const { error } = await supabase.from('rewards').insert([
-      {
-        sender_id: user.id,
-        receiver_id: song.profile_id,
-        song_id: song.id,
-        amount: 1,
-        emoji: null,
-      },
-    ]);
-
-    if (!error) {
-      setTickleBalance((prev) => prev - 1);
-      toast.success('1 Tickle sent!');
-      tickleSound.play().catch(() => {});
-    } else {
-      toast.error('Failed to send Tickle.');
-    }
-
-    setSending(false);
-  };
-
   return (
     <div
       ref={cardRef}
@@ -218,15 +189,9 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
           user={user}
           onAdded={() => setJamsCount((prev) => prev + 1)}
         />
-
-        <button
-          onClick={handleSendTickle}
-          disabled={sending}
-          className="px-3 py-1 text-sm bg-yellow-500 text-black rounded hover:bg-yellow-600"
-        >
-          🎁 Send Tickle
-        </button>
       </div>
+
+      <ReactionStatsBar song={song} /> {/* ✅ inserted here */}
     </div>
   );
 };
