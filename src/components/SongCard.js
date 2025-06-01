@@ -25,11 +25,13 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
+  // Detect when the card is visible (auto-play + view count)
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
       { threshold: 0.5 }
     );
+
     if (cardRef.current) observer.observe(cardRef.current);
     return () => observer.disconnect();
   }, []);
@@ -90,9 +92,10 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
 
   const handleReaction = async (emoji) => {
     if (!user) return toast.error('Please sign in to react.');
+
     const statKey = emojiToStatKey(emoji);
     if (hasReacted[statKey]) {
-      toast('Already reacted with this emoji.');
+      toast('You already reacted with this emoji.');
       return;
     }
 
@@ -115,7 +118,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
         [statKey]: true,
       }));
     } else {
-      toast.error('Reaction failed.');
+      toast.error('Failed to react.');
     }
   };
 
@@ -205,6 +208,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
           user={user}
           onAdded={() => setJamsCount((prev) => prev + 1)}
         />
+
         <button
           onClick={handleSendTickle}
           disabled={sending}
