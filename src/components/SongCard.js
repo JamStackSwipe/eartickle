@@ -169,7 +169,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
       <hr className="my-4 border-t border-gray-600" />
 
       <div className="flex items-center justify-between">
-        <AddToJamStackButton songId={song.id} />
+       <AddToJamStackButton songId={song.id} user={user} />
         <button
           onClick={handleSendTickle}
           disabled={sending}
