@@ -4,6 +4,8 @@ import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { useUser } from '../components/AuthProvider';
+import SendTickleButton from '../components/SendTickleButton';
+import EmojiReactionGiftBox from '../components/EmojiReactionGiftBox';
 import SongCard from '../components/SongCard';
 
 const ArtistProfileScreen = () => {
@@ -12,6 +14,7 @@ const ArtistProfileScreen = () => {
   const [artist, setArtist] = useState(null);
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
   const [tickleBalance, setTickleBalance] = useState(0);
 
   useEffect(() => {
@@ -62,6 +65,40 @@ const ArtistProfileScreen = () => {
 
     fetchBalance();
   }, [user]);
+
+  const handleAddToJamStack = async (songId) => {
+    if (!user || adding) return;
+    setAdding(true);
+
+    const { data: existing } = await supabase
+      .from('jamstacksongs')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('song_id', songId)
+      .maybeSingle();
+
+    if (existing) {
+      alert('🛑 Already in your JamStack!');
+      setAdding(false);
+      return;
+    }
+
+    const { error } = await supabase.from('jamstacksongs').insert([
+      {
+        id: uuidv4(),
+        user_id: user.id,
+        song_id: songId,
+      },
+    ]);
+
+    if (!error) {
+      alert('🎵 Added to your JamStack!');
+    } else {
+      console.error('❌ Error adding to JamStack:', error);
+    }
+
+    setAdding(false);
+  };
 
   if (loading) return <div className="p-6">Loading artist page...</div>;
   if (!artist) return <div className="p-6 text-center text-gray-500">Artist not found.</div>;
@@ -114,6 +151,26 @@ const ArtistProfileScreen = () => {
               📩 Book This Artist
             </a>
           )}
+
+          {user && user.id !== artist.id && (
+            <div className="mt-4 space-y-2">
+              <SendTickleButton
+                songId={songs[0]?.id}
+                songTitle={songs[0]?.title}
+                artistId={artist.id}
+                artistStripeId={artist.stripe_id}
+                senderId={user.id}
+              />
+              {songs[0] && (
+                <EmojiReactionGiftBox
+                  song={songs[0]}
+                  user={user}
+                  tickleBalance={tickleBalance}
+                  setTickleBalance={setTickleBalance}
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -121,7 +178,7 @@ const ArtistProfileScreen = () => {
       {songs.length === 0 ? (
         <p className="text-gray-500">This artist hasn’t uploaded any songs yet.</p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
           {songs.map((song) => (
             <li key={song.id}>
               <SongCard
