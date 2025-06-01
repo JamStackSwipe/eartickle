@@ -14,6 +14,13 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
     bullseyes: song.bullseyes || 0,
   });
 
+  const [hasReacted, setHasReacted] = useState({
+    fires: false,
+    loves: false,
+    sads: false,
+    bullseyes: false,
+  });
+
   const audioRef = useRef(null);
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -38,73 +45,71 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
     }
   }, [isVisible]);
 
-  const fetchLatestStats = async () => {
-    const { data, error } = await supabase
-      .from('songs')
-      .select('fires, loves, sads, bullseyes')
-      .eq('id', song.id)
-      .single();
-
-    if (data && !error) {
-      setLocalReactions({
-        fires: data.fires || 0,
-        loves: data.loves || 0,
-        sads: data.sads || 0,
-        bullseyes: data.bullseyes || 0,
-      });
-    } else {
-      console.error('Failed to fetch live reaction stats', error);
-    }
-  };
-
   useEffect(() => {
+    const fetchLatestStats = async () => {
+      const { data, error } = await supabase
+        .from('songs')
+        .select('fires, loves, sads, bullseyes')
+        .eq('id', song.id)
+        .single();
+
+      if (data && !error) {
+        setLocalReactions({
+          fires: data.fires || 0,
+          loves: data.loves || 0,
+          sads: data.sads || 0,
+          bullseyes: data.bullseyes || 0,
+        });
+      } else {
+        console.error('Failed to fetch live reaction stats', error);
+      }
+    };
+
+    const fetchReactionFlags = async () => {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('reactions')
+        .select('emoji')
+        .eq('user_id', user.id)
+        .eq('song_id', song.id);
+
+      if (data && !error) {
+        const flags = {};
+        for (const r of data) {
+          const key = emojiToStatKey(emojiToSymbol(r.emoji));
+          flags[key] = true;
+        }
+        setHasReacted(flags);
+      }
+    };
+
     fetchLatestStats();
-  }, [song.id]);
+    fetchReactionFlags();
+  }, [song.id, user]);
 
   const incrementViews = async () => {
     await supabase.rpc('increment_song_view', { song_id_input: song.id });
   };
 
   const handleReaction = async (emoji) => {
-    if (!user || !user.id) {
-      toast.error('Please sign in to react.');
-      return;
-    }
+    if (!user) return toast.error('Please sign in to react.');
 
     const statKey = emojiToStatKey(emoji);
+    if (hasReacted[statKey]) return toast('Already reacted with this emoji.');
 
-    try {
-      const { data: existing, error: checkError } = await supabase
-        .from('reactions')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('song_id', song.id)
-        .eq('emoji', emoji)
-        .maybeSingle();
+    const { error } = await supabase.from('reactions').insert([
+      { user_id: user.id, song_id: song.id, emoji },
+    ]);
 
-      if (checkError) throw checkError;
-
-      // Increment local count immediately for feedback
+    if (!error) {
+      toast.success(`You reacted with ${emoji}`);
       setLocalReactions((prev) => ({
         ...prev,
         [statKey]: (prev[statKey] || 0) + 1,
       }));
-
-      if (existing) {
-        toast('You already reacted with this emoji.');
-        return;
-      }
-
-      const { error: insertError } = await supabase.from('reactions').insert([
-        { user_id: user.id, song_id: song.id, emoji },
-      ]);
-
-      if (insertError) throw insertError;
-
-      toast.success(`You reacted with ${emoji}`);
-    } catch (err) {
-      console.error('Reaction failed:', err.message);
-      toast.error('Could not add your reaction.');
+      setHasReacted((prev) => ({ ...prev, [statKey]: true }));
+    } else {
+      toast.error('Failed to react');
     }
   };
 
@@ -119,7 +124,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
     const { error } = await supabase.from('rewards').insert([
       {
         sender_id: user.id,
-        receiver_id: song.profile_id,
+        receiver_id: song.artist_id,
         song_id: song.id,
         amount: 1,
         emoji: null,
@@ -157,10 +162,18 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
 
       <div className="flex flex-wrap items-center justify-between text-lg text-white">
         <div className="flex gap-4 flex-wrap">
-          <span onClick={() => handleReaction('🔥')} className="cursor-pointer">🔥 {localReactions.fires}</span>
-          <span onClick={() => handleReaction('❤️')} className="cursor-pointer">❤️ {localReactions.loves}</span>
-          <span onClick={() => handleReaction('😢')} className="cursor-pointer">😢 {localReactions.sads}</span>
-          <span onClick={() => handleReaction('🎯')} className="cursor-pointer">🎯 {localReactions.bullseyes}</span>
+          <span onClick={() => handleReaction('🔥')} className={`cursor-pointer ${hasReacted.fires ? 'opacity-50' : ''}`}>
+            🔥 {localReactions.fires}
+          </span>
+          <span onClick={() => handleReaction('❤️')} className={`cursor-pointer ${hasReacted.loves ? 'opacity-50' : ''}`}>
+            ❤️ {localReactions.loves}
+          </span>
+          <span onClick={() => handleReaction('😢')} className={`cursor-pointer ${hasReacted.sads ? 'opacity-50' : ''}`}>
+            😢 {localReactions.sads}
+          </span>
+          <span onClick={() => handleReaction('🎯')} className={`cursor-pointer ${hasReacted.bullseyes ? 'opacity-50' : ''}`}>
+            🎯 {localReactions.bullseyes}
+          </span>
           <span className="text-sm text-gray-300">👁️ {song.views || 0}</span>
           <span className="text-sm text-gray-300">📥 {song.jams || 0}</span>
         </div>
@@ -169,7 +182,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
       <hr className="my-4 border-t border-gray-600" />
 
       <div className="flex items-center justify-between">
-       <AddToJamStackButton songId={song.id} user={user} />
+        <AddToJamStackButton songId={song.id} user={user} />
         <button
           onClick={handleSendTickle}
           disabled={sending}
@@ -184,16 +197,21 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
 
 const emojiToStatKey = (emoji) => {
   switch (emoji) {
-    case '🔥':
-      return 'fires';
-    case '❤️':
-      return 'loves';
-    case '😢':
-      return 'sads';
-    case '🎯':
-      return 'bullseyes';
-    default:
-      return '';
+    case '🔥': return 'fires';
+    case '❤️': return 'loves';
+    case '😢': return 'sads';
+    case '🎯': return 'bullseyes';
+    default: return '';
+  }
+};
+
+const emojiToSymbol = (emojiText) => {
+  switch (emojiText) {
+    case 'fire': return '🔥';
+    case 'heart': return '❤️';
+    case 'cry': return '😢';
+    case 'bullseye': return '🎯';
+    default: return '';
   }
 };
 
