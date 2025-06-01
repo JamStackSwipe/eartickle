@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabase';
-import { useUser } from './AuthProvider';
 
 const AddToJamStackButton = ({ songId, user }) => {
-
   const [added, setAdded] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -11,7 +9,6 @@ const AddToJamStackButton = ({ songId, user }) => {
     if (!user || !songId) return;
     setLoading(true);
 
-    // Check for duplicates
     const { data: existing, error: checkError } = await supabase
       .from('jamstacksongs')
       .select('id')
@@ -31,7 +28,6 @@ const AddToJamStackButton = ({ songId, user }) => {
       return;
     }
 
-    // Insert if not found
     const { error } = await supabase.from('jamstacksongs').insert([
       { user_id: user.id, song_id: songId },
     ]);
