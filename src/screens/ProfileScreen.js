@@ -59,20 +59,12 @@ const ProfileScreen = () => {
   };
 
   const fetchTickleStats = async (songIds) => {
-    const { data, error } = await supabase
-      .from('tickles')
-      .select('song_id, emoji, count')
-      .in('song_id', songIds)
-      .group('song_id, emoji');
-    if (!error) {
-      const grouped = {};
-      data.forEach(({ song_id, emoji, count }) => {
-        if (!grouped[song_id]) grouped[song_id] = {};
-        grouped[song_id][emoji] = count;
-      });
-      setTickleStats(grouped);
-    }
-  };
+  const { data, error } = await supabase
+    .from('tickles')
+    .select('song_id, emoji, count') // ❌ 'count' doesn't work this way
+    .in('song_id', songIds)
+    .group('song_id, emoji');        // ❌ Supabase doesn't support this
+
 
   const handleChange = (field, value) => {
     setProfile((prev) => ({ ...prev, [field]: value }));
