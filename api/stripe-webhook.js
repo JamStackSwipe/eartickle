@@ -1,5 +1,3 @@
-// /api/stripe-webhook.js
-
 import Stripe from 'stripe';
 import { buffer } from 'micro';
 import { createClient } from '@supabase/supabase-js';
@@ -39,15 +37,28 @@ export default async function handler(req, res) {
     console.log('✅ Stripe Webhook: Payment complete');
     console.log('👤 User ID:', user_id);
     console.log('💰 Amount:', parsedAmount);
+    console.log('🧾 Session ID:', session.id);
 
     if (!user_id || isNaN(parsedAmount)) {
       console.warn('⚠️ Missing or invalid metadata:', session.metadata);
       return res.status(400).send('Invalid metadata');
     }
 
-    // ✅ Insert into tickle_purchases using correct column name
-    const { data, error } = await supabase.from('tickle_purchases').insert([{
-      buyer_id: user_id, // ✅ Use correct column
+    // ✅ Check for duplicate session ID
+    const { data: existing } = await supabase
+      .from('tickle_purchases')
+      .select('id')
+      .eq('stripe_session_id', session.id)
+      .maybeSingle();
+
+    if (existing) {
+      console.warn('⚠️ Duplicate Stripe session detected. Skipping insert.');
+      return res.status(200).json({ received: true, duplicate: true });
+    }
+
+    // ✅ Insert new tickle purchase
+    const { error } = await supabase.from('tickle_purchases').insert([{
+      buyer_id: user_id,
       amount: parsedAmount,
       completed: true,
       stripe_session_id: session.id,
@@ -58,7 +69,7 @@ export default async function handler(req, res) {
       return res.status(500).send('Database insert failed');
     }
 
-    console.log('✅ Tickle purchase recorded:', data);
+    console.log('✅ Tickle purchase recorded.');
   }
 
   return res.status(200).json({ received: true });
