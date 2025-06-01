@@ -10,15 +10,45 @@ const ReactionStatsBar = ({ song }) => {
   const { user } = useUser();
   const [stats, setStats] = useState({});
   const [showConfirm, setShowConfirm] = useState(null);
-  
-  const [tickleBalance, setTickleBalance] = useState(null);const handleSendTickle = async () => {
-  console.log("🎯 Send Tickle button clicked", user);
-  if (!user) return;
-  ...
-};
+  const [tickleBalance, setTickleBalance] = useState(null);
 
+  // Send Tickle via secure API
+  const handleSendTickle = async () => {
+    console.log("🎯 Send Tickle button clicked", user);
+    if (!user) return;
 
-  
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const token = session?.access_token;
+    if (!token) {
+      toast.error('Login required');
+      return;
+    }
+
+    const res = await fetch('/api/send-tickle', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        artist_id: song.user_id,
+        song_id: song.id,
+        emoji: "🎁",
+      }),
+    });
+
+    const result = await res.json();
+    if (res.ok) {
+      playTickle();
+      toast.success('1 Tickle sent to the artist!');
+      setTickleBalance((prev) => (prev || 1) - 1);
+    } else {
+      toast.error(result.error || 'Failed to send tickle.');
+    }
+  };
 
   // Load emoji counts + user balance
   useEffect(() => {
@@ -69,45 +99,8 @@ const ReactionStatsBar = ({ song }) => {
     setStats((prev) => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
   };
 
-  const handleSendTickle = async () => {
-    if (!user) return;
-
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    const token = session?.access_token;
-    if (!token) {
-      toast.error('Login required');
-      return;
-    }
-
-    const res = await fetch('/api/send-tickle', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        artist_id: song.user_id,
-        song_id: song.id,
-        emoji: "🎁",
-      }),
-    });
-
-    const result = await res.json();
-    if (res.ok) {
-      playTickle();
-      toast.success('1 Tickle sent to the artist!');
-      setTickleBalance((prev) => (prev || 1) - 1);
-    } else {
-      toast.error(result.error || 'Failed to send tickle.');
-    }
-  };
-
   return (
     <div className="flex flex-col gap-2 text-lg mt-2 w-full">
-
       {/* Emoji Reactions */}
       <div className="flex flex-wrap gap-4">
         {emojis.map((emoji) => (
