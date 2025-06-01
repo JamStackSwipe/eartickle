@@ -1,3 +1,5 @@
+// src/screens/SwipeScreen.js
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -12,14 +14,13 @@ const SwipeScreen = () => {
     const fetchSongs = async () => {
       const { data, error } = await supabase
         .from('songs')
-        .select('id, title, cover, audio, artist, genre, artist_id, profile_id, fires, loves, sads, bullseyes, views, jams')
+        .select('id, title, cover, audio, artist, genre, artist_id, fires, loves, sads, bullseyes, views, jams')
         .order('created_at', { ascending: false })
         .limit(20);
 
       if (error) {
         console.error('Error loading songs:', error.message);
       } else {
-        console.log('👀 Songs from Supabase:', data); // Optional debug
         setSongs(data);
       }
       setLoading(false);
