@@ -38,7 +38,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No Tickles left — buy more to gift.' });
     }
 
-    // Insert tickle
+    // Insert into tickles table
     const { error: insertError } = await supabase
       .from('tickles')
       .insert({
@@ -52,6 +52,21 @@ export default async function handler(req, res) {
     if (insertError) {
       console.error('❌ Tickle insert failed:', insertError);
       return res.status(500).json({ error: 'Failed to insert tickle' });
+    }
+
+    // Insert into rewards table
+    const { error: rewardError } = await supabase
+      .from('rewards')
+      .insert({
+        sender_id: user.id,
+        receiver_id: artist_id,
+        song_id,
+        amount: 1
+      });
+
+    if (rewardError) {
+      console.error('❌ Failed to log reward:', rewardError);
+      return res.status(500).json({ error: 'Failed to log reward' });
     }
 
     // Deduct tickle
