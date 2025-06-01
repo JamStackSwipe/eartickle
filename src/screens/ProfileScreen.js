@@ -311,7 +311,13 @@ const toggleSection = (section) => {
                       <span key={emoji}>{emoji} {count}</span>
                     ))}
                 </div>
-                  {/* Collapsible Jam Stack Songs */}
+                 
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+          {/* Collapsible Jam Stack Songs */}
 <div className="mt-10">
   <button
     className="text-lg font-bold underline"
@@ -338,6 +344,10 @@ const toggleSection = (section) => {
               >
                 <option value="">{song.genre || 'Unknown Genre'}</option>
               </select>
+              {/* 🎵 Audio player added */}
+              <audio controls className="w-full mt-1" src={song.audio_url}>
+                Your browser does not support the audio element.
+              </audio>
             </div>
             <button
               onClick={() => handleDeleteJam(song.id)}
@@ -365,11 +375,6 @@ const toggleSection = (section) => {
   )}
 </div>
 
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
     </div>
   );
 };
