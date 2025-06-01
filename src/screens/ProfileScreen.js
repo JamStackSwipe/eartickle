@@ -238,56 +238,69 @@ const ProfileScreen = () => {
       >
         Save Profile
       </button>
+{message && <p className="mt-2 text-green-600">{message}</p>}
 
-      {message && <p className="mt-2 text-green-600">{message}</p>}
-
-      {/* Collapsible Uploaded Songs */}
-      <div className="mt-10">
-        <button
-          onClick={() => setShowUploads(!showUploads)}
-          className="text-lg font-bold mb-2"
-        >
-          ⬆️ My Uploaded Songs {showUploads ? '▾' : '▸'}
-        </button>
-        {showUploads && (
+      {songs.length > 0 && (
+        <>
+          <h2 className="text-xl font-bold mt-10 mb-4">🎵 Your Uploaded Songs</h2>
           <ul className="space-y-4">
             {songs.map((song) => (
-              <li key={song.id} className="bg-gray-100 p-4 rounded shadow">
+              <li
+                key={song.id}
+                className="bg-gray-100 p-4 rounded shadow space-y-2"
+              >
                 <div className="flex items-center space-x-4">
-                  <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
+                  <img
+                    src={song.cover}
+                    alt="cover"
+                    className="w-16 h-16 object-cover rounded"
+                  />
                   <div className="flex-1 space-y-1">
                     <input
                       value={song.title}
-                      onChange={(e) => updateSong(song.id, { title: e.target.value })}
+                      onChange={(e) =>
+                        updateSong(song.id, { title: e.target.value })
+                      }
                       className="w-full border p-1 rounded"
                     />
+
                     <select
                       value={song.genre}
-                      onChange={(e) => updateSong(song.id, { genre: e.target.value })}
+                      onChange={(e) =>
+                        updateSong(song.id, { genre: e.target.value })
+                      }
                       className="w-full border p-1 rounded"
                     >
                       <option value="">Select genre</option>
                       {genreOptions.map((g) => (
-                        <option key={g} value={g}>{g}</option>
+                        <option key={g} value={g}>
+                          {g.charAt(0).toUpperCase() + g.slice(1)}
+                        </option>
                       ))}
                     </select>
+
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
                         checked={!!song.stripe_account_id}
                         onChange={(e) =>
                           updateSong(song.id, {
-                            stripe_account_id: e.target.checked ? 'FETCH_FROM_PROFILE' : null,
+                            stripe_account_id: e.target.checked
+                              ? 'FETCH_FROM_PROFILE'
+                              : null,
                           })
                         }
                       />
                       <label className="text-sm text-gray-600">Enable Gifting</label>
                     </div>
                   </div>
+
                   <button
                     onClick={() => handleDelete(song.id)}
-                    className="text-red-500 hover:text-red-700"
-                  >🗑️</button>
+                    className="text-sm text-red-500 hover:text-red-700"
+                  >
+                    🗑️
+                  </button>
                 </div>
                 <div className="flex flex-wrap gap-4 text-xs text-gray-600 mt-2">
                   <span>👁️ {song.views || 0}</span>
