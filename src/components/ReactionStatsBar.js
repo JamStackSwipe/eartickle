@@ -16,34 +16,34 @@ const ReactionStatsBar = ({ song }) => {
   const [hasReacted, setHasReacted] = useState({});
   const [loading, setLoading] = useState(true);
 
+  const loadStats = async () => {
+    const [{ data: reactionsData }, { data: balanceData }, { data: userReactions }] = await Promise.all([
+      supabase.from('song_reactions').select('emoji').eq('song_id', song.id),
+      user
+        ? supabase.from('profiles').select('tickle_balance').eq('id', user.id).maybeSingle()
+        : { data: null },
+      user
+        ? supabase.from('song_reactions').select('emoji').eq('song_id', song.id).eq('user_id', user.id)
+        : { data: [] },
+    ]);
+
+    const counts = {};
+    reactionsData?.forEach(({ emoji }) => {
+      counts[emoji] = (counts[emoji] || 0) + 1;
+    });
+
+    const reacted = {};
+    userReactions?.forEach(({ emoji }) => {
+      reacted[emoji] = true;
+    });
+
+    setStats(counts);
+    setHasReacted(reacted);
+    setTickleBalance(balanceData?.tickle_balance ?? 0);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const loadStats = async () => {
-      const [{ data: reactionsData }, { data: balanceData }, { data: userReactions }] = await Promise.all([
-        supabase.from('song_reactions').select('emoji').eq('song_id', song.id),
-        user
-          ? supabase.from('profiles').select('tickle_balance').eq('id', user.id).maybeSingle()
-          : { data: null },
-        user
-          ? supabase.from('song_reactions').select('emoji').eq('song_id', song.id).eq('user_id', user.id)
-          : { data: [] },
-      ]);
-
-      const counts = {};
-      reactionsData?.forEach(({ emoji }) => {
-        counts[emoji] = (counts[emoji] || 0) + 1;
-      });
-
-      const reacted = {};
-      userReactions?.forEach(({ emoji }) => {
-        reacted[emoji] = true;
-      });
-
-      setStats(counts);
-      setHasReacted(reacted);
-      setTickleBalance(balanceData?.tickle_balance ?? 0);
-      setLoading(false);
-    };
-
     loadStats();
   }, [song.id, user]);
 
@@ -88,6 +88,7 @@ const ReactionStatsBar = ({ song }) => {
       playTickle();
       toast.success('1 Tickle sent!');
       setTickleBalance((prev) => (prev || 1) - 1);
+      loadStats(); // 🔁 Refresh the stats after sending tickle
     } else {
       toast.error(result.error || 'Failed to send tickle');
     }
