@@ -1,4 +1,8 @@
 // EmojiReactionGiftBox.js
+// ❌ DEPRECATED COMPONENT – Use <ReactionStatsBar /> instead
+// This file was replaced by the reusable ReactionStatsBar for all reaction + tickle gifting UI.
+// Retained temporarily for reference until full migration is complete.
+
 import React, { useState } from 'react';
 import { supabase } from '../supabase';
 import { toast } from 'react-hot-toast';
