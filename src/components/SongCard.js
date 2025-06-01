@@ -6,8 +6,13 @@ import toast from 'react-hot-toast';
 const emojis = ['🔥', '❤️', '😢', '🎯'];
 
 const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
-  const [confirmation, setConfirmation] = useState({ show: false, emoji: null });
   const [sending, setSending] = useState(false);
+  const [localReactions, setLocalReactions] = useState({
+    fires: song.fires || 0,
+    loves: song.loves || 0,
+    sads: song.sads || 0,
+    bullseyes: song.bullseyes || 0,
+  });
   const audioRef = useRef(null);
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -39,12 +44,18 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
   const handleReaction = async (emoji) => {
     if (!user) return toast.error('Please sign in to react.');
 
+    const statKey = emojiToStatKey(emoji);
+
     const { error } = await supabase.from('song_reactions').insert([
       { user_id: user.id, song_id: song.id, emoji },
     ]);
 
     if (!error) {
       toast.success(`You reacted with ${emoji}`);
+      setLocalReactions((prev) => ({
+        ...prev,
+        [statKey]: (prev[statKey] || 0) + 1,
+      }));
     } else {
       toast.error('Failed to react');
     }
@@ -121,7 +132,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
             onClick={() => handleReaction(emoji)}
             className="hover:scale-110 transition-transform"
           >
-            {emoji} {song[emojiToStatKey(emoji)] || 0}
+            {emoji} {localReactions[emojiToStatKey(emoji)] || 0}
           </button>
         ))}
 
@@ -141,7 +152,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
         ❤️ Add to JamStack
       </button>
       <div className="text-xs text-gray-400 mt-2 text-center">
-        👁️ {song.views || 0} | 📥 {song.jams || 0} | 🔥 {song.fires || 0} | ❤️ {song.loves || 0} | 😢 {song.sads || 0} | 🎯 {song.bullseyes || 0}
+        👁️ {song.views || 0} | 📥 {song.jams || 0} | 🔥 {localReactions.fires} | ❤️ {localReactions.loves} | 😢 {localReactions.sads} | 🎯 {localReactions.bullseyes}
       </div>
     </div>
   );
