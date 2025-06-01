@@ -38,26 +38,26 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
     }
   }, [isVisible]);
 
+  const fetchLatestStats = async () => {
+    const { data, error } = await supabase
+      .from('songs')
+      .select('fires, loves, sads, bullseyes')
+      .eq('id', song.id)
+      .single();
+
+    if (data && !error) {
+      setLocalReactions({
+        fires: data.fires || 0,
+        loves: data.loves || 0,
+        sads: data.sads || 0,
+        bullseyes: data.bullseyes || 0,
+      });
+    } else {
+      console.error('Failed to fetch live reaction stats', error);
+    }
+  };
+
   useEffect(() => {
-    const fetchLatestStats = async () => {
-      const { data, error } = await supabase
-        .from('songs')
-        .select('fires, loves, sads, bullseyes')
-        .eq('id', song.id)
-        .single();
-
-      if (data && !error) {
-        setLocalReactions({
-          fires: data.fires || 0,
-          loves: data.loves || 0,
-          sads: data.sads || 0,
-          bullseyes: data.bullseyes || 0,
-        });
-      } else {
-        console.error('Failed to fetch live reaction stats', error);
-      }
-    };
-
     fetchLatestStats();
   }, [song.id]);
 
@@ -65,7 +65,6 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
     await supabase.rpc('increment_song_view', { song_id_input: song.id });
   };
 
-  // ✅ Duplicate-safe and stable reaction handler
   const handleReaction = async (emoji) => {
     if (!user || !user.id) {
       toast.error('Please sign in to react.');
@@ -85,6 +84,12 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
 
       if (checkError) throw checkError;
 
+      // Increment local count immediately for feedback
+      setLocalReactions((prev) => ({
+        ...prev,
+        [statKey]: (prev[statKey] || 0) + 1,
+      }));
+
       if (existing) {
         toast('You already reacted with this emoji.');
         return;
@@ -97,10 +102,6 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
       if (insertError) throw insertError;
 
       toast.success(`You reacted with ${emoji}`);
-      setLocalReactions((prev) => ({
-        ...prev,
-        [statKey]: (prev[statKey] || 0) + 1,
-      }));
     } catch (err) {
       console.error('Reaction failed:', err.message);
       toast.error('Could not add your reaction.');
