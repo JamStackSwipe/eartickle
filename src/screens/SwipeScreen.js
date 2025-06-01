@@ -34,7 +34,7 @@ const SwipeScreen = () => {
   return (
     <div className="p-4 max-w-xl mx-auto space-y-10">
       {songs.map((song) => (
-        <SongCard key={song.id} song={song} />
+      <SongCard key={song.id} song={song} user={user} />
       ))}
     </div>
   );
