@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 
-const AddToJamStackButton = ({ songId, user }) => {
+const AddToJamStackButton = ({ songId, user, className = '' }) => {
   const [added, setAdded] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // 🔍 Check if the song is already in JamStack when component mounts
   useEffect(() => {
     const checkIfInJamStack = async () => {
       if (!user || !songId) return;
@@ -32,11 +31,11 @@ const AddToJamStackButton = ({ songId, user }) => {
       { user_id: user.id, song_id: songId },
     ]);
 
-    if (error) {
-      console.error('Error adding to JamStack:', error.message);
-    } else {
+    if (!error) {
       console.log('✅ Song added to JamStack!');
       setAdded(true);
+    } else {
+      console.error('Error adding to JamStack:', error.message);
     }
 
     setLoading(false);
@@ -46,10 +45,10 @@ const AddToJamStackButton = ({ songId, user }) => {
     <button
       onClick={handleAddToJamStack}
       disabled={loading || added}
-      className={`px-4 py-2 mt-2 text-sm font-semibold rounded ${
+      className={`px-4 py-2 mt-2 text-sm font-semibold rounded transition-colors ${
         added
-          ? 'bg-green-400 text-white cursor-not-allowed'
-          : 'bg-blue-500 hover:bg-blue-600 text-white'
+          ? 'bg-green-500 text-white cursor-not-allowed'
+          : className
       }`}
     >
       {added ? '✅ In JamStack' : loading ? 'Adding...' : '➕ Add to JamStack'}
