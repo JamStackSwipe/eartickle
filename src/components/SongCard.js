@@ -150,36 +150,7 @@ const SongCard = ({ song, user }) => {
 
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
 
-      <div className="flex flex-wrap items-center justify-between text-lg text-white">
-        <div className="flex gap-4 flex-wrap">
-          <span
-            onClick={() => handleReaction('🔥')}
-            className={`cursor-pointer ${hasReacted.fires ? 'opacity-50' : ''}`}
-          >
-            🔥 {localReactions.fires}
-          </span>
-          <span
-            onClick={() => handleReaction('❤️')}
-            className={`cursor-pointer ${hasReacted.loves ? 'opacity-50' : ''}`}
-          >
-            ❤️ {localReactions.loves}
-          </span>
-          <span
-            onClick={() => handleReaction('😢')}
-            className={`cursor-pointer ${hasReacted.sads ? 'opacity-50' : ''}`}
-          >
-            😢 {localReactions.sads}
-          </span>
-          <span
-            onClick={() => handleReaction('🎯')}
-            className={`cursor-pointer ${hasReacted.bullseyes ? 'opacity-50' : ''}`}
-          >
-            🎯 {localReactions.bullseyes}
-          </span>
-          <span className="text-sm text-gray-300">👁️ {song.views || 0}</span>
-          <span className="text-sm text-gray-300">📥 {jamsCount}</span>
-        </div>
-      </div>
+      
 
       <hr className="my-4 border-t border-gray-600" />
 
