@@ -52,32 +52,35 @@ const ReactionStatsBar = ({ song }) => {
   const handleSendTickle = async () => {
     if (!user) return;
 
-    const { data: userProfile } = await supabase
-      .from('profiles')
-      .select('tickle_balance')
-      .eq('id', user.id)
-      .maybeSingle();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if ((userProfile?.tickle_balance || 0) < 1) {
-      toast.error('You need Tickles to gift. Buy more in Rewards.');
+    const token = session?.access_token;
+    if (!token) {
+      toast.error('Login required');
       return;
     }
 
-    const { error } = await supabase.from('rewards').insert([
-      {
-        sender_id: user.id,
-        receiver_id: song.user_id,
-        song_id: song.id,
-        amount: 1,
-        emoji: showConfirm,
+    const res = await fetch('/api/send-tickle', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
-    ]);
+      body: JSON.stringify({
+        artist_id: song.user_id,
+        song_id: song.id,
+        emoji: showConfirm,
+      }),
+    });
 
-    if (!error) {
+    const result = await res.json();
+    if (res.ok) {
       playTickle();
       toast.success('1 Tickle sent to the artist!');
     } else {
-      toast.error('Failed to send tickle.');
+      toast.error(result.error || 'Failed to send tickle.');
     }
 
     setShowConfirm(null);
