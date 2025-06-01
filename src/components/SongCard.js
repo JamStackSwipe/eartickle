@@ -150,18 +150,6 @@ const SongCard = ({ song, user }) => {
 
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
 
-      
-
-      <hr className="my-4 border-t border-gray-600" />
-
-      <div className="flex items-center justify-between">
-        <AddToJamStackButton
-          songId={song.id}
-          user={user}
-          onAdded={() => setJamsCount((prev) => prev + 1)}
-        />
-      </div>
-
       <ReactionStatsBar song={song} /> {/* ✅ inserted here */}
     </div>
   );
