@@ -24,7 +24,9 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
 
   useEffect(() => {
     if (!audioRef.current) return;
-    if (isVisible) {
+    const isMobile = window.innerWidth < 768;
+
+    if (isMobile && isVisible) {
       audioRef.current.play().catch(() => {});
       incrementViews();
     } else {
