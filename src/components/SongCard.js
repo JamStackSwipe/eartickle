@@ -5,6 +5,8 @@ import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import AddToJamStackButton from './AddToJamStackButton';
 
+const tickleSound = new Audio('/sounds/tickle.mp3');
+
 const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
   const [sending, setSending] = useState(false);
   const [localReactions, setLocalReactions] = useState({
@@ -143,6 +145,7 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
     if (!error) {
       setTickleBalance((prev) => prev - 1);
       toast.success('1 Tickle sent!');
+      tickleSound.play().catch(() => {});
     } else {
       toast.error('Failed to send Tickle.');
     }
