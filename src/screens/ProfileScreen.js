@@ -413,8 +413,6 @@ const ProfileScreen = () => {
     alt="cover"
     className="w-16 h-16 object-cover rounded"
   />
-</a>
-
             </a>
             <div className="flex-1 space-y-1">
               <input
