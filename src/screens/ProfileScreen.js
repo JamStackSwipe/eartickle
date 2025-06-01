@@ -92,7 +92,7 @@ const ProfileScreen = () => {
 const handleSave = async () => {
   const updates = {
     id: user.id,
-    email: user.email || '', // ✅ this ensures new user row is insertable
+    email: user.email || '', // make sure email column exists
     display_name: profile.display_name || '',
     bio: profile.bio || '',
     avatar_url: profile.avatar_url || '',
@@ -107,11 +107,13 @@ const handleSave = async () => {
     updated_at: new Date(),
   };
 
-  const { error } = await supabase.from('profiles').upsert(updates);
+  const { error } = await supabase
+    .from('profiles')
+    .upsert(updates, { onConflict: ['id'] });
 
   if (error) {
-    console.error('❌ Error saving profile:', error.message);
-    setMessage('Error saving.');
+    console.error('❌ Full save error:', error);
+    setMessage(`❌ Save failed: ${error.message || 'Unknown error'}`);
   } else {
     setProfile((prev) => ({ ...prev, ...updates }));
     setMessage('✅ Profile saved!');
