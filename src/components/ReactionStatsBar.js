@@ -5,7 +5,7 @@ import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
 import { playTickle } from '../utils/tickleSound';
 import toast from 'react-hot-toast';
-import AddToJamStackButton from './AddToJamStackButton';
+import AddToJamStackButton from './AddToJamStackButton'; // ✅ Added back
 
 const emojis = ['🔥', '❤️', '😢', '🎯'];
 
@@ -16,27 +16,34 @@ const ReactionStatsBar = ({ song }) => {
   const [hasReacted, setHasReacted] = useState({});
   const [loading, setLoading] = useState(true);
 
+  // Load emoji counts + user balance
   useEffect(() => {
     const loadStats = async () => {
-      const [emojiCountsResult, balanceResult, userReactionsResult] = await Promise.all([
-        supabase.rpc('get_emoji_counts', { song_id_input: song.id }),
-        user ? supabase.from('profiles').select('tickle_balance').eq('id', user.id).maybeSingle() : { data: null },
-        user ? supabase.from('song_reactions').select('emoji').eq('song_id', song.id).eq('user_id', user.id) : { data: [] },
+      const [{ data: reactions }, balanceRes, { data: userReactions }] = await Promise.all([
+        supabase.from('song_reactions').select('emoji, count').eq('song_id', song.id).group('emoji'),
+        user
+          ? supabase.from('profiles').select('tickle_balance').eq('id', user.id).maybeSingle()
+          : { data: null },
+        user
+          ? supabase.from('song_reactions').select('emoji').eq('song_id', song.id).eq('user_id', user.id)
+          : { data: [] },
       ]);
 
       const counts = {};
-      emojiCountsResult.data?.forEach(({ emoji, count }) => {
+      reactions?.forEach(({ emoji, count }) => {
         counts[emoji] = count;
       });
 
       const reacted = {};
-      userReactionsResult.data?.forEach(({ emoji }) => {
+      userReactions?.forEach(({ emoji }) => {
         reacted[emoji] = true;
       });
 
+      const balance = balanceRes?.data?.tickle_balance ?? 0;
+
       setStats(counts);
       setHasReacted(reacted);
-      setTickleBalance(balanceResult?.data?.[0]?.tickle_balance ?? 0);
+      setTickleBalance(balance);
       setLoading(false);
     };
 
@@ -63,6 +70,7 @@ const ReactionStatsBar = ({ song }) => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
+
     if (!token) return toast.error('Not authorized');
 
     const res = await fetch('/api/send-tickle', {
@@ -107,7 +115,10 @@ const ReactionStatsBar = ({ song }) => {
       </div>
 
       <div className="flex items-center justify-between mt-3">
-        <AddToJamStackButton songId={song.id} user={user} className="bg-yellow-400 text-black" />
+        <AddToJamStackButton
+          songId={song.id}
+          user={user}
+        />
         <div className="text-xs text-yellow-300 font-semibold bg-zinc-800 px-2 py-1 rounded shadow">
           🎶 Tickles Left: {loading ? '...' : tickleBalance}
         </div>
