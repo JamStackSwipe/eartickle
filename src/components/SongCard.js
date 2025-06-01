@@ -1,4 +1,3 @@
-// src/components/SongCard.js
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
@@ -13,10 +12,12 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
     sads: song.sads || 0,
     bullseyes: song.bullseyes || 0,
   });
+
   const audioRef = useRef(null);
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
+  // Detect when the card is visible (auto-play + view count)
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
@@ -37,6 +38,30 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
     }
   }, [isVisible]);
 
+  // ✅ Fetch latest emoji stats from Supabase on load
+  useEffect(() => {
+    const fetchLatestStats = async () => {
+      const { data, error } = await supabase
+        .from('songs')
+        .select('fires, loves, sads, bullseyes')
+        .eq('id', song.id)
+        .single();
+
+      if (data && !error) {
+        setLocalReactions({
+          fires: data.fires || 0,
+          loves: data.loves || 0,
+          sads: data.sads || 0,
+          bullseyes: data.bullseyes || 0,
+        });
+      } else {
+        console.error('Failed to fetch live reaction stats', error);
+      }
+    };
+
+    fetchLatestStats();
+  }, [song.id]);
+
   const incrementViews = async () => {
     await supabase.rpc('increment_song_view', { song_id_input: song.id });
   };
@@ -46,16 +71,21 @@ const SongCard = ({ song, user, tickleBalance, setTickleBalance }) => {
 
     const statKey = emojiToStatKey(emoji);
 
-    const { error } = await supabase.from('song_reactions').insert([
+    const { error } = await supabase.from('reactions').insert([
       { user_id: user.id, song_id: song.id, emoji },
     ]);
 
     if (!error) {
       toast.success(`You reacted with ${emoji}`);
+
+      // Instantly update local count
       setLocalReactions((prev) => ({
         ...prev,
         [statKey]: (prev[statKey] || 0) + 1,
       }));
+
+      // Optional: Re-fetch true count from DB
+      // await fetchLatestStats(); // Uncomment if needed for consistency
     } else {
       toast.error('Failed to react');
     }
