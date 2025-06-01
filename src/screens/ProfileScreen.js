@@ -89,31 +89,35 @@ const ProfileScreen = () => {
   const handleChange = (field, value) => {
     setProfile((prev) => ({ ...prev, [field]: value }));
   };
-
-  const handleSave = async () => {
-    const updates = {
-      id: user.id,
-      display_name: profile.display_name || '',
-      bio: profile.bio || '',
-      avatar_url: profile.avatar_url || '',
-      booking_email: profile.booking_email || '',
-      website: profile.website || '',
-      spotify: profile.spotify || '',
-      youtube: profile.youtube || '',
-      instagram: profile.instagram || '',
-      soundcloud: profile.soundcloud || '',
-      tiktok: profile.tiktok || '',
-      bandlab: profile.bandlab || '',
-      updated_at: new Date(),
-    };
-    const { error } = await supabase.from('profiles').upsert(updates);
-    if (error) {
-      console.error('❌ Error saving profile:', error.message);
-      setMessage('Error saving.');
-    } else {
-      setMessage('✅ Profile saved!');
-    }
+const handleSave = async () => {
+  const updates = {
+    id: user.id,
+    email: user.email || '', // ✅ this ensures new user row is insertable
+    display_name: profile.display_name || '',
+    bio: profile.bio || '',
+    avatar_url: profile.avatar_url || '',
+    booking_email: profile.booking_email || '',
+    website: profile.website || '',
+    spotify: profile.spotify || '',
+    youtube: profile.youtube || '',
+    instagram: profile.instagram || '',
+    soundcloud: profile.soundcloud || '',
+    tiktok: profile.tiktok || '',
+    bandlab: profile.bandlab || '',
+    updated_at: new Date(),
   };
+
+  const { error } = await supabase.from('profiles').upsert(updates);
+
+  if (error) {
+    console.error('❌ Error saving profile:', error.message);
+    setMessage('Error saving.');
+  } else {
+    setProfile((prev) => ({ ...prev, ...updates }));
+    setMessage('✅ Profile saved!');
+  }
+};
+
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
