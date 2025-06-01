@@ -13,7 +13,6 @@ export default async function handler(req, res) {
   try {
     const { artist_id, song_id, emoji } = req.body;
 
-    // Auth header from client (handled by Supabase Auth)
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
       return res.status(401).json({ error: 'No auth token provided' });
@@ -28,18 +27,18 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Unauthorized or user not found' });
     }
 
-    // 1. Check current available_tickles
+    // Get current balance
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('available_tickles')
+      .select('tickle_balance')
       .eq('id', user.id)
       .single();
 
-    if (profileError || profile.available_tickles < 1) {
+    if (profileError || profile.tickle_balance < 1) {
       return res.status(400).json({ error: 'No Tickles left — buy more to gift.' });
     }
 
-    // 2. Insert tickle
+    // Insert tickle
     const { error: insertError } = await supabase
       .from('tickles')
       .insert({
@@ -51,18 +50,20 @@ export default async function handler(req, res) {
       });
 
     if (insertError) {
+      console.error('❌ Tickle insert failed:', insertError);
       return res.status(500).json({ error: 'Failed to insert tickle' });
     }
 
-    // 3. Deduct from sender
+    // Deduct tickle
     const { error: updateError } = await supabase
       .from('profiles')
       .update({
-        available_tickles: profile.available_tickles - 1
+        tickle_balance: profile.tickle_balance - 1
       })
       .eq('id', user.id);
 
     if (updateError) {
+      console.error('❌ Failed to update balance:', updateError);
       return res.status(500).json({ error: 'Failed to update profile balance' });
     }
 
