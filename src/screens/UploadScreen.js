@@ -181,14 +181,7 @@ const UploadScreen = () => {
         Supported formats: MP3, M4A, or audio-only MP4. Make sure your MP4 does not contain video.
       </p>
 
-      <div className="mb-4 flex items-center space-x-2">
-        <input
-          type="checkbox"
-          checked={enableGifting}
-          onChange={(e) => setEnableGifting(e.target.checked)}
-        />
-        <label className="text-sm font-medium text-gray-800">Enable Rewards (Allows Users To Send Gifts For This Song)</label>
-      </div>
+     
 
       <button
         onClick={handleUpload}
