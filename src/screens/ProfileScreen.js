@@ -64,7 +64,7 @@ const ProfileScreen = () => {
       // extract the nested `songs` object, filter out any you uploaded yourself
       const filtered = data
         .map((item) => item.songs)
-        .filter((s) => s.user_id !== user.id);
+        //.filter((s) => s.user_id !== user.id);
       setJamStackSongs(filtered);
     }
   };
