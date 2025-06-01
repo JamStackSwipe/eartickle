@@ -1,4 +1,8 @@
 // src/components/SendTickleButton.js
+// ❌ DEPRECATED COMPONENT – Use <ReactionStatsBar /> instead
+// This file was replaced by the reusable ReactionStatsBar for all reaction + tickle gifting UI.
+// Retained temporarily for reference until full migration is complete.
+
 import React from 'react';
 
 const SendTickleButton = ({ songId, songTitle, artistId, artistStripeId, senderId }) => {
