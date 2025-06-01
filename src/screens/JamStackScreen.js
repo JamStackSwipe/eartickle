@@ -1,4 +1,3 @@
-// src/screens/StackerScreen.js
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -28,16 +27,24 @@ const StackerScreen = () => {
   }, [user?.id]);
 
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.load();
-      audioRef.current.play().catch(() => {});
-    }
-  }, [currentIndex]);
+    const audio = audioRef.current;
+    if (!audio) return;
 
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % songs.length);
-  };
+    // Reset and play the new audio track
+    audio.pause();
+    audio.load();
+    audio.play().catch(() => {});
+
+    // Auto-skip listener
+    const handleEnded = () => {
+      setCurrentIndex((prev) => (prev + 1) % songs.length);
+    };
+
+    audio.addEventListener('ended', handleEnded);
+    return () => {
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [currentIndex, songs.length]);
 
   if (!songs.length) {
     return <div className="text-white text-center mt-10">No songs in your JamStack yet.</div>;
@@ -57,7 +64,7 @@ const StackerScreen = () => {
 
       <div className="flex justify-center mt-4">
         <button
-          onClick={handleNext}
+          onClick={() => setCurrentIndex((prev) => (prev + 1) % songs.length)}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
           Next Song
