@@ -187,19 +187,19 @@ const SettingsScreen = () => {
       <div className="mt-8">
         <p className="text-sm text-gray-300 mb-1">Want to share your artist profile?</p>
         <div className="flex items-center gap-2 bg-gray-800 text-white text-sm px-4 py-2 rounded-lg">
-          <input
+      <button
+  onClick={handleClick}
+  className="w-full text-lg bg-green-600 font-bold px-6 py-4 rounded-lg shadow-xl hover:bg-green-700 animate-bounce"
+>
+  🚀 Connect Stripe & Get Paid!
+</button>
+    <input
             readOnly
             value={`${window.location.origin}/artist/${userId}`}
             className="flex-1 bg-transparent outline-none text-white text-sm"
             onClick={(e) => e.target.select()}
           />
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(`${window.location.origin}/artist/${userId}`);
-              alert('✅ Profile link copied!');
-            }}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded"
-          >
+      
             Copy
           </button>
         </div>
