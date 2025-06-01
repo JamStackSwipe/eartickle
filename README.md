@@ -7,7 +7,7 @@ A music discovery and artist support platform where users build their JamStack�
 
 ## 🚀 Features
 
-- 🔐 GitHub + Email (Magic Link) login
+- 🔐 GitHub + Spotify Login
 - 👤 Profile page with avatar, bio, uploads, and live music stats
 - 🎵 Upload original songs with cover art and MP3
 - 🎧 Swipe screen for discovering and reacting to new music
