@@ -53,10 +53,10 @@ const Header = () => {
           {/* Desktop Nav */}
           <div className="hidden sm:flex items-center space-x-4">
             <Link to="/swipe" className="hover:underline text-white">Swipe</Link>
-            <Link to="/upload" className="hover:underline text-white">Upload</Link>
             <Link to="/stacker" className="hover:underline text-white">🎶 Stacker</Link>
-            <Link to="/rewards" className="hover:underline text-white">🎁 Rewards</Link>
             <Link to="/charts" className="hover:underline text-white">📈 Charts</Link>
+            <Link to="/rewards" className="hover:underline text-white">🎁 Rewards</Link>
+            <Link to="/upload" className="hover:underline text-white">Upload</Link>
           </div>
 
           {/* Avatar + Dropdown */}
