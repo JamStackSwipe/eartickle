@@ -16,11 +16,10 @@ const ReactionStatsBar = ({ song }) => {
   const [hasReacted, setHasReacted] = useState({});
   const [loading, setLoading] = useState(true);
 
-  // Load emoji counts + user balance
   useEffect(() => {
     const loadStats = async () => {
-      const [{ data: reactions }, balanceRes, { data: userReactions }] = await Promise.all([
-        supabase.from('song_reactions').select('emoji, count').eq('song_id', song.id).group('emoji'),
+      const [{ data: reactionsData }, { data: balanceData }, { data: userReactions }] = await Promise.all([
+        supabase.from('song_reactions').select('emoji').eq('song_id', song.id),
         user
           ? supabase.from('profiles').select('tickle_balance').eq('id', user.id).maybeSingle()
           : { data: null },
@@ -30,8 +29,8 @@ const ReactionStatsBar = ({ song }) => {
       ]);
 
       const counts = {};
-      reactions?.forEach(({ emoji, count }) => {
-        counts[emoji] = count;
+      reactionsData?.forEach(({ emoji }) => {
+        counts[emoji] = (counts[emoji] || 0) + 1;
       });
 
       const reacted = {};
@@ -39,11 +38,9 @@ const ReactionStatsBar = ({ song }) => {
         reacted[emoji] = true;
       });
 
-      const balance = balanceRes?.data?.tickle_balance ?? 0;
-
       setStats(counts);
       setHasReacted(reacted);
-      setTickleBalance(balance);
+      setTickleBalance(balanceData?.tickle_balance ?? 0);
       setLoading(false);
     };
 
@@ -115,10 +112,7 @@ const ReactionStatsBar = ({ song }) => {
       </div>
 
       <div className="flex items-center justify-between mt-3">
-        <AddToJamStackButton
-          songId={song.id}
-          user={user}
-        />
+        <AddToJamStackButton songId={song.id} user={user} className="bg-yellow-400 text-black hover:bg-yellow-500" />
         <div className="text-xs text-yellow-300 font-semibold bg-zinc-800 px-2 py-1 rounded shadow">
           🎶 Tickles Left: {loading ? '...' : tickleBalance}
         </div>
