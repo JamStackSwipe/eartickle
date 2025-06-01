@@ -229,44 +229,39 @@ const ProfileScreen = () => {
           />
         </div>
       ))}
-
+        
       <button
         onClick={handleSave}
         className="mt-4 bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700"
       >
         Save Profile
       </button>
+
       {message && <p className="mt-2 text-green-600">{message}</p>}
 
-      {songs.length > 0 && (
-        <div className="mt-10">
-          <h2 className="text-xl font-bold mb-4">🎵 Your Uploaded Songs</h2>
-          <ul className="space-y-4">
+      {/* Collapsible Uploaded Songs */}
+      <div className="mt-10">
+        <button
+          className="text-lg font-bold underline"
+          onClick={() => toggleSection('uploads')}
+        >
+          {expandedSection === 'uploads' ? '🔽 Hide Uploaded Songs' : '▶️ Show Uploaded Songs'}
+        </button>
+        {expandedSection === 'uploads' && (
+          <ul className="space-y-4 mt-4">
             {songs.map((song) => (
-              <li
-                key={song.id}
-                className="bg-gray-100 p-4 rounded shadow space-y-2"
-              >
+              <li key={song.id} className="bg-gray-100 p-4 rounded shadow space-y-2">
                 <div className="flex items-center space-x-4">
-                  <img
-                    src={song.cover}
-                    alt="cover"
-                    className="w-16 h-16 object-cover rounded"
-                  />
+                  <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
                   <div className="flex-1 space-y-1">
                     <input
                       value={song.title}
-                      onChange={(e) =>
-                        updateSong(song.id, { title: e.target.value })
-                      }
+                      onChange={(e) => updateSong(song.id, { title: e.target.value })}
                       className="w-full border p-1 rounded"
                     />
-
                     <select
                       value={song.genre}
-                      onChange={(e) =>
-                        updateSong(song.id, { genre: e.target.value })
-                      }
+                      onChange={(e) => updateSong(song.id, { genre: e.target.value })}
                       className="w-full border p-1 rounded"
                     >
                       <option value="">Select genre</option>
@@ -276,23 +271,19 @@ const ProfileScreen = () => {
                         </option>
                       ))}
                     </select>
-
                     <div className="flex items-center space-x-2">
                       <input
                         type="checkbox"
                         checked={!!song.stripe_account_id}
                         onChange={(e) =>
                           updateSong(song.id, {
-                            stripe_account_id: e.target.checked
-                              ? 'FETCH_FROM_PROFILE'
-                              : null,
+                            stripe_account_id: e.target.checked ? 'FETCH_FROM_PROFILE' : null,
                           })
                         }
                       />
                       <label className="text-sm text-gray-600">Enable Gifting</label>
                     </div>
                   </div>
-
                   <button
                     onClick={() => handleDelete(song.id)}
                     className="text-sm text-red-500 hover:text-red-700"
@@ -300,6 +291,7 @@ const ProfileScreen = () => {
                     🗑️
                   </button>
                 </div>
+
                 <div className="flex flex-wrap gap-4 text-xs text-gray-600 mt-2">
                   <span>👁️ {song.views || 0}</span>
                   <span>❤️ {song.likes || 0}</span>
@@ -311,36 +303,6 @@ const ProfileScreen = () => {
                     Object.entries(tickleStats[song.id]).map(([emoji, count]) => (
                       <span key={emoji}>{emoji} {count}</span>
                     ))}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className="mt-10">
-        <button
-          onClick={() => setShowJamStack(!showJamStack)}
-          className="text-lg font-bold mb-2"
-        >
-          📦 My Jam Stack {showJamStack ? '▾' : '▸'}
-        </button>
-        {showJamStack && (
-          <ul className="space-y-4">
-            {jamStackSongs.map((song) => (
-              <li key={song.id} className="bg-gray-100 p-4 rounded shadow">
-                <div className="flex items-center space-x-4">
-                  <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
-                  <div className="flex-1 space-y-1">
-                    <p className="font-semibold">{song.title}</p>
-                    <audio src={song.audio} controls className="w-full" />
-                  </div>
-                  <button
-                    onClick={() => handleDeleteJam(song.id)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    🗑️
-                  </button>
                 </div>
               </li>
             ))}
