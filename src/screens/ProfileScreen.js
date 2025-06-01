@@ -14,6 +14,7 @@ const ProfileScreen = () => {
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
   const [showUploads, setShowUploads] = useState(true);
+  const [expandedSection, setExpandedSection] = useState(null);
   const [showJamStack, setShowJamStack] = useState(false);
 
   useEffect(() => {
