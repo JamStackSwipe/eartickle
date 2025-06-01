@@ -47,9 +47,9 @@ const ProfileScreen = () => {
   const fetchJamStack = async () => {
     const { data, error } = await supabase
       .from('jamstacksongs')
-      .select('id, song_id, songs:song_id(id, title, artist, artist_id, user_id, cover, audio, views, jams, fires, loves, sads, bullseyes)')
+      .select('*, songs(*)')
       .eq('user_id', user.id);
-    if (!error) {
+    if (!error && data) {
       const filtered = data.map((item) => item.songs).filter((s) => s.user_id !== user.id);
       setJamStackSongs(filtered);
     }
