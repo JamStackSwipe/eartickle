@@ -1,4 +1,4 @@
-// Full ProfileScreen.js with all features preserved and working avatar upload + cache busting
+// Full ProfileScreen.js with avatar upload + tickle stats + collapsible songs fully preserved
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
@@ -26,11 +26,7 @@ const ProfileScreen = () => {
   }, [user]);
 
   const fetchProfile = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     if (!error && data) setProfile(data);
   };
 
@@ -60,24 +56,16 @@ const ProfileScreen = () => {
 
   const fetchTickleStats = async (songIds) => {
     if (!songIds.length) return;
-
-    const { data, error } = await supabase
-      .from('tickles')
-      .select('song_id, emoji');
-
+    const { data, error } = await supabase.from('tickles').select('song_id, emoji');
     if (error) {
       console.error('❌ Error fetching tickles:', error.message);
       return;
     }
-
     const stats = {};
-    data
-      .filter((t) => songIds.includes(t.song_id))
-      .forEach(({ song_id, emoji }) => {
-        if (!stats[song_id]) stats[song_id] = {};
-        stats[song_id][emoji] = (stats[song_id][emoji] || 0) + 1;
-      });
-
+    data.filter((t) => songIds.includes(t.song_id)).forEach(({ song_id, emoji }) => {
+      if (!stats[song_id]) stats[song_id] = {};
+      stats[song_id][emoji] = (stats[song_id][emoji] || 0) + 1;
+    });
     setTickleStats(stats);
   };
 
@@ -130,10 +118,7 @@ const ProfileScreen = () => {
 
     await new Promise((r) => setTimeout(r, 300));
 
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('avatars').getPublicUrl(filePath);
-
+    const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(filePath);
     const avatarWithCacheBust = `${publicUrl}?t=${Date.now()}`;
 
     const { error: updateError } = await supabase
@@ -149,6 +134,31 @@ const ProfileScreen = () => {
       setMessage('✅ Avatar updated!');
     }
     setUploading(false);
+  };
+
+  const handleDelete = async (songId) => {
+    if (!confirm('Delete this song?')) return;
+    const { error } = await supabase.from('songs').delete().eq('id', songId).eq('user_id', user.id);
+    if (!error) setSongs((prev) => prev.filter((s) => s.id !== songId));
+  };
+
+  const handleDeleteJam = async (songId) => {
+    const { error } = await supabase.from('jamstacksongs').delete().eq('song_id', songId).eq('user_id', user.id);
+    if (!error) setJamStackSongs((prev) => prev.filter((s) => s.id !== songId));
+  };
+
+  const updateSong = async (id, updates) => {
+    if ('stripe_account_id' in updates && updates.stripe_account_id === 'FETCH_FROM_PROFILE') {
+      const { data: profile } = await supabase.from('profiles').select('stripe_account_id').eq('id', user.id).maybeSingle();
+      if (!profile?.stripe_account_id) {
+        alert('You must connect Stripe in Settings to enable gifting.');
+        return;
+      }
+      updates.stripe_account_id = profile.stripe_account_id;
+    }
+    const { error } = await supabase.from('songs').update(updates).eq('id', id);
+    if (error) console.error('❌ Error updating song:', error.message);
+    else fetchUploads();
   };
 
   const avatarSrc = profile.avatar_url?.trim()
@@ -187,7 +197,18 @@ const ProfileScreen = () => {
         </div>
       </div>
 
-      {/* Additional profile fields would go here */}
+      {["booking_email", "website", "spotify", "youtube", "instagram", "soundcloud", "tiktok", "bandlab"].map((field) => (
+        <div key={field} className="mb-2">
+          <label className="block text-sm font-semibold capitalize">{field.replace('_', ' ')}</label>
+          <input
+            type="text"
+            value={profile[field] || ''}
+            onChange={(e) => handleChange(field, e.target.value)}
+            className="w-full p-2 border rounded"
+            placeholder={`Enter your ${field}`}
+          />
+        </div>
+      ))}
 
       <button
         onClick={handleSave}
@@ -195,8 +216,90 @@ const ProfileScreen = () => {
       >
         Save Profile
       </button>
-
       {message && <p className="mt-2 text-green-600">{message}</p>}
+
+      {/* Collapsible Uploaded Songs */}
+      <div className="mt-10">
+        <button onClick={() => setShowUploads(!showUploads)} className="text-lg font-bold mb-2">
+          ⬆️ My Uploaded Songs {showUploads ? '▾' : '▸'}
+        </button>
+        {showUploads && (
+          <ul className="space-y-4">
+            {songs.map((song) => (
+              <li key={song.id} className="bg-gray-100 p-4 rounded shadow">
+                <div className="flex items-center space-x-4">
+                  <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
+                  <div className="flex-1 space-y-1">
+                    <input
+                      value={song.title}
+                      onChange={(e) => updateSong(song.id, { title: e.target.value })}
+                      className="w-full border p-1 rounded"
+                    />
+                    <select
+                      value={song.genre}
+                      onChange={(e) => updateSong(song.id, { genre: e.target.value })}
+                      className="w-full border p-1 rounded"
+                    >
+                      <option value="">Select genre</option>
+                      {genreOptions.map((g) => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
+                    </select>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={!!song.stripe_account_id}
+                        onChange={(e) =>
+                          updateSong(song.id, {
+                            stripe_account_id: e.target.checked ? 'FETCH_FROM_PROFILE' : null,
+                          })
+                        }
+                      />
+                      <label className="text-sm text-gray-600">Enable Gifting</label>
+                    </div>
+                  </div>
+                  <button onClick={() => handleDelete(song.id)} className="text-red-500 hover:text-red-700">🗑️</button>
+                </div>
+                <div className="flex flex-wrap gap-4 text-xs text-gray-600 mt-2">
+                  <span>👁️ {song.views || 0}</span>
+                  <span>❤️ {song.likes || 0}</span>
+                  <span>🔥 {song.fires || 0}</span>
+                  <span>😢 {song.sads || 0}</span>
+                  <span>🎯 {song.bullseyes || 0}</span>
+                  <span>📦 {song.jams || 0} Jams</span>
+                  {tickleStats[song.id] &&
+                    Object.entries(tickleStats[song.id]).map(([emoji, count]) => (
+                      <span key={emoji}>{emoji} {count}</span>
+                    ))}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* Collapsible Jam Stack Songs */}
+      <div className="mt-10">
+        <button onClick={() => setShowJamStack(!showJamStack)} className="text-lg font-bold mb-2">
+          📦 My Jam Stack {showJamStack ? '▾' : '▸'}
+        </button>
+        {showJamStack && (
+          <ul className="space-y-4">
+            {jamStackSongs.map((song) => (
+              <li key={song.id} className="bg-gray-100 p-4 rounded shadow">
+                <div className="flex items-center space-x-4">
+                  <img src={song.cover} alt="cover" className="w-16 h-16 object-cover rounded" />
+                  <div className="flex-1 space-y-1">
+                    <p className="font-semibold">{song.title}</p>
+                    <audio src={song.audio} controls className="w-full" />
+                  </div>
+                  <button onClick={() => handleDeleteJam(song.id)} className="text-red-500 hover:text-red-700">🗑️</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 };
