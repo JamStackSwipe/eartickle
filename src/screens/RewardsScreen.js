@@ -26,8 +26,7 @@ const RewardsScreen = () => {
       .single();
 
     if (error) {
-      console.error('❌ Error fetc
-      hing tickle balance from profile:', error);
+      console.error('❌ Error fetching tickle balance from profile:', error);
       setTickles(0);
     } else {
       setTickles(data.tickle_balance || 0);
