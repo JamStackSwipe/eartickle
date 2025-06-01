@@ -34,7 +34,7 @@ const ChartsScreen = () => {
 
   return (
     <div className="p-4 max-w-xl mx-auto space-y-10">
-      <h1 className="text-white text-2xl font-bold mb-4 text-center">🔥 Top 20 Chart</h1>
+      <h1 className="text-3xl font-bold mb-4">🔥 Top 20 Chart</h1>
       {songs.map((song) => (
         <SongCard key={song.id} song={song} user={user} />
       ))}
