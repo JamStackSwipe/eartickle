@@ -4,7 +4,7 @@ import React from 'react';
 import ReactionStatsBar from './ReactionStatsBar';
 
 const MySongCard = ({ song, variant, onDelete, onPublish }) => {
-  if (!song) return null;
+  if (!song || !song.id || !song.artist_id) return null;
 
   const {
     id,
@@ -49,9 +49,11 @@ const MySongCard = ({ song, variant, onDelete, onPublish }) => {
         </div>
       </div>
 
-      <div className="mt-2">
-        <ReactionStatsBar song={song} />
-      </div>
+      {song && song.id && song.artist_id && (
+        <div className="mt-2">
+          <ReactionStatsBar song={song} />
+        </div>
+      )}
 
       <div className="flex justify-end space-x-2 mt-3">
         {typeof is_draft === 'boolean' && is_draft && onPublish && (
