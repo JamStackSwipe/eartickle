@@ -1,6 +1,7 @@
-// MySongCard.js - now supports cover upload and delete on uploads
+// MySongCard.js - now with editable title saving, artist link, and delete undo
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
+import { Link } from 'react-router-dom';
 
 const emojiIcons = {
   '🔥': '🔥',
@@ -45,6 +46,11 @@ const MySongCard = ({
     }
   };
 
+  const handleUndo = () => {
+    setFadeOut(false);
+    setConfirmDelete(false);
+  };
+
   const handleCoverClick = () => {
     if (editable) fileInputRef.current?.click();
   };
@@ -60,37 +66,52 @@ const MySongCard = ({
     window.location.reload();
   };
 
+  const handleTitleSave = async () => {
+    if (title.trim() !== song.title) {
+      await supabase.from('songs').update({ title: title.trim() }).eq('id', song.id);
+    }
+  };
+
+  const coverImage = (
+    <div className="relative" onClick={handleCoverClick}>
+      <img
+        src={song.cover || '/default-cover.png'}
+        alt="cover"
+        className={`rounded ${compact ? 'w-16 h-16' : 'w-24 h-24'} object-cover cursor-pointer`}
+      />
+      {editable && (
+        <div className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs p-1 rounded">
+          📷
+        </div>
+      )}
+      <input
+        type="file"
+        accept="image/*"
+        ref={fileInputRef}
+        onChange={handleCoverUpload}
+        hidden
+      />
+    </div>
+  );
+
   return (
     <div
       className={`flex items-center gap-4 border p-3 rounded shadow-sm relative transition-all duration-500 ${
         fadeOut ? 'opacity-30 blur-sm' : 'opacity-100'
       }`}
     >
-      <div className="relative" onClick={handleCoverClick}>
-        <img
-          src={song.cover || '/default-cover.png'}
-          alt="cover"
-          className={`rounded ${compact ? 'w-16 h-16' : 'w-24 h-24'} object-cover cursor-pointer`}
-        />
-        {editable && (
-          <div className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs p-1 rounded">
-            📷
-          </div>
-        )}
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          onChange={handleCoverUpload}
-          hidden
-        />
-      </div>
+      {onDeleteWithConfirm && !editable ? (
+        <Link to={`/artist/${song.artist_id}`}>{coverImage}</Link>
+      ) : (
+        coverImage
+      )}
 
       <div className="flex-1">
         {editable ? (
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            onBlur={handleTitleSave}
             className="text-lg font-semibold w-full border-b"
           />
         ) : (
@@ -137,9 +158,12 @@ const MySongCard = ({
           )}
 
           {confirmDelete && (
-            <div className="text-sm text-red-600 font-medium">
-              Deleting... (Undo not available yet)
-            </div>
+            <button
+              onClick={handleUndo}
+              className="text-sm text-red-600 underline font-medium"
+            >
+              Undo Delete
+            </button>
           )}
         </div>
       </div>
