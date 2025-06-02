@@ -149,8 +149,8 @@ const SongCard = ({ song, user }) => {
       <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
 
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
-
-      <ReactionStatsBar song={song} /> {/* ✅ inserted here */}
+            
+      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
     </div>
   );
 };
