@@ -59,7 +59,11 @@ const StackerScreen = () => {
   }
 
   const currentSong = songs[currentIndex];
-  const nextSong = songs[(currentIndex + 1) % songs.length];
+  const upcoming = [
+    songs[(currentIndex + 1) % songs.length],
+    songs[(currentIndex + 2) % songs.length],
+    songs[(currentIndex + 3) % songs.length],
+  ];
 
   return (
     <div className="p-4 max-w-xl mx-auto">
@@ -80,25 +84,30 @@ const StackerScreen = () => {
         </button>
       </div>
 
-      {/* Up Next Preview */}
-      {songs.length > 1 && nextSong && (
-        <div className="mt-6 text-center">
-          <div className="text-sm text-gray-300 mb-2">Up Next:</div>
-          <div
-            className="flex items-center gap-3 justify-center p-2 rounded-lg hover:bg-zinc-800 cursor-pointer transition"
-            onClick={() => setCurrentIndex((currentIndex + 1) % songs.length)}
-          >
-            <img
-              src={nextSong.cover || '/default-cover.png'}
-              alt="Up next cover"
-              className="w-12 h-12 object-cover rounded shadow"
-            />
-            <div className="text-left text-white text-sm font-medium">
-              <div>{nextSong.title}</div>
-              {nextSong.artist && (
-                <div className="text-xs text-gray-400">by {nextSong.artist}</div>
-              )}
-            </div>
+      {/* Up Next Queue */}
+      {songs.length > 1 && (
+        <div className="mt-8">
+          <div className="text-sm text-gray-300 text-center mb-2">Up Next</div>
+          <div className="space-y-2">
+            {upcoming.map((song, offset) => (
+              <div
+                key={song?.id || offset}
+                onClick={() => setCurrentIndex((currentIndex + offset + 1) % songs.length)}
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800 cursor-pointer transition"
+              >
+                <img
+                  src={song?.cover || '/default-cover.png'}
+                  alt="cover"
+                  className="w-12 h-12 object-cover rounded shadow"
+                />
+                <div className="text-white text-sm">
+                  <div className="font-medium">{song?.title || 'Untitled'}</div>
+                  {song?.artist && (
+                    <div className="text-xs text-gray-400">by {song.artist}</div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
