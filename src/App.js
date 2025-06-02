@@ -5,7 +5,6 @@ import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import SwipeScreen from './screens/SwipeScreen';
 import UploadScreen from './screens/UploadScreen';
-import MyJamsScreen from './screens/MyJamsScreen';
 import JamStackScreen from './screens/JamStackScreen';
 import LoginScreen from './screens/LoginScreen';
 import RewardsScreen from './screens/RewardsScreen';
@@ -25,7 +24,6 @@ function App() {
         <Route path="/auth" element={<LoginScreen />} />
         <Route path="/swipe" element={<SwipeScreen />} />
         <Route path="/upload" element={<UploadScreen />} />
-        <Route path="/myjams" element={<MyJamsScreen />} />
         <Route path="/stacker" element={<JamStackScreen />} />
         <Route path="/rewards" element={<RewardsScreen />} />
         <Route path="/profile" element={<ProfileScreen />} />
