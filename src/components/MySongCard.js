@@ -1,10 +1,9 @@
 // For The Profile Page Same Base Logic as SongCard.js but has the profile CRUD
 // Added Some Styling For My Jams
 import React from 'react';
-import { playAudioPreview } from '../utils/audioPlayer';
 import { useUser } from './AuthProvider';
 import { supabase } from '../supabase';
-import ReactionStatsBar from './ReactionStatsBar'; // ✅ NEW
+import ReactionStatsBar from './ReactionStatsBar';
 
 const MySongCard = ({ song, onEdit, onDelete, onPublish, variant }) => {
   const { user } = useUser();
@@ -52,7 +51,6 @@ const MySongCard = ({ song, onEdit, onDelete, onPublish, variant }) => {
 
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">{song.title}</h3>
-        <button onClick={() => playAudioPreview(song.audio_url)}>🔊</button>
       </div>
 
       <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
