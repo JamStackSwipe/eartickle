@@ -18,8 +18,8 @@ const SpendTickles = ({ userId, songId, tickleBalance, onSpent }) => {
     }
 
     const { error } = await supabase.rpc('spend_tickles', {
-      user_id: userId,
-      song_id: songId,
+      user_id_input: userId,
+      song_id_input: songId,
       reason: option.value,
       cost: option.cost
     });
