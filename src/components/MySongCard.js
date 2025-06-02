@@ -1,3 +1,4 @@
+// src/components/MySongCard.js
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import { Link } from 'react-router-dom';
@@ -28,7 +29,7 @@ const MySongCard = ({
     if (stats && stats[song.id]) {
       setSongStats(stats[song.id]);
     } else {
-      fetchStats(); // fallback
+      fetchStats();
     }
   }, [song.id, stats]);
 
@@ -43,7 +44,6 @@ const MySongCard = ({
     reactions?.forEach(({ emoji }) => {
       counts[emoji] = (counts[emoji] || 0) + 1;
     });
-
     counts.views = views?.length || 0;
     counts.jam_saves = jams?.length || 0;
 
@@ -102,23 +102,21 @@ const MySongCard = ({
               </button>
             </div>
           ) : (
-            <>
+            <div className="flex items-center gap-1">
               <div className="font-semibold text-white">
                 {title}
               </div>
               {editableTitle && (
                 <button
                   onClick={() => setIsEditingTitle(true)}
-                  className="absolute -right-6 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-blue-500"
+                  className="text-gray-400 hover:text-blue-500"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
+                  ✏️
                 </button>
               )}
-            </>
+            </div>
           )}
-          
+
           {song.is_draft && (
             <button
               onClick={() => onPublish?.(song.id)}
