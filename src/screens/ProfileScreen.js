@@ -1,9 +1,18 @@
-// src/screens/ProfileScreen.js
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 import MySongCard from '../components/MySongCard';
 import Footer from '../components/Footer';
+
+const socialIcons = {
+  website: '🌐',
+  spotify: '🎵',
+  youtube: '📺',
+  instagram: '📸',
+  soundcloud: '🔊',
+  tiktok: '🎬',
+  bandlab: '🎹',
+};
 
 const ProfileScreen = () => {
   const { user } = useUser();
@@ -13,7 +22,7 @@ const ProfileScreen = () => {
   const [songs, setSongs] = useState([]);
   const [jamStackSongs, setJamStackSongs] = useState([]);
   const [tickleStats, setTickleStats] = useState({});
-  const [editing, setEditing] = useState(null);
+  const [editing, setEditing] = useState(null); // 'name' or 'bio'
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
   const [showSocial, setShowSocial] = useState(false);
@@ -33,6 +42,7 @@ const ProfileScreen = () => {
 
   const fetchReactionStats = async (songIds) => {
     if (!songIds.length) return;
+
     const [reactionsData, viewsData, jamData] = await Promise.all([
       supabase.from('reactions').select('song_id, emoji'),
       supabase.from('views').select('song_id'),
@@ -40,6 +50,7 @@ const ProfileScreen = () => {
     ]);
 
     const stats = {};
+
     reactionsData.data?.forEach(({ song_id, emoji }) => {
       if (songIds.includes(song_id)) {
         stats[song_id] = stats[song_id] || {};
@@ -139,8 +150,8 @@ const ProfileScreen = () => {
   const avatarSrc = profile.avatar_url || user?.user_metadata?.avatar_url || '/default-avatar.png';
 
   return (
-    <div className="px-4 py-6 max-w-3xl mx-auto space-y-10">
-      {/* Avatar (unchanged) */}
+    <div className="p-4 max-w-2xl mx-auto space-y-6">
+      {/* Avatar */}
       <div className="text-center">
         <img
           src={avatarSrc}
@@ -154,114 +165,111 @@ const ProfileScreen = () => {
       {/* Display Name */}
       <div className="text-center">
         {editing === 'name' ? (
-          <div className="space-y-2">
+          <div className="flex flex-col items-center">
             <input
               type="text"
               value={profile.display_name || ''}
               onChange={(e) => handleChange('display_name', e.target.value)}
               placeholder="Your artist name"
-              className="text-xl font-semibold text-center border-b-2 border-blue-400 focus:outline-none pb-1 w-64"
+              className="text-xl font-bold text-center border-b-2 border-blue-400 focus:outline-none focus:border-blue-600 pb-1 w-64"
               autoFocus
             />
-            <div className="flex justify-center gap-3">
-              <button onClick={handleSave} className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm">Save</button>
-              <button onClick={() => setEditing(null)} className="bg-gray-200 px-3 py-1 rounded-full text-sm">Cancel</button>
+            <div className="flex gap-2 mt-2">
+              <button onClick={handleSave} className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600">Save</button>
+              <button onClick={() => setEditing(null)} className="px-3 py-1 bg-gray-200 rounded-full text-sm hover:bg-gray-300">Cancel</button>
             </div>
           </div>
         ) : (
-          <h2 className="text-2xl font-bold text-gray-800">
+          <div className="inline-flex items-center gap-2 text-xl font-bold text-gray-800 hover:text-black transition">
             {profile.display_name || 'Unnamed Artist'}
-            <button
-              onClick={() => setEditing('name')}
-              className="ml-2 text-blue-500 hover:underline text-sm"
-            >Edit</button>
-          </h2>
+            <button onClick={() => setEditing('name')} className="text-gray-400 hover:text-blue-500">✏️</button>
+          </div>
         )}
       </div>
 
       {/* Bio */}
-      <div className="text-center">
+      <div className="text-center max-w-md mx-auto">
         {editing === 'bio' ? (
-          <div className="space-y-2">
+          <div className="flex flex-col items-center">
             <textarea
               value={profile.bio || ''}
               onChange={(e) => handleChange('bio', e.target.value)}
               placeholder="Tell your story..."
               rows={3}
-              className="w-full border rounded-lg p-2"
+              className="w-full border rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
               autoFocus
             />
-            <div className="flex justify-center gap-3">
-              <button onClick={handleSave} className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm">Save</button>
-              <button onClick={() => setEditing(null)} className="bg-gray-200 px-3 py-1 rounded-full text-sm">Cancel</button>
+            <div className="flex gap-2 mt-2">
+              <button onClick={handleSave} className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600">Save</button>
+              <button onClick={() => setEditing(null)} className="px-3 py-1 bg-gray-200 rounded-full text-sm hover:bg-gray-300">Cancel</button>
             </div>
           </div>
         ) : (
-          <p className="text-gray-600">
-            {profile.bio || 'No bio yet. Click to add one...'}
-            <button
-              onClick={() => setEditing('bio')}
-              className="ml-2 text-blue-500 hover:underline text-sm"
-            >Edit</button>
-          </p>
+          <div className="flex items-center justify-center gap-2 text-gray-600 hover:text-gray-800 transition">
+            <p>{profile.bio || 'No bio yet. Click ✏️ to add one.'}</p>
+            <button onClick={() => setEditing('bio')} className="text-gray-400 hover:text-blue-500">✏️</button>
+          </div>
         )}
       </div>
 
       {/* Social Links */}
-      <div>
-        <button onClick={() => setShowSocial(!showSocial)} className="text-blue-600 underline text-sm">
-          {showSocial ? 'Hide Social Links' : 'Show Social Links'}
+      <div className="text-center">
+        <button
+          onClick={() => setShowSocial(!showSocial)}
+          className="px-4 py-1 rounded-full bg-blue-100 text-blue-700 text-sm hover:bg-blue-200 transition"
+        >
+          {showSocial ? 'Hide Social Links' : 'Edit Social Links'}
         </button>
         {showSocial && (
-          <div className="grid grid-cols-2 gap-3 mt-3">
-            {['website', 'spotify', 'youtube', 'instagram', 'soundcloud', 'tiktok', 'bandlab'].map((field) => (
-              <input
-                key={field}
-                value={profile[field] || ''}
-                onChange={(e) => handleChange(field, e.target.value)}
-                placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                className="border p-2 rounded w-full text-sm"
-              />
+          <div className="grid grid-cols-2 gap-4 mt-4 bg-gray-50 p-4 rounded-lg shadow">
+            {Object.keys(socialIcons).map((field) => (
+              <div key={field} className="flex flex-col text-sm">
+                <label htmlFor={field} className="mb-1 text-gray-700 flex items-center gap-1 capitalize">
+                  <span>{socialIcons[field]}</span> {field}
+                </label>
+                <input
+                  id={field}
+                  value={profile[field] || ''}
+                  onChange={(e) => handleChange(field, e.target.value)}
+                  placeholder={`Enter your ${field}`}
+                  className="border border-gray-300 p-2 rounded focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* My Uploads */}
+      {/* Uploads */}
       {songs.length > 0 && (
         <div>
-          <h3 className="text-xl font-bold mb-4 text-center">📤 My Uploads</h3>
-          <div className="space-y-4">
-            {songs.map((song) => (
-              <MySongCard
-                key={song.id}
-                song={song}
-                editable
-                stats={tickleStats[song.id] || {}}
-                onDelete={() => handleDelete(song.id)}
-                onPublish={song.is_draft ? () => handlePublish(song.id) : undefined}
-                showStripeButton={!profile.stripe_account_id && !song.is_draft}
-              />
-            ))}
-          </div>
+          <h3 className="text-xl font-bold mb-4">📤 My Uploads</h3>
+          {songs.map((song) => (
+            <MySongCard
+              key={song.id}
+              song={song}
+              editableTitle
+              stats={tickleStats[song.id] || {}}
+              onDelete={() => handleDelete(song.id)}
+              onPublish={song.is_draft ? () => handlePublish(song.id) : undefined}
+              showStripeButton={!profile.stripe_account_id && !song.is_draft}
+            />
+          ))}
         </div>
       )}
 
-      {/* My Jam Stack */}
+      {/* Jam Stack */}
       {jamStackSongs.length > 0 && (
         <div>
-          <h3 className="text-xl font-bold text-center text-blue-700 mb-4">🎵 My Jam Stack</h3>
-          <div className="space-y-4">
-            {jamStackSongs.map((song) => (
-              <MySongCard
-                key={song.id}
-                song={song}
-                stats={tickleStats[song.id] || {}}
-                onDeleteWithConfirm={() => handleDeleteJam(song.id)}
-                compact
-              />
-            ))}
-          </div>
+          <h3 className="text-2xl font-extrabold text-blue-800 mb-4 tracking-tight uppercase">🎵 My Jam Stack</h3>
+          {jamStackSongs.map((song) => (
+            <MySongCard
+              key={song.id}
+              song={song}
+              stats={tickleStats[song.id] || {}}
+              onDelete={() => handleDeleteJam(song.id)} // always show delete
+            />
+          ))}
         </div>
       )}
 
