@@ -1,5 +1,4 @@
-//rebuilt from the ground up
-// Rebuilt ProfileScreen.js
+// Rebuilt ProfileScreen.js - updated for MySongCard delete + stats fix
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -27,11 +26,7 @@ const ProfileScreen = () => {
   }, [user]);
 
   const fetchProfile = async () => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     if (data) setProfile(data);
   };
 
@@ -52,7 +47,6 @@ const ProfileScreen = () => {
       .from('jamstacksongs')
       .select(`song_id, songs ( id, title, artist_id, audio, cover, is_draft, created_at )`)
       .eq('user_id', user.id);
-
     if (data) {
       const songsOnly = data.map((item) => ({
         ...item.songs,
@@ -96,11 +90,29 @@ const ProfileScreen = () => {
     setUploading(false);
   };
 
+  const handleDelete = async (songId) => {
+    const { error } = await supabase.from('songs').delete().eq('id', songId).eq('user_id', user.id);
+    if (!error) setSongs((prev) => prev.filter((s) => s.id !== songId));
+  };
+
+  const handlePublish = async (songId) => {
+    const { error } = await supabase.from('songs').update({ is_draft: false }).eq('id', songId);
+    if (!error) fetchUploads();
+  };
+
+  const handleDeleteJam = async (songId) => {
+    const { error } = await supabase
+      .from('jamstacksongs')
+      .delete()
+      .eq('song_id', songId)
+      .eq('user_id', user.id);
+    if (!error) setJamStackSongs((prev) => prev.filter((s) => s.id !== songId));
+  };
+
   const avatarSrc = profile.avatar_url || user?.user_metadata?.avatar_url || '/default-avatar.png';
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
-      {/* Avatar & Display Name */}
       <div className="text-center mb-6">
         <img
           src={avatarSrc}
@@ -112,7 +124,6 @@ const ProfileScreen = () => {
         <p className="text-gray-600 text-sm mt-1">{profile.bio || 'Tell us about yourself'}</p>
       </div>
 
-      {/* Social Links */}
       <div className="mb-6">
         <button onClick={() => setShowSocial(!showSocial)} className="text-blue-500 underline font-medium">
           {showSocial ? 'Hide Social Links' : 'Show Social Links'}
@@ -136,10 +147,9 @@ const ProfileScreen = () => {
         )}
       </div>
 
-      {/* My Uploads */}
       {profile.is_artist && songs.length > 0 && (
         <div className="mb-10">
-          <h2 className="text-2xl font-extrabold text-blue-800 mb-4 tracking-tight uppercase">📤 My Uploads</h2>
+          <h3 className="text-xl font-semibold mb-2">📤 My Uploads</h3>
           <div className="space-y-4">
             {songs.map((song) => (
               <MySongCard
@@ -148,24 +158,26 @@ const ProfileScreen = () => {
                 compact
                 editable
                 stats={tickleStats[song.id] || {}}
+                onDelete={(id) => handleDelete(id)}
+                onPublish={(id) => handlePublish(id)}
+                showStripeButton={!profile.stripe_account_id && !song.is_draft}
               />
             ))}
           </div>
         </div>
       )}
 
-      {/* My Jam Stack */}
       {jamStackSongs.length > 0 && (
         <div className="mb-10">
-         <h2 className="text-2xl font-extrabold text-blue-800 mb-4 tracking-tight uppercase">🎵 My Jam Stack</h2>
+          <h3 className="text-2xl font-extrabold text-blue-800 mb-4 tracking-tight uppercase">🎵 My Jam Stack</h3>
           <div className="space-y-4">
             {jamStackSongs.map((song) => (
               <MySongCard
                 key={song.id}
                 song={song}
                 compact
-                onDeleteWithConfirm
                 stats={tickleStats[song.id] || {}}
+                onDeleteWithConfirm={() => handleDeleteJam(song.id)}
               />
             ))}
           </div>
