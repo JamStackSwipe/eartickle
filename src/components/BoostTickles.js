@@ -1,10 +1,15 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 
+const boostSound = new Audio('/sounds/tickle-welcome.mp3');
+
 const BoostTickles = ({ songId, userId }) => {
-  const cardRef = useRef(null);
-  const boostSound = new Audio('/sounds/tickle-welcome.mp3');
+  const playBoostSound = () => {
+    boostSound.pause();
+    boostSound.currentTime = 0;
+    boostSound.play().catch(() => {});
+  };
 
   const boost = async (amount) => {
     const { error } = await supabase.rpc('spend_tickles', {
@@ -15,21 +20,11 @@ const BoostTickles = ({ songId, userId }) => {
     });
 
     if (error) {
-      toast.error('❌ Boost failed: ' + error.message);
-      console.error(error);
+      toast.error(error.message || 'Boost failed.');
     } else {
+      playBoostSound();
       toast.success(`🎯 Boosted with ${amount} Tickles!`);
-      boostSound.play().catch(() => {});
-      animateCard();
     }
-  };
-
-  const animateCard = () => {
-    if (!cardRef.current) return;
-    cardRef.current.classList.add('animate-boost');
-    setTimeout(() => {
-      cardRef.current.classList.remove('animate-boost');
-    }, 1000);
   };
 
   const buttonStyles = [
@@ -39,7 +34,7 @@ const BoostTickles = ({ songId, userId }) => {
   ];
 
   return (
-    <div ref={cardRef} className="flex gap-2 justify-end flex-wrap transition-all">
+    <div className="flex gap-2 justify-end flex-wrap mt-2">
       {buttonStyles.map(({ amount, label, color }) => (
         <button
           key={amount}
