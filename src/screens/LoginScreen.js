@@ -27,17 +27,23 @@ const LoginScreen = () => {
     }
   };
 
-  const handleEmailLogin = async (e) => {
-    e.preventDefault();
-    const { error } = await supabase.auth.signInWithOtp({ email });
+ const handleEmailLogin = async (e) => {
+  e.preventDefault();
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: 'https://eartickle.com/swipe', // 👈 full URL to redirect *after* login
+    },
+  });
 
-    if (error) {
-      console.error('Email login error:', error.message);
-      setMessage('Could not send magic link.');
-    } else {
-      setMessage('Magic login link sent! Check your email.');
-    }
-  };
+  if (error) {
+    console.error('Email login error:', error.message);
+    setMessage('Could not send magic link.');
+  } else {
+    setMessage('Magic login link sent! Check your email.');
+  }
+};
+
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-purple-900 via-black to-black text-white overflow-hidden">
