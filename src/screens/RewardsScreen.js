@@ -112,6 +112,10 @@ const totalReceived = received?.reduce((sum, t) => sum + (t.amount || 0), 0);
       </div>
 
       <hr className="my-8 border-gray-300" />
+            <div className="text-yellow-300 text-sm font-semibold">
+  🪙 Tickles Received: {totalReceived}
+</div>
+
       <h3 className="text-2xl font-semibold mb-4 text-center">Recent Tickles Received</h3>
 
       {rewards.length === 0 ? (
