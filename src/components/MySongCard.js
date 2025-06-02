@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 const emojiIcons = {
   '🔥': '🔥',
   '💖': '💖',
-  '😢': '😭',
+  '😭': '😭',
   '🎯': '🎯',
   views: '👁️',
   jamstack: '➕'
