@@ -1,41 +1,35 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 
-const boostSound = new Audio('/sounds/tickle-welcome.mp3');
+const BoostTickles = ({ songId, userId }) => {
+  const cardRef = useRef(null);
+  const boostSound = new Audio('/sounds/tickle-welcome.mp3');
 
-const BoostTickles = ({ songId, userId, onBoosted }) => {
   const boost = async (amount) => {
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('tickle_balance')
-      .eq('id', userId)
-      .single();
-
-    if (profileError || !profile) {
-      toast.error('❌ Failed to get tickle balance.');
-      return;
-    }
-
-    if (profile.tickle_balance < amount) {
-      toast.error('😢 Not enough Tickles.');
-      return;
-    }
-
     const { error } = await supabase.rpc('spend_tickles', {
-      user_id: userId,
-      song_id: songId,
-      reason: 'boost',
+      user_id_input: userId,
+      song_id_input: songId,
+      reason: '🎯',
       cost: amount,
     });
 
     if (error) {
-      toast.error('❌ Boost failed.');
+      toast.error('❌ Boost failed: ' + error.message);
+      console.error(error);
     } else {
-      boostSound.play().catch(() => {});
       toast.success(`🎯 Boosted with ${amount} Tickles!`);
-      onBoosted?.(); // optional UI refresh
+      boostSound.play().catch(() => {});
+      animateCard();
     }
+  };
+
+  const animateCard = () => {
+    if (!cardRef.current) return;
+    cardRef.current.classList.add('animate-boost');
+    setTimeout(() => {
+      cardRef.current.classList.remove('animate-boost');
+    }, 1000);
   };
 
   const buttonStyles = [
@@ -45,7 +39,7 @@ const BoostTickles = ({ songId, userId, onBoosted }) => {
   ];
 
   return (
-    <div className="flex gap-2 justify-end flex-wrap mt-2">
+    <div ref={cardRef} className="flex gap-2 justify-end flex-wrap transition-all">
       {buttonStyles.map(({ amount, label, color }) => (
         <button
           key={amount}
