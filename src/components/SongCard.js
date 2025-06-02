@@ -170,11 +170,6 @@ const SongCard = ({ song, user }) => {
 
       <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
 
-      {user && (
-        <div className="mt-3">
-          <BoostTickles songId={song.id} userId={user.id} />
-        </div>
-      )}
     </div>
   );
 };
