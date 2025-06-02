@@ -1,3 +1,4 @@
+// Stacker Screen Very Important
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
