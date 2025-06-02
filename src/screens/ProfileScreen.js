@@ -258,7 +258,6 @@ const ProfileScreen = () => {
                 song={song} variant="jamstack"
                 onDelete={handleDelete}
                 onPublish={handlePublish}
-                onEdit={() => {}}
               />
             ))}
           </div>
