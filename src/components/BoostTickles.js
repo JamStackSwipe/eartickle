@@ -1,56 +1,51 @@
-// src/components/BoostTickles.js
+// BoostTickles.js – simplified with 3 fixed buttons
 
-import { useState } from 'react';
+import React from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 
 const BoostTickles = ({ songId, userId }) => {
-  const [amount, setAmount] = useState(5);
-  const [loading, setLoading] = useState(false);
+  const boost = async (amount) => {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('tickle_balance')
+      .eq('id', userId)
+      .single();
 
-  const handleBoost = async () => {
-    if (!userId || !songId || amount <= 0) {
-      toast.error('Invalid boost parameters.');
+    if (profileError || !profile) {
+      toast.error('Failed to get tickle balance.');
       return;
     }
 
-    setLoading(true);
+    if (profile.tickle_balance < amount) {
+      toast.error('Not enough Tickles.');
+      return;
+    }
 
-    const { error } = await supabase.from('tickles').insert([
-      {
-        user_id: userId,
-        song_id: songId,
-        emoji: 'boost',
-        amount,
-      },
-    ]);
-
-    setLoading(false);
+    const { error } = await supabase.rpc('boost_song_with_tickles', {
+      song_id_input: songId,
+      user_id_input: userId,
+      tickles_to_spend: amount,
+    });
 
     if (error) {
-      toast.error(`❌ ${error.message}`);
+      toast.error('Boost failed.');
     } else {
-      toast.success(`🚀 Boosted with ${amount} Tickles!`);
+      toast.success(`🎯 Boosted with ${amount} Tickles!`);
     }
   };
 
   return (
-    <div className="flex items-center gap-2 mt-2">
-      <input
-        type="number"
-        min="1"
-        step="1"
-        value={amount}
-        onChange={(e) => setAmount(parseInt(e.target.value))}
-        className="w-16 px-2 py-1 rounded text-sm bg-zinc-800 text-white border border-zinc-600"
-      />
-      <button
-        onClick={handleBoost}
-        disabled={loading}
-        className="px-3 py-1 text-sm rounded bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
-      >
-        {loading ? 'Boosting...' : 'Boost 🎯'}
-      </button>
+    <div className="flex gap-2 justify-end">
+      {[5, 10, 25].map((amt) => (
+        <button
+          key={amt}
+          onClick={() => boost(amt)}
+          className="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
+        >
+          🎯 Boost {amt}
+        </button>
+      ))}
     </div>
   );
 };
