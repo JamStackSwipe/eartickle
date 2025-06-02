@@ -1,4 +1,4 @@
-// Rebuilt ProfileScreen.js - with editable display name and bio
+// Rebuilt ProfileScreen.js - with editable display name and bio and working reaction stats
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -31,6 +31,23 @@ const ProfileScreen = () => {
     if (data) setProfile(data);
   };
 
+  const fetchReactionStats = async (songIds) => {
+    if (!songIds.length) return;
+    const { data, error } = await supabase.from('reactions').select('song_id, emoji');
+    if (error) {
+      console.error('❌ Reaction fetch error:', error.message);
+      return;
+    }
+    const stats = {};
+    data
+      .filter(({ song_id }) => songIds.includes(song_id))
+      .forEach(({ song_id, emoji }) => {
+        if (!stats[song_id]) stats[song_id] = {};
+        stats[song_id][emoji] = (stats[song_id][emoji] || 0) + 1;
+      });
+    setTickleStats(stats);
+  };
+
   const fetchUploads = async () => {
     const { data } = await supabase
       .from('songs')
@@ -39,7 +56,7 @@ const ProfileScreen = () => {
       .order('created_at', { ascending: false });
     if (data) {
       setSongs(data);
-      fetchTickleStats(data.map((s) => s.id));
+      fetchReactionStats(data.map((s) => s.id));
     }
   };
 
@@ -54,18 +71,8 @@ const ProfileScreen = () => {
         id: item.song_id || item.songs.id,
       }));
       setJamStackSongs(songsOnly);
+      fetchReactionStats(songsOnly.map((s) => s.id));
     }
-  };
-
-  const fetchTickleStats = async (songIds) => {
-    if (!songIds.length) return;
-    const { data } = await supabase.from('tickles').select('song_id, emoji');
-    const stats = {};
-    data?.forEach(({ song_id, emoji }) => {
-      if (!stats[song_id]) stats[song_id] = {};
-      stats[song_id][emoji] = (stats[song_id][emoji] || 0) + 1;
-    });
-    setTickleStats(stats);
   };
 
   const handleChange = (field, value) => {
