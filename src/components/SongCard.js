@@ -137,7 +137,7 @@ const SongCard = ({ song, user }) => {
   return (
     <div
       ref={cardRef}
-      className={`text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md ${glowStyle}`}
+     className={`w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-lg bg-zinc-900 text-white ring-2 ring-offset-2 ${glowStyle}`}
     >
       <a
         href={`/artist/${song.artist_id}`}
