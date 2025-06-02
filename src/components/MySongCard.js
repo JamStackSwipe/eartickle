@@ -1,150 +1,125 @@
-// used for profile page so pleae dont delete me
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
-import { Link } from 'react-router-dom';
-
-const emojiIcons = {
-  '🔥': '🔥',
-  '💖': '💖',
-  '😭': '😭',
-  '🎯': '🎯',
-  views: '👁️',
-  jamstack: '➕'
-};
+import toast from 'react-hot-toast';
+import ReactionStatsBar from './ReactionStatsBar';
+import BoostTickles from './BoostTickles';
 
 const MySongCard = ({
   song,
-  stats = null,
-  onDelete,
-  onEditCover,
-  onPublish,
+  stats = {},
   editableTitle = false,
+  onDelete,
+  onPublish,
+  showStripeButton = false
 }) => {
   const [title, setTitle] = useState(song.title);
-  const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [songStats, setSongStats] = useState({});
-  const inputRef = useRef();
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (stats && stats[song.id]) {
-      setSongStats(stats[song.id]);
+  const audioRef = useRef(null);
+  const cardRef = useRef(null);
+
+  const saveTitle = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from('songs')
+      .update({ title })
+      .eq('id', song.id);
+    setSaving(false);
+    if (error) {
+      toast.error('Failed to save title');
     } else {
-      fetchStats();
-    }
-  }, [song.id, stats]);
-
-  const fetchStats = async () => {
-    const [{ data: reactions }, { data: views }, { data: jams }] = await Promise.all([
-      supabase.from('reactions').select('emoji').eq('song_id', song.id),
-      supabase.from('views').select('song_id').eq('song_id', song.id),
-      supabase.from('jamstacksongs').select('song_id').eq('song_id', song.id),
-    ]);
-
-    const counts = {};
-    reactions?.forEach(({ emoji }) => {
-      counts[emoji] = (counts[emoji] || 0) + 1;
-    });
-    counts.views = views?.length || 0;
-    counts.jam_saves = jams?.length || 0;
-
-    setSongStats(counts);
-  };
-
-  const handleTitleSave = async () => {
-    setIsEditingTitle(false);
-    if (title !== song.title) {
-      await supabase.from('songs').update({ title }).eq('id', song.id);
+      toast.success('Title updated!');
+      setEditingTitle(false);
     }
   };
-
-  useEffect(() => {
-    if (isEditingTitle) inputRef.current?.focus();
-  }, [isEditingTitle]);
 
   return (
-    <div className="flex items-center justify-between bg-zinc-900 rounded-lg p-4 mb-4 shadow-md hover:shadow-lg transition-shadow">
-      <div className="flex items-center gap-4">
-        {/* Cover image + edit icon */}
-        <Link to={`/artist/${song.artist_id || ''}`} className="relative w-16 h-16 block group">
-          <img
-            src={song.cover || '/default-cover.png'}
-            alt={title}
-            className="w-16 h-16 object-cover rounded group-hover:opacity-80 transition"
+    <div
+      ref={cardRef}
+      className="bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md"
+    >
+      {/* Cover art */}
+      <a
+        href={`/artist/${song.artist_id}`}
+        onClick={(e) => {
+          e.preventDefault();
+          window.location.href = `/artist/${song.artist_id}`;
+        }}
+      >
+        <img
+          src={song.cover}
+          alt={song.title}
+          className="w-full h-auto rounded-xl mb-4"
+        />
+      </a>
+
+      {/* Title + Edit */}
+      {editableTitle && editingTitle ? (
+        <div className="flex items-center gap-2 mb-2">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="text-lg bg-zinc-800 border border-gray-500 rounded px-2 py-1 w-full"
           />
-          {onEditCover && (
-            <div
-              onClick={(e) => {
-                e.preventDefault();
-                onEditCover(song.id);
-              }}
-              className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1 py-0.5 rounded cursor-pointer"
-            >
-              📷
-            </div>
-          )}
-        </Link>
-
-        {/* Title, Edit, Draft button */}
-        <div className="flex flex-col">
-          {isEditingTitle ? (
-            <div className="flex items-center gap-2">
-              <input
-                ref={inputRef}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                onBlur={handleTitleSave}
-                onKeyDown={(e) => e.key === 'Enter' && handleTitleSave()}
-                className="bg-zinc-800 text-white px-2 py-1 rounded w-full"
-              />
-              <button
-                onClick={handleTitleSave}
-                className="text-sm px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-              >
-                Save
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 text-white font-semibold">
-              <span>{title}</span>
-              {editableTitle && (
-                <button
-                  onClick={() => setIsEditingTitle(true)}
-                  className="text-gray-400 hover:text-blue-500"
-                >
-                  ✏️
-                </button>
-              )}
-            </div>
-          )}
-
-          {song.is_draft && (
-            <button
-              onClick={() => onPublish?.(song.id)}
-              className="mt-2 text-xs bg-yellow-400 text-black px-2 py-0.5 rounded hover:bg-yellow-500"
-            >
-              Publish
-            </button>
+          <button
+            onClick={saveTitle}
+            disabled={saving}
+            className="px-2 py-1 text-sm bg-blue-600 rounded hover:bg-blue-700"
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+          <button onClick={() => setEditingTitle(false)} className="text-gray-400">✖️</button>
+        </div>
+      ) : (
+        <div className="flex justify-between items-center mb-1">
+          <h2 className="text-xl font-semibold">{title}</h2>
+          {editableTitle && (
+            <button onClick={() => setEditingTitle(true)} className="text-sm text-blue-400">✏️</button>
           )}
         </div>
+      )}
+
+      {/* Artist label */}
+      <p className="text-sm text-gray-400 mb-2">by You</p>
+
+      {/* Audio */}
+      <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
+
+      {/* Reaction stats */}
+      <ReactionStatsBar song={song} stats={stats} />
+
+      {/* Boost */}
+      <div className="mt-3">
+        <BoostTickles songId={song.id} userId={song.artist_id} />
       </div>
 
-      {/* Stats and Delete */}
-      <div className="flex items-center flex-wrap justify-end gap-3 text-white text-sm">
-        {['🔥', '💖', '😭', '🎯'].map((emoji) => (
-          <span key={emoji} className="flex items-center gap-1">
-            {emojiIcons[emoji]} {songStats[emoji] || 0}
-          </span>
-        ))}
-        <span>{emojiIcons.views} {songStats.views || 0}</span>
-        <span>{emojiIcons.jamstack} {songStats.jam_saves || 0}</span>
-
+      {/* Controls */}
+      <div className="flex flex-wrap gap-2 mt-4">
         {onDelete && (
           <button
-            onClick={() => onDelete(song.id)}
-            className="ml-2 text-red-400 hover:text-red-600"
+            onClick={onDelete}
+            className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
           >
-            ❌
+            🗑 Delete
           </button>
+        )}
+        {onPublish && (
+          <button
+            onClick={onPublish}
+            className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            🚀 Publish Draft
+          </button>
+        )}
+        {showStripeButton && (
+          <a
+            href="/settings"
+            className="px-3 py-1 text-sm bg-yellow-500 text-black rounded hover:bg-yellow-600"
+          >
+            💵 Connect Stripe
+          </a>
         )}
       </div>
     </div>
