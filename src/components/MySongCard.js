@@ -1,72 +1,80 @@
-import React from 'react';
-import { useRouter } from 'next/router';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { supabase } from '../supabase';
+import toast from 'react-hot-toast';
 
-const MySongCard = ({ song, stats = {}, onDelete, onEditCover, onPublish }) => {
-  const router = useRouter();
+const emojiStats = ['🔥', '💖', '😢', '🎯'];
 
-  const handleCardClick = () => {
-    if (song.artist_id) {
-      router.push(`/artist/${song.artist_id}`);
-    }
-  };
+const MySongCard = ({
+  song,
+  stats = {},
+  onDelete,
+  onEditCover,
+  onPublish
+}) => {
+  const {
+    id,
+    title,
+    cover,
+    is_draft,
+    artist_id,
+  } = song;
+
+  const views = stats[id]?.views || 0;
+  const jamSaves = stats[id]?.jam_saves || 0;
 
   return (
-    <div className="bg-zinc-900 rounded-lg shadow-md mb-4 p-4">
-      <div className="flex items-center gap-4">
-        {/* Cover Image */}
-        <div className="relative w-16 h-16 cursor-pointer" onClick={handleCardClick}>
+    <div className="flex items-center justify-between bg-zinc-900 rounded-lg p-3 mb-3 shadow">
+      <div className="flex items-center gap-3">
+        <Link to={`/artist/${artist_id || ''}`} className="relative w-16 h-16 block group">
           <img
-            src={song.cover || '/default-cover.png'}
-            alt={song.title}
-            className="w-16 h-16 object-cover rounded"
+            src={cover || '/default-cover.png'}
+            alt={title}
+            className="w-16 h-16 object-cover rounded group-hover:opacity-80 transition"
           />
           {onEditCover && (
             <div
-              className="absolute bottom-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 rounded"
               onClick={(e) => {
-                e.stopPropagation();
-                onEditCover(song.id);
+                e.preventDefault();
+                onEditCover(id);
               }}
+              className="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1 py-0.5 rounded cursor-pointer"
             >
               📷
             </div>
           )}
-        </div>
+        </Link>
 
-        {/* Song Details */}
-        <div className="flex-1 min-w-0">
-          <div className="text-white font-semibold truncate">{song.title}</div>
-          <div className="text-sm text-gray-400 truncate">{song.artist}</div>
-
-          <div className="flex gap-3 mt-1 text-sm text-gray-400 flex-wrap">
-            <span>🔥 {stats[song.id]?.['🔥'] || 0}</span>
-            <span>💖 {stats[song.id]?.['💖'] || 0}</span>
-            <span>😢 {stats[song.id]?.['😢'] || 0}</span>
-            <span>🎯 {stats[song.id]?.['🎯'] || 0}</span>
-            <span>👁️ {stats[song.id]?.views || 0}</span>
-            <span>📥 {stats[song.id]?.jam_saves || 0}</span>
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="flex flex-col items-end gap-1">
-          {onPublish && song.is_draft && (
+        <div>
+          <div className="font-semibold text-white">{title}</div>
+          {is_draft && (
             <button
-              onClick={() => onPublish(song.id)}
-              className="text-xs text-yellow-300 bg-zinc-800 px-2 py-1 rounded"
+              onClick={() => onPublish?.(id)}
+              className="mt-1 text-xs bg-yellow-400 text-black px-2 py-0.5 rounded hover:bg-yellow-500"
             >
               Publish
             </button>
           )}
-          {onDelete && (
-            <button
-              onClick={() => onDelete(song.id)}
-              className="text-xs text-red-400 hover:text-red-600"
-            >
-              🗑 Delete
-            </button>
-          )}
         </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        {emojiStats.map((emoji) => (
+          <span key={emoji} className="text-sm text-white flex items-center gap-1">
+            {emoji}
+            <span className="text-gray-300">{stats[id]?.[emoji] || 0}</span>
+          </span>
+        ))}
+        <span className="text-sm text-white">👁️ {views}</span>
+        <span className="text-sm text-white">📥 {jamSaves}</span>
+        {onDelete && (
+          <button
+            onClick={() => onDelete(id)}
+            className="ml-2 text-red-400 text-sm hover:text-red-600"
+          >
+            ❌
+          </button>
+        )}
       </div>
     </div>
   );
