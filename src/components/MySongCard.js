@@ -1,108 +1,119 @@
 // For The Profile Page Same Base Logic as SongCard.js but has the profile CRUD
 // Added Some Styling For My Jams
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../supabase';
-import ReactionStatsBar from './ReactionStatsBar';
-import toast from 'react-hot-toast';
 
-const tickleSound = new Audio('/sounds/tickle.mp3');
+// MySongCard.js - with compact, editable, and confirm delete support
+import { useState, useEffect } from 'react';
 
-const MySongCard = ({ song, variant, onDelete, onPublish }) => {
-  if (!song || !song.id || !song.artist_id) return null;
+const emojiIcons = {
+  '🔥': '🔥',
+  '💖': '💖',
+  '😭': '😭',
+  '🎯': '🎯',
+  views: '👁️',
+  jamstack: '➕'
+};
 
-  const {
-    id,
-    title,
-    audio_url,
-    cover_url,
-    is_draft,
-    created_at,
-    fires = 0,
-    loves = 0,
-    sads = 0,
-    bullseyes = 0,
-  } = song;
-
-  const [localReactions, setLocalReactions] = useState({ fires, loves, sads, bullseyes });
+const MySongCard = ({
+  song,
+  stats = {},
+  compact = false,
+  editable = false,
+  onDelete,
+  onDeleteWithConfirm = false,
+  onPublish,
+  showStripeButton = false,
+}) => {
+  const [fadeOut, setFadeOut] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [title, setTitle] = useState(song.title || '');
+  const isDraft = song.is_draft;
 
   useEffect(() => {
-    const fetchStats = async () => {
-      const { data, error } = await supabase
-        .from('songs')
-        .select('fires, loves, sads, bullseyes')
-        .eq('id', id)
-        .single();
-
-      if (data) {
-        setLocalReactions({
-          fires: data.fires || 0,
-          loves: data.loves || 0,
-          sads: data.sads || 0,
-          bullseyes: data.bullseyes || 0,
-        });
-      }
-    };
-
-    fetchStats();
-  }, [id]);
+    if (confirmDelete) {
+      const timeout = setTimeout(() => {
+        if (fadeOut && onDelete) onDelete(song.id);
+      }, 5000);
+      return () => clearTimeout(timeout);
+    }
+  }, [confirmDelete, fadeOut]);
 
   const handleDelete = () => {
-    if (onDelete) onDelete(id);
-  };
-
-  const handlePublish = () => {
-    if (onPublish) onPublish(id);
+    if (onDeleteWithConfirm) {
+      setFadeOut(true);
+      setConfirmDelete(true);
+    } else if (onDelete) {
+      onDelete(song.id);
+    }
   };
 
   return (
     <div
-      className={`rounded-2xl p-4 shadow-md bg-white border relative overflow-hidden transition-all duration-300 hover:shadow-lg ${
-        variant === 'jamstack' ? 'ring-2 ring-blue-500 shadow-blue-200' : ''
+      className={`flex items-center gap-4 border p-3 rounded shadow-sm relative transition-all duration-500 ${
+        fadeOut ? 'opacity-30 blur-sm' : 'opacity-100'
       }`}
     >
-      {variant === 'jamstack' && (
-        <div className="absolute top-2 right-2 text-sm bg-blue-500 text-white px-2 py-1 rounded shadow">
-          🎧 My Jam
-        </div>
-      )}
-      <div className="flex items-center space-x-4">
-        <img
-          src={cover_url || '/placeholder.jpg'}
-          alt={title}
-          className="w-20 h-20 rounded-lg object-cover border"
-        />
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold truncate">{title}</h3>
-          <audio controls className="w-full mt-1">
-            <source src={audio_url} type="audio/mpeg" />
-            Your browser does not support the audio element.
-          </audio>
-        </div>
-      </div>
+      <img
+        src={song.cover || '/default-cover.png'}
+        alt="cover"
+        className={`rounded ${compact ? 'w-16 h-16' : 'w-24 h-24'} object-cover`}
+      />
 
-      {song && song.id && song.artist_id && (
-        <div className="mt-2">
-          <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
-        </div>
-      )}
+      <div className="flex-1">
+        {editable ? (
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="text-lg font-semibold w-full border-b"
+          />
+        ) : (
+          <div className="text-lg font-semibold">{song.title}</div>
+        )}
 
-      <div className="flex justify-end space-x-2 mt-3">
-        {typeof is_draft === 'boolean' && is_draft && onPublish && (
-          <button
-            onClick={handlePublish}
-            className="bg-green-500 text-white px-4 py-1 rounded hover:bg-green-600"
-          >
-            Publish
-          </button>
-        )}
-        {onDelete && (
-          <button
-            onClick={handleDelete}
-            className="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600"
-          >
-            Delete
-          </button>
-        )}
+        {/* Simple Emoji Stats Bar */}
+        <div className="flex gap-3 text-sm mt-1 text-gray-600">
+          {Object.entries(emojiIcons).map(([key, icon]) => (
+            <div key={key} className="flex items-center gap-1">
+              <span>{icon}</span>
+              <span>{stats[key] || 0}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="mt-2 flex gap-3 flex-wrap">
+          {editable && isDraft && (
+            <button
+              onClick={() => onPublish?.(song.id)}
+              className="text-sm bg-yellow-500 text-white px-3 py-1 rounded"
+            >
+              Publish
+            </button>
+          )}
+
+          {editable && showStripeButton && (
+            <button
+              className="text-sm bg-purple-600 text-white px-3 py-1 rounded"
+              onClick={() => window.location.href = '/settings'}
+            >
+              Enable Rewards
+            </button>
+          )}
+
+          {(onDelete || onDeleteWithConfirm) && !confirmDelete && (
+            <button
+              onClick={handleDelete}
+              className="text-sm bg-red-500 text-white px-3 py-1 rounded"
+            >
+              Delete
+            </button>
+          )}
+
+          {confirmDelete && (
+            <div className="text-sm text-red-600 font-medium">
+              Deleting... (Undo not available yet)
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
