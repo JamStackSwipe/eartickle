@@ -1,3 +1,5 @@
+// src/screens/RewardsScreen.js
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -7,16 +9,14 @@ const RewardsScreen = () => {
   const { user } = useUser();
   const [tickles, setTickles] = useState(0);
   const [rewards, setRewards] = useState([]);
-  const [totalReceived, setTotalReceived] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       fetchTickles();
       fetchRewards();
-      fetchTotalReceived();
     }
-  }, [user]);
+  }, [user?.id]);
 
   const fetchTickles = async () => {
     const { data, error } = await supabase
@@ -25,11 +25,10 @@ const RewardsScreen = () => {
       .eq('id', user.id)
       .single();
 
-    if (error) {
-      console.error('❌ Error fetching tickle balance from profile:', error);
-      setTickles(0);
-    } else {
+    if (!error) {
       setTickles(data.tickle_balance || 0);
+    } else {
+      console.error('❌ Error fetching tickle balance:', error);
     }
   };
 
@@ -41,34 +40,18 @@ const RewardsScreen = () => {
       .not('emoji', 'is', null)
       .order('created_at', { ascending: false });
 
-    if (error) {
+    if (!error) {
+      setRewards(data);
+      if (data.length > 0) {
+        const latest = data[0];
+        if (latest.amount >= 20) playTickleSpecial();
+        else playTickle();
+      }
+    } else {
       console.error('❌ Error fetching rewards:', error);
-      return;
-    }
-
-    setRewards(data);
-    if (data.length > 0) {
-      const latest = data[0];
-      if (latest.amount >= 20) playTickleSpecial();
-      else playTickle();
     }
 
     setLoading(false);
-  };
-
-  const fetchTotalReceived = async () => {
-    const { data, error } = await supabase
-      .from('tickles')
-      .select('amount')
-      .eq('artist_id', user.id);
-
-    if (error) {
-      console.error('❌ Error fetching tickles total:', error);
-      return;
-    }
-
-    const total = data?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
-    setTotalReceived(total);
   };
 
   const handleBuy = async (amount) => {
@@ -117,10 +100,6 @@ const RewardsScreen = () => {
       </div>
 
       <hr className="my-8 border-gray-300" />
-
-      <div className="text-yellow-300 text-sm font-semibold">
-        🪙 Tickles Received: {totalReceived}
-      </div>
 
       <h3 className="text-2xl font-semibold mb-4 text-center">Recent Tickles Received</h3>
 
