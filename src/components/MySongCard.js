@@ -11,7 +11,7 @@ const MySongCard = ({ song, stats = {}, onDelete, onEditCover, onPublish }) => {
   };
 
   return (
-    <div className="bg-zinc-900 rounded-lg shadow-md mb-4 p-4 relative">
+    <div className="bg-zinc-900 rounded-lg shadow-md mb-4 p-4">
       <div className="flex items-center gap-4">
         {/* Cover Image */}
         <div className="relative w-16 h-16 cursor-pointer" onClick={handleCardClick}>
@@ -22,7 +22,7 @@ const MySongCard = ({ song, stats = {}, onDelete, onEditCover, onPublish }) => {
           />
           {onEditCover && (
             <div
-              className="absolute bottom-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 rounded cursor-pointer"
+              className="absolute bottom-0 right-0 bg-black bg-opacity-50 text-white text-xs px-1 rounded"
               onClick={(e) => {
                 e.stopPropagation();
                 onEditCover(song.id);
@@ -33,13 +33,12 @@ const MySongCard = ({ song, stats = {}, onDelete, onEditCover, onPublish }) => {
           )}
         </div>
 
-        {/* Song Info */}
-        <div className="flex-1">
-          <div className="text-white font-semibold">{song.title}</div>
-          <div className="text-sm text-gray-400">{song.artist}</div>
+        {/* Song Details */}
+        <div className="flex-1 min-w-0">
+          <div className="text-white font-semibold truncate">{song.title}</div>
+          <div className="text-sm text-gray-400 truncate">{song.artist}</div>
 
-          {/* Stats Row */}
-          <div className="flex gap-3 mt-1 text-sm text-gray-400">
+          <div className="flex gap-3 mt-1 text-sm text-gray-400 flex-wrap">
             <span>🔥 {stats[song.id]?.['🔥'] || 0}</span>
             <span>💖 {stats[song.id]?.['💖'] || 0}</span>
             <span>😢 {stats[song.id]?.['😢'] || 0}</span>
@@ -49,8 +48,8 @@ const MySongCard = ({ song, stats = {}, onDelete, onEditCover, onPublish }) => {
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-col items-end gap-2 ml-2">
+        {/* Controls */}
+        <div className="flex flex-col items-end gap-1">
           {onPublish && song.is_draft && (
             <button
               onClick={() => onPublish(song.id)}
@@ -62,7 +61,7 @@ const MySongCard = ({ song, stats = {}, onDelete, onEditCover, onPublish }) => {
           {onDelete && (
             <button
               onClick={() => onDelete(song.id)}
-              className="text-xs text-red-500 hover:text-red-700"
+              className="text-xs text-red-400 hover:text-red-600"
             >
               🗑 Delete
             </button>
