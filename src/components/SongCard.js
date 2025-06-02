@@ -132,14 +132,6 @@ const SongCard = ({ song, user }) => {
     }
   };
 
-  const flavorGlowMap = {
-    country_roots: 'bg-yellow-50 shadow-yellow-300',
-    hiphop_flow: 'bg-gray-100 shadow-gray-400',
-    rock_raw: 'bg-red-50 shadow-red-400',
-    pop_shine: 'bg-pink-50 shadow-pink-300',
-    spiritual_soul: 'bg-purple-50 shadow-purple-400',
-  };
-
   const glowStyle = flavorGlowMap[song.genre_flavor] || 'bg-white shadow';
 
   return (
