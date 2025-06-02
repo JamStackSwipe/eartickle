@@ -157,7 +157,7 @@ const ProfileScreen = () => {
       {/* My Jam Stack */}
       {jamStackSongs.length > 0 && (
         <div className="mb-10">
-          <h3 className="text-xl font-semibold mb-2">🎵 My Jam Stack</h3>
+         <h2 className="text-2xl font-extrabold text-blue-800 mb-4 tracking-tight uppercase">🎵 My Jam Stack</h2>
           <div className="space-y-4">
             {jamStackSongs.map((song) => (
               <MySongCard
