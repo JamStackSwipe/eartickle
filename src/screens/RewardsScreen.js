@@ -79,6 +79,14 @@ const RewardsScreen = () => {
     else alert('⚠️ Failed to create Stripe session');
   };
 
+  const { data: received } = await supabase
+  .from('tickles')
+  .select('amount')
+  .eq('artist_id', user.id);
+
+const totalReceived = received?.reduce((sum, t) => sum + (t.amount || 0), 0);
+
+
   if (!user) return <p className="text-center mt-10">Please log in to view your Tickles.</p>;
   if (loading) return <p className="text-center mt-10">Loading Tickles...</p>;
 
