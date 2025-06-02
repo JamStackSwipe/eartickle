@@ -150,7 +150,8 @@ const SongCard = ({ song, user }) => {
 
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
             
-      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
+     <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
+
     </div>
   );
 };
