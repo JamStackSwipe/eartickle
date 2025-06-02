@@ -6,11 +6,12 @@ import { Link } from 'react-router-dom';
 const emojiIcons = {
   '🔥': '🔥',
   '💖': '💖',
-  '😭': '😭',
+  '😢': '😭', // map sad to cry
   '🎯': '🎯',
   views: '👁️',
   jamstack: '➕'
 };
+
 
 const MySongCard = ({
   song,
