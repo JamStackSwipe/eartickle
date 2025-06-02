@@ -82,9 +82,20 @@ const SongCard = ({ song, user }) => {
         />
       </a>
 
-      <h2 className="text-xl font-semibold mb-1 text-black">{song.title}</h2>
-      <p className="text-sm text-gray-600 mb-2">by {song.artist}</p>
+      <h2 className="text-xl font-semibold mb-1">{song.title}</h2>
+      <p className="text-sm text-gray-300 mb-1">by {song.artist}</p>
 
+      {song.genre_flavor && (
+        <span className="inline-block text-xs font-semibold px-2 py-1 rounded-full mb-1 bg-yellow-300 text-black">
+          {flavorLabelMap[song.genre_flavor] || 'Unlabeled'}
+        </span>
+      )}
+
+      {song.genre && (
+        <p className="text-xs text-gray-400 mb-2 italic">
+          Genre: {song.genre}
+        </p>
+      )}
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
 
       <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
