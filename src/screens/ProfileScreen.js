@@ -86,7 +86,7 @@ const ProfileScreen = () => {
   const fetchJamStack = async () => {
     const { data } = await supabase
       .from('jamstacksongs')
-      .select('song_id, songs ( id, title, artist_id, audio, cover, is_draft, created_at )')
+      .select('song_id, songs ( id, title, artist_id, artist, audio, cover, is_draft, created_at )')
       .eq('user_id', user.id);
 
     if (data) {
@@ -237,7 +237,7 @@ const ProfileScreen = () => {
           {songs.map((song) => (
             <MySongCard
               key={song.id}
-              song={song}
+              song={{ ...song, artist: profile.display_name }}
               editableTitle
               stats={tickleStats[song.id] || {}}
               onDelete={() => handleDelete(song.id)}
@@ -257,7 +257,7 @@ const ProfileScreen = () => {
           {jamStackSongs.map((song) => (
             <MySongCard
               key={song.id}
-              song={song}
+              song={{ ...song, artist: song.artist || profile.display_name }}
               stats={tickleStats[song.id] || {}}
               onDelete={() => handleDeleteJam(song.id)}
             />
