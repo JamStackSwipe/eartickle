@@ -1,29 +1,52 @@
+// BoostTickles.js – with flash + balance update
 import React from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 
-const boostSound = new Audio('/sounds/tickle-welcome.mp3');
-
-const BoostTickles = ({ songId, userId }) => {
-  const playBoostSound = () => {
-    boostSound.pause();
-    boostSound.currentTime = 0;
-    boostSound.play().catch(() => {});
-  };
-
+const BoostTickles = ({ songId, userId, onBoost, refreshBalance }) => {
   const boost = async (amount) => {
-    const { error } = await supabase.rpc('spend_tickles', {
+    // Check balance
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('tickle_balance')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !profile) {
+      toast.error('Failed to get tickle balance.');
+      return;
+    }
+
+    if (profile.tickle_balance < amount) {
+      toast.error('Not enough Tickles.');
+      return;
+    }
+
+    // Spend tickles via RPC
+    const { error: spendError } = await supabase.rpc('spend_tickles', {
       user_id_input: userId,
       song_id_input: songId,
       reason: '🎯',
       cost: amount,
     });
 
-    if (error) {
-      toast.error(error.message || 'Boost failed.');
+    if (spendError) {
+      console.error('❌ Spend tickles failed:', spendError);
+      toast.error('Boost failed.');
     } else {
-      playBoostSound();
       toast.success(`🎯 Boosted with ${amount} Tickles!`);
+
+      // Flash animation on the card
+      const card = document.querySelector(`[data-song-id="${songId}"]`);
+      if (card) {
+        card.classList.add('animate-pulse', 'ring-4', 'ring-green-400');
+        setTimeout(() => {
+          card.classList.remove('animate-pulse', 'ring-4', 'ring-green-400');
+        }, 800);
+      }
+
+      if (refreshBalance) refreshBalance();
+      if (onBoost) onBoost(songId, amount);
     }
   };
 
@@ -34,7 +57,7 @@ const BoostTickles = ({ songId, userId }) => {
   ];
 
   return (
-    <div className="flex gap-2 justify-end flex-wrap mt-2">
+    <div className="flex gap-2 justify-end flex-wrap">
       {buttonStyles.map(({ amount, label, color }) => (
         <button
           key={amount}
