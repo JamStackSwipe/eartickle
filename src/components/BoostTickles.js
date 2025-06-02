@@ -1,4 +1,4 @@
-// BoostTickles.js – simplified with 3 fixed buttons
+// BoostTickles.js – working version with direct insert
 
 import React from 'react';
 import { supabase } from '../supabase';
@@ -22,15 +22,23 @@ const BoostTickles = ({ songId, userId }) => {
       return;
     }
 
-    const { error } = await supabase.rpc('boost_song_with_tickles', {
-      song_id_input: songId,
-      user_id_input: userId,
-      tickles_to_spend: amount,
-    });
+    const { error } = await supabase.from('tickles').insert([
+      {
+        user_id: userId,
+        song_id: songId,
+        amount,
+        emoji: '🎯',
+      },
+    ]);
 
     if (error) {
       toast.error('Boost failed.');
     } else {
+      await supabase
+        .from('profiles')
+        .update({ tickle_balance: profile.tickle_balance - amount })
+        .eq('id', userId);
+
       toast.success(`🎯 Boosted with ${amount} Tickles!`);
     }
   };
