@@ -1,3 +1,4 @@
+// src/screens/ProfileScreen.js
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -12,7 +13,7 @@ const ProfileScreen = () => {
   const [songs, setSongs] = useState([]);
   const [jamStackSongs, setJamStackSongs] = useState([]);
   const [tickleStats, setTickleStats] = useState({});
-  const [editing, setEditing] = useState(null); // 'name' or 'bio'
+  const [editing, setEditing] = useState(null);
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
   const [showSocial, setShowSocial] = useState(false);
@@ -32,7 +33,6 @@ const ProfileScreen = () => {
 
   const fetchReactionStats = async (songIds) => {
     if (!songIds.length) return;
-
     const [reactionsData, viewsData, jamData] = await Promise.all([
       supabase.from('reactions').select('song_id, emoji'),
       supabase.from('views').select('song_id'),
@@ -40,7 +40,6 @@ const ProfileScreen = () => {
     ]);
 
     const stats = {};
-
     reactionsData.data?.forEach(({ song_id, emoji }) => {
       if (songIds.includes(song_id)) {
         stats[song_id] = stats[song_id] || {};
@@ -140,8 +139,8 @@ const ProfileScreen = () => {
   const avatarSrc = profile.avatar_url || user?.user_metadata?.avatar_url || '/default-avatar.png';
 
   return (
-    <div className="p-4 max-w-2xl mx-auto">
-      {/* Avatar (locked) */}
+    <div className="px-4 py-6 max-w-3xl mx-auto space-y-10">
+      {/* Avatar (unchanged) */}
       <div className="text-center">
         <img
           src={avatarSrc}
@@ -152,150 +151,117 @@ const ProfileScreen = () => {
         <input type="file" hidden ref={fileInputRef} accept="image/*" onChange={handleAvatarChange} />
       </div>
 
-     {/* Display Name */}
-<div className="mt-6 text-center relative group">
-  {editing === 'name' ? (
-    <div className="flex flex-col items-center">
-      <input
-        type="text"
-        value={profile.display_name || ''}
-        onChange={(e) => handleChange('display_name', e.target.value)}
-        placeholder="Your artist name"
-        className="text-xl font-bold text-center border-b-2 border-blue-400 focus:outline-none focus:border-blue-600 pb-1 w-64"
-        autoFocus
-      />
-      <div className="flex gap-2 mt-2">
-        <button
-          onClick={handleSave}
-          className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
-        >
-          Save
-        </button>
-        <button
-          onClick={() => setEditing(null)}
-          className="px-3 py-1 bg-gray-200 rounded-full text-sm hover:bg-gray-300 transition"
-        >
-          Cancel
-        </button>
+      {/* Display Name */}
+      <div className="text-center">
+        {editing === 'name' ? (
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={profile.display_name || ''}
+              onChange={(e) => handleChange('display_name', e.target.value)}
+              placeholder="Your artist name"
+              className="text-xl font-semibold text-center border-b-2 border-blue-400 focus:outline-none pb-1 w-64"
+              autoFocus
+            />
+            <div className="flex justify-center gap-3">
+              <button onClick={handleSave} className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm">Save</button>
+              <button onClick={() => setEditing(null)} className="bg-gray-200 px-3 py-1 rounded-full text-sm">Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <h2 className="text-2xl font-bold text-gray-800">
+            {profile.display_name || 'Unnamed Artist'}
+            <button
+              onClick={() => setEditing('name')}
+              className="ml-2 text-blue-500 hover:underline text-sm"
+            >Edit</button>
+          </h2>
+        )}
       </div>
-    </div>
-  ) : (
-    <div className="inline-block relative">
-      <h2 className="text-xl font-bold text-gray-800 hover:text-black transition">
-        {profile.display_name || 'Unnamed Artist'}
-      </h2>
-      <button 
-        onClick={() => setEditing('name')} 
-        className="absolute -right-6 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-blue-500"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-        </svg>
-      </button>
-    </div>
-  )}
-</div>
 
-{/* Bio */}
-<div className="mt-4 text-center relative group max-w-md mx-auto">
-  {editing === 'bio' ? (
-    <div className="flex flex-col items-center">
-      <textarea
-        value={profile.bio || ''}
-        onChange={(e) => handleChange('bio', e.target.value)}
-        placeholder="Tell your story..."
-        rows={3}
-        className="w-full border rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        autoFocus
-      />
-      <div className="flex gap-2 mt-2">
-        <button
-          onClick={handleSave}
-          className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
-        >
-          Save
-        </button>
-        <button
-          onClick={() => setEditing(null)}
-          className="px-3 py-1 bg-gray-200 rounded-full text-sm hover:bg-gray-300 transition"
-        >
-          Cancel
-        </button>
+      {/* Bio */}
+      <div className="text-center">
+        {editing === 'bio' ? (
+          <div className="space-y-2">
+            <textarea
+              value={profile.bio || ''}
+              onChange={(e) => handleChange('bio', e.target.value)}
+              placeholder="Tell your story..."
+              rows={3}
+              className="w-full border rounded-lg p-2"
+              autoFocus
+            />
+            <div className="flex justify-center gap-3">
+              <button onClick={handleSave} className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm">Save</button>
+              <button onClick={() => setEditing(null)} className="bg-gray-200 px-3 py-1 rounded-full text-sm">Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-gray-600">
+            {profile.bio || 'No bio yet. Click to add one...'}
+            <button
+              onClick={() => setEditing('bio')}
+              className="ml-2 text-blue-500 hover:underline text-sm"
+            >Edit</button>
+          </p>
+        )}
       </div>
-    </div>
-  ) : (
-    <div className="inline-block relative px-6">
-      <p className="text-gray-600 hover:text-gray-800 transition">
-        {profile.bio || 'No bio yet. Click to add one...'}
-      </p>
-      <button 
-        onClick={() => setEditing('bio')} 
-        className="absolute -right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-blue-500"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-        </svg>
-      </button>
-    </div>
-  )}
-</div>
 
-    
-
-      {/* Collapsible Social Links */}
-      <div className="mt-4">
-        <button
-          onClick={() => setShowSocial(!showSocial)}
-          className="text-blue-600 underline text-sm"
-        >
+      {/* Social Links */}
+      <div>
+        <button onClick={() => setShowSocial(!showSocial)} className="text-blue-600 underline text-sm">
           {showSocial ? 'Hide Social Links' : 'Show Social Links'}
         </button>
         {showSocial && (
-          <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+          <div className="grid grid-cols-2 gap-3 mt-3">
             {['website', 'spotify', 'youtube', 'instagram', 'soundcloud', 'tiktok', 'bandlab'].map((field) => (
               <input
                 key={field}
                 value={profile[field] || ''}
                 onChange={(e) => handleChange(field, e.target.value)}
-                placeholder={field}
-                className="border p-1 rounded"
+                placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                className="border p-2 rounded w-full text-sm"
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Uploads */}
+      {/* My Uploads */}
       {songs.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-xl font-bold mb-4">📤 My Uploads</h3>
-          {songs.map((song) => (
-            <MySongCard
-              key={song.id}
-              song={song}
-              editable
-              stats={tickleStats[song.id] || {}}
-              onDelete={() => handleDelete(song.id)}
-              onPublish={song.is_draft ? () => handlePublish(song.id) : undefined}
-              showStripeButton={!profile.stripe_account_id && !song.is_draft}
-            />
-          ))}
+        <div>
+          <h3 className="text-xl font-bold mb-4 text-center">📤 My Uploads</h3>
+          <div className="space-y-4">
+            {songs.map((song) => (
+              <MySongCard
+                key={song.id}
+                song={song}
+                editable
+                stats={tickleStats[song.id] || {}}
+                onDelete={() => handleDelete(song.id)}
+                onPublish={song.is_draft ? () => handlePublish(song.id) : undefined}
+                showStripeButton={!profile.stripe_account_id && !song.is_draft}
+              />
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Jam Stack */}
+      {/* My Jam Stack */}
       {jamStackSongs.length > 0 && (
-        <div className="mt-10">
-          <h3 className="text-2xl font-extrabold text-blue-800 mb-4 tracking-tight uppercase">🎵 My Jam Stack</h3>
-          {jamStackSongs.map((song) => (
-            <MySongCard
-              key={song.id}
-              song={song}
-              stats={tickleStats[song.id] || {}}
-              onDeleteWithConfirm={() => handleDeleteJam(song.id)}
-              compact
-            />
-          ))}
+        <div>
+          <h3 className="text-xl font-bold text-center text-blue-700 mb-4">🎵 My Jam Stack</h3>
+          <div className="space-y-4">
+            {jamStackSongs.map((song) => (
+              <MySongCard
+                key={song.id}
+                song={song}
+                stats={tickleStats[song.id] || {}}
+                onDeleteWithConfirm={() => handleDeleteJam(song.id)}
+                compact
+              />
+            ))}
+          </div>
         </div>
       )}
 
