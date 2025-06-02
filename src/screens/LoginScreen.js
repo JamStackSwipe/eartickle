@@ -27,92 +27,87 @@ const LoginScreen = () => {
     }
   };
 
- const handleEmailLogin = async (e) => {
-  e.preventDefault();
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: 'https://eartickle.com/swipe', // 👈 full URL to redirect *after* login
-    },
-  });
+  const handleEmailLogin = async (e) => {
+    e.preventDefault();
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: 'https://eartickle.com/swipe',
+      },
+    });
 
-  if (error) {
-    console.error('Email login error:', error.message);
-    setMessage('Could not send magic link.');
-  } else {
-    setMessage('Magic login link sent! Check your email.');
-  }
-};
-
+    if (error) {
+      console.error('Email login error:', error.message);
+      setMessage('Could not send magic link.');
+    } else {
+      setMessage('Magic login link sent! Check your email.');
+    }
+  };
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-purple-900 via-black to-black text-white overflow-hidden">
-      {/* Animated Gradient Background */}
+      {/* Background Pulse */}
       <div className="absolute inset-0 opacity-40 animate-pulse z-0" />
 
-      {/* Overlay Content */}
+      {/* Foreground Content */}
       <div className="relative z-10 flex flex-col items-center justify-center px-4 py-20 text-center">
-        {/* ✅ Logo + Tagline */}
-        <div className="text-center mb-10 select-none">
+        {/* Logo & Tagline */}
+        <div className="mb-10 select-none">
           <img
             src="/logo.png"
             alt="EarTickle Logo"
             className="w-24 h-24 mx-auto mb-2 rounded-lg shadow"
           />
-          <h1 className="text-4xl font-bold text-white tracking-wide">EarTickle</h1>
+          <h1 className="text-4xl font-bold">EarTickle</h1>
           <p className="text-sm text-teal-300 mt-1">Swipe. Stack. Play.</p>
         </div>
 
-        {/* Feature Highlights */}
-        <div className="space-y-2 mb-10 text-sm text-gray-300 max-w-md">
+        {/* Highlights */}
+        <div className="text-gray-300 space-y-1 text-sm mb-8">
           <p>🎧 All Your Saved Jams, Always</p>
           <p>🔀 Stacker Shuffle: Rediscover what you love</p>
           <p>🌱 Artists: Share your full catalog with fans</p>
-          <p>📈 Grow your following and get real feedback</p>
-          <p>🪙 Rewards Coming Soon – Be Early</p>
+          <p>📈 Real feedback, real growth</p>
         </div>
 
-        {/* Login Buttons */}
-        <div className="space-y-4 w-full max-w-xs">
+        {/* OAuth Buttons */}
+        <div className="space-y-3 w-full max-w-xs">
           <button
             onClick={() => handleOAuthLogin('github')}
             className="bg-white text-black font-semibold py-2 px-4 rounded w-full hover:bg-gray-200"
           >
-            Login with GitHub
+            Continue with GitHub
           </button>
 
           <button
             onClick={() => handleOAuthLogin('google')}
             className="bg-red-500 text-white font-semibold py-2 px-4 rounded w-full hover:bg-red-600"
           >
-            Login with Google
-          </button>
-
-          <button
-            onClick={() => handleOAuthLogin('spotify')}
-            className="bg-green-500 text-white font-semibold py-2 px-4 rounded w-full hover:bg-green-600"
-          >
-            Login with Spotify
+            Continue with Google
           </button>
         </div>
 
-        {/* Magic Link Email */}
-        <form onSubmit={handleEmailLogin} className="space-y-4 pt-6 w-full max-w-xs">
-          <input
-            type="email"
-            placeholder="Your email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 rounded text-black focus:outline-none focus:ring-2 focus:ring-blue-300"
-            required
-          />
-          <button
-            type="submit"
-            className="bg-blue-400 text-black font-semibold py-2 px-4 rounded w-full hover:bg-blue-300"
+        {/* Magic Link (Optional) */}
+        {process.env.NODE_ENV !== 'production' && (
+          <form
+            onSubmit={handleEmailLogin}
+            className="space-y-3 pt-6 w-full max-w-xs"
           >
-            Send Magic Link
-          </button>
-        </form>
+            <input
+              type="email"
+              placeholder="Email for magic link"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-3 rounded text-black focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="bg-blue-400 text-black font-semibold py-2 px-4 rounded w-full hover:bg-blue-300"
+            >
+              Send Magic Link
+            </button>
+          </form>
+        )}
 
         {message && <p className="mt-4 text-teal-300 text-sm">{message}</p>}
       </div>
