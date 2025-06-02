@@ -41,6 +41,7 @@ const RewardsScreen = () => {
         songs ( title )
       `)
       .eq('receiver_id', user.id)
+      .not('emoji', 'is', null) // 🧼 Filter out broken rows
       .order('created_at', { ascending: false });
 
     if (error) {
