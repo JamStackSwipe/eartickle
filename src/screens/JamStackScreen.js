@@ -1,4 +1,17 @@
-// Stacker Screen Very Important
+/**
+ * 🎵 StackerScreen.js
+ * 
+ * JamStack autoplay screen. Plays user's favorited songs one-by-one.
+ * Pulls from `jamstacksongs` table and displays each using <SongCard>.
+ * Auto-plays next track when the current song ends.
+ * 
+ * ✅ Uses full SongCard layout for visual consistency
+ * ✅ AutoPlay + Manual Skip (Next button)
+ * 🔁 Could later support shuffle/repeat, mini-player, etc.
+ * 
+ * This is the "sit back and listen" mode for users' JamStack.
+ */
+
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
