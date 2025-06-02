@@ -90,7 +90,8 @@ const MySongCard = ({ song, onEdit, onDelete, onPublish, variant }) => {
       </div>
 
       <div className="mt-4">
-        <ReactionStatsBar songId={song.id} />
+        {song?.id && <ReactionStatsBar songId={song.id} />}
+
       </div>
     </div>
   );
