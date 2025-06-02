@@ -1,5 +1,3 @@
-// BoostTickles.js – working version with direct insert
-
 import React from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
@@ -43,15 +41,21 @@ const BoostTickles = ({ songId, userId }) => {
     }
   };
 
+  const buttonStyles = [
+    { amount: 5, label: '🎁 Boost', color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+    { amount: 10, label: '🔥 Mega', color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
+    { amount: 25, label: '🚀 Super', color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' }, // pink-red
+  ];
+
   return (
-    <div className="flex gap-2 justify-end">
-      {[5, 10, 25].map((amt) => (
+    <div className="flex gap-2 justify-end flex-wrap">
+      {buttonStyles.map(({ amount, label, color }) => (
         <button
-          key={amt}
-          onClick={() => boost(amt)}
-          className="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-700 hover:bg-blue-200 transition"
+          key={amount}
+          onClick={() => boost(amount)}
+          className={`px-3 py-1 text-sm rounded-full font-semibold transition ${color}`}
         >
-          🎯 Boost {amt}
+          {label} ({amount})
         </button>
       ))}
     </div>
