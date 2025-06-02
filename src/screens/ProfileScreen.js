@@ -1,4 +1,3 @@
-// Now Uses MySongCard.js to display songcards similar to the look and feel of the rest of the website.
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -256,7 +255,7 @@ const ProfileScreen = () => {
             {songs.map((song) => (
               <MySongCard
                 key={song.id}
-                song={song}
+                song={song} variant="jamstack"
                 onDelete={handleDelete}
                 onPublish={handlePublish}
                 onEdit={() => {}}
@@ -281,7 +280,7 @@ const ProfileScreen = () => {
             {jamStackSongs.map((song) => (
               <MySongCard
                 key={song.id}
-                song={song}
+                song={song} variant="jamstack"
                 onDelete={handleDeleteJam}
               />
             ))}
