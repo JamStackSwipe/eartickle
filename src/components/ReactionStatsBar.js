@@ -1,11 +1,12 @@
-// src/components/ReactionStatsBar.js
+// ReactionStatsBar.js – now includes BoostTickles inline
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
 import { playTickle } from '../utils/tickleSound';
 import toast from 'react-hot-toast';
-import AddToJamStackButton from './AddToJamStackButton'; // ✅ Added back
+import AddToJamStackButton from './AddToJamStackButton';
+import BoostTickles from './BoostTickles';
 
 const emojis = ['🔥', '💖', '😭', '🎯'];
 
@@ -112,17 +113,21 @@ const ReactionStatsBar = ({ song }) => {
         <span className="text-gray-400">📥 {song.jams || 0}</span>
       </div>
 
-      <div className="flex items-center justify-between mt-3">
+      <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
         <AddToJamStackButton songId={song.id} user={user} className="bg-yellow-400 text-black hover:bg-yellow-500" />
+
         <div className="text-xs text-yellow-300 font-semibold bg-zinc-800 px-2 py-1 rounded shadow">
           🎶 Tickles Left: {loading ? '...' : tickleBalance}
         </div>
+
         <button
           onClick={handleSendTickle}
           className="px-3 py-1 bg-yellow-400 rounded text-black text-sm font-medium hover:bg-yellow-500"
         >
           🎁 Send Tickle
         </button>
+
+        {user && <BoostTickles songId={song.id} userId={user.id} />}
       </div>
     </div>
   );
