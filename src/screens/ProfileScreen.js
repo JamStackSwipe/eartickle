@@ -152,73 +152,95 @@ const ProfileScreen = () => {
         <input type="file" hidden ref={fileInputRef} accept="image/*" onChange={handleAvatarChange} />
       </div>
 
-      {/* Display Name */}
-      <div className="mt-4 relative">
-        <label className="block text-sm font-semibold mb-1">Display Name</label>
-        {editing === 'name' ? (
-          <div className="flex gap-2 items-center">
-            <input
-              type="text"
-              value={profile.display_name || ''}
-              onChange={(e) => handleChange('display_name', e.target.value)}
-              placeholder="Add a short artist name..."
-              className="border p-1 rounded w-full"
-            />
-            <button
-              onClick={handleSave}
-              className="text-sm px-3 py-1 bg-blue-600 text-white rounded"
-            >
-              💾 Save
-            </button>
-          </div>
-        ) : (
-          <div className="relative group">
-            <span className="text-lg font-bold block text-center">
-              {profile.display_name || 'Unnamed Artist'}
-            </span>
-            <button 
-              onClick={() => setEditing('name')} 
-              className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity text-blue-500"
-            >
-              ✏️
-            </button>
-          </div>
-        )}
+     {/* Display Name */}
+<div className="mt-6 text-center relative group">
+  {editing === 'name' ? (
+    <div className="flex flex-col items-center">
+      <input
+        type="text"
+        value={profile.display_name || ''}
+        onChange={(e) => handleChange('display_name', e.target.value)}
+        placeholder="Your artist name"
+        className="text-xl font-bold text-center border-b-2 border-blue-400 focus:outline-none focus:border-blue-600 pb-1 w-64"
+        autoFocus
+      />
+      <div className="flex gap-2 mt-2">
+        <button
+          onClick={handleSave}
+          className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
+        >
+          Save
+        </button>
+        <button
+          onClick={() => setEditing(null)}
+          className="px-3 py-1 bg-gray-200 rounded-full text-sm hover:bg-gray-300 transition"
+        >
+          Cancel
+        </button>
       </div>
+    </div>
+  ) : (
+    <div className="inline-block relative">
+      <h2 className="text-xl font-bold text-gray-800 hover:text-black transition">
+        {profile.display_name || 'Unnamed Artist'}
+      </h2>
+      <button 
+        onClick={() => setEditing('name')} 
+        className="absolute -right-6 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-blue-500"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+        </svg>
+      </button>
+    </div>
+  )}
+</div>
 
-      {/* Bio */}
-      <div className="mt-4 relative">
-        <label className="block text-sm font-semibold mb-1">Bio</label>
-        {editing === 'bio' ? (
-          <div>
-            <textarea
-              value={profile.bio || ''}
-              onChange={(e) => handleChange('bio', e.target.value)}
-              placeholder="Tell fans what makes you different..."
-              rows={3}
-              className="border p-2 w-full rounded"
-            />
-            <button
-              onClick={handleSave}
-              className="mt-1 text-sm px-3 py-1 bg-blue-600 text-white rounded"
-            >
-              💾 Save
-            </button>
-          </div>
-        ) : (
-          <div className="relative group">
-            <p className="text-gray-700 text-sm text-center">
-              {profile.bio || 'No bio yet.'}
-            </p>
-            <button 
-              onClick={() => setEditing('bio')} 
-              className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity text-blue-500"
-            >
-              ✏️
-            </button>
-          </div>
-        )}
+{/* Bio */}
+<div className="mt-4 text-center relative group max-w-md mx-auto">
+  {editing === 'bio' ? (
+    <div className="flex flex-col items-center">
+      <textarea
+        value={profile.bio || ''}
+        onChange={(e) => handleChange('bio', e.target.value)}
+        placeholder="Tell your story..."
+        rows={3}
+        className="w-full border rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        autoFocus
+      />
+      <div className="flex gap-2 mt-2">
+        <button
+          onClick={handleSave}
+          className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
+        >
+          Save
+        </button>
+        <button
+          onClick={() => setEditing(null)}
+          className="px-3 py-1 bg-gray-200 rounded-full text-sm hover:bg-gray-300 transition"
+        >
+          Cancel
+        </button>
       </div>
+    </div>
+  ) : (
+    <div className="inline-block relative px-6">
+      <p className="text-gray-600 hover:text-gray-800 transition">
+        {profile.bio || 'No bio yet. Click to add one...'}
+      </p>
+      <button 
+        onClick={() => setEditing('bio')} 
+        className="absolute -right-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-blue-500"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+        </svg>
+      </button>
+    </div>
+  )}
+</div>
+
+    
 
       {/* Collapsible Social Links */}
       <div className="mt-4">
