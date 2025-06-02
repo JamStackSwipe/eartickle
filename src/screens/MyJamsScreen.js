@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
-import SendTickleButton from '../components/SendTickleButton';
+
 
 const MyJamsScreen = () => {
   const { user } = useUser();
