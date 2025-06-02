@@ -5,6 +5,8 @@ import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import AddToJamStackButton from './AddToJamStackButton';
 import ReactionStatsBar from './ReactionStatsBar'; // ✅ added
+import BoostTickles from './BoostTickles';
+
 
 const tickleSound = new Audio('/sounds/tickle.mp3');
 
@@ -151,6 +153,11 @@ const SongCard = ({ song, user }) => {
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
             
      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
+{user && (
+  <div className="mt-3">
+    <BoostTickles songId={song.id} userId={user.id} />
+  </div>
+)}
 
     </div>
   );
