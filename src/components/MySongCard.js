@@ -4,6 +4,7 @@ import React from 'react';
 import { playAudioPreview } from '../utils/audioPlayer';
 import { useUser } from './AuthProvider';
 import { supabase } from '../supabase';
+import ReactionStatsBar from './ReactionStatsBar'; // ✅ NEW
 
 const MySongCard = ({ song, onEdit, onDelete, onPublish, variant }) => {
   const { user } = useUser();
@@ -48,14 +49,21 @@ const MySongCard = ({ song, onEdit, onDelete, onPublish, variant }) => {
           Draft
         </div>
       )}
+
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">{song.title}</h3>
         <button onClick={() => playAudioPreview(song.audio_url)}>🔊</button>
       </div>
+
       <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
         {song.genre && <span>🎶 {song.genre}</span>}
         {song.created_at && <span>📅 {new Date(song.created_at).toLocaleDateString()}</span>}
       </div>
+
+      <audio controls className="w-full mt-3" src={song.audio_url}>
+        Your browser does not support the audio element.
+      </audio>
+
       <div className="flex gap-2 mt-3">
         {onEdit && (
           <button
@@ -81,6 +89,10 @@ const MySongCard = ({ song, onEdit, onDelete, onPublish, variant }) => {
             Publish
           </button>
         )}
+      </div>
+
+      <div className="mt-4">
+        <ReactionStatsBar songId={song.id} />
       </div>
     </div>
   );
