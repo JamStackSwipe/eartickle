@@ -1,127 +1,158 @@
-import { useEffect, useRef, useState } from 'react';
+//Works With Profile Page
+// src/components/MySongCard.js
+
+import { useState } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
-import ReactionStatsBar from './ReactionStatsBar';
-import BoostTickles from './BoostTickles';
 
 const MySongCard = ({
   song,
   stats = {},
-  editableTitle = false,
+  editableTitle,
   onDelete,
   onPublish,
-  showStripeButton = false
+  showStripeButton,
 }) => {
   const [title, setTitle] = useState(song.title);
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
-  const audioRef = useRef(null);
-  const cardRef = useRef(null);
-
-  const saveTitle = async () => {
-    setSaving(true);
+  const handleTitleSave = async () => {
     const { error } = await supabase
       .from('songs')
       .update({ title })
       .eq('id', song.id);
-    setSaving(false);
-    if (error) {
-      toast.error('Failed to save title');
+    if (!error) toast.success('✅ Title updated!');
+    else toast.error('❌ Failed to update title.');
+    setIsEditing(false);
+  };
+
+  const handleBoost = async (amount) => {
+    const { error } = await supabase.from('tickles').insert([
+      {
+        user_id: song.user_id,
+        song_id: song.id,
+        artist_id: song.artist_id,
+        amount,
+      },
+    ]);
+    if (!error) {
+      toast.success(`🎁 Boosted with ${amount} Tickles!`);
     } else {
-      toast.success('Title updated!');
-      setEditingTitle(false);
+      toast.error('❌ Boost failed');
     }
   };
 
   return (
-    <div
-      ref={cardRef}
-      className="bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md"
-    >
-      {/* Cover art */}
-      <a
-        href={`/artist/${song.artist_id}`}
-        onClick={(e) => {
-          e.preventDefault();
-          window.location.href = `/artist/${song.artist_id}`;
-        }}
-      >
-        <img
-          src={song.cover}
-          alt={song.title}
-          className="w-full h-auto rounded-xl mb-4"
-        />
-      </a>
+    <div className="bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md">
+      <img
+        src={song.cover}
+        alt={song.title}
+        className="w-full h-auto rounded-xl mb-4"
+      />
 
-      {/* Title + Edit */}
-      {editableTitle && editingTitle ? (
-        <div className="flex items-center gap-2 mb-2">
+      {editableTitle && isEditing ? (
+        <div className="mb-2">
           <input
-            type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="text-lg bg-zinc-800 border border-gray-500 rounded px-2 py-1 w-full"
+            className="w-full p-2 rounded border border-gray-600 text-black"
           />
-          <button
-            onClick={saveTitle}
-            disabled={saving}
-            className="px-2 py-1 text-sm bg-blue-600 rounded hover:bg-blue-700"
-          >
-            {saving ? 'Saving...' : 'Save'}
-          </button>
-          <button onClick={() => setEditingTitle(false)} className="text-gray-400">✖️</button>
+          <div className="flex justify-end gap-2 mt-1">
+            <button
+              onClick={handleTitleSave}
+              className="px-2 py-1 text-sm bg-green-600 text-white rounded"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                setTitle(song.title);
+              }}
+              className="px-2 py-1 text-sm bg-gray-500 text-white rounded"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       ) : (
-        <div className="flex justify-between items-center mb-1">
-          <h2 className="text-xl font-semibold">{title}</h2>
-          {editableTitle && (
-            <button onClick={() => setEditingTitle(true)} className="text-sm text-blue-400">✏️</button>
-          )}
-        </div>
+        <h2
+          className="text-xl font-semibold mb-1 cursor-pointer"
+          onClick={() => editableTitle && setIsEditing(true)}
+        >
+          {title}
+        </h2>
       )}
 
-      {/* Artist label */}
-      <p className="text-sm text-gray-400 mb-2">by You</p>
+      <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
 
-      {/* Audio */}
-      <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
+      <audio src={song.audio} controls className="w-full mb-3" />
 
-      {/* Reaction stats */}
-      <ReactionStatsBar song={song} stats={stats} />
-
-      {/* Boost */}
-      <div className="mt-3">
-        <BoostTickles songId={song.id} userId={song.artist_id} />
+      {/* Emoji Stats Row */}
+      <div className="flex justify-between text-sm text-gray-400 mb-2">
+        <div className="flex gap-3">
+          <span>🔥 {stats['🔥'] || stats.fires || 0}</span>
+          <span>💖 {stats['💖'] || stats.loves || 0}</span>
+          <span>😭 {stats['😭'] || stats.sads || 0}</span>
+          <span>🎯 {stats['🎯'] || stats.bullseyes || 0}</span>
+        </div>
+        <div className="flex gap-3">
+          <span>👁️ {stats.views || 0}</span>
+          <span>📥 {stats.jam_saves || 0}</span>
+        </div>
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-wrap gap-2 mt-4">
+      {/* Boost + Delete Inline Row */}
+      <div className="flex justify-between items-center mt-2">
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleBoost(5)}
+            className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-full"
+          >
+            🎁 Boost (5)
+          </button>
+          <button
+            onClick={() => handleBoost(10)}
+            className="px-2 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-full"
+          >
+            🔥 Mega (10)
+          </button>
+          <button
+            onClick={() => handleBoost(25)}
+            className="px-2 py-1 text-xs bg-pink-600 hover:bg-pink-700 text-white rounded-full"
+          >
+            🚀 Super (25)
+          </button>
+        </div>
         {onDelete && (
           <button
             onClick={onDelete}
-            className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+            className="text-gray-400 hover:text-red-500 text-xl"
+            title="Delete song"
           >
-            🗑 Delete
+            🗑️
           </button>
-        )}
-        {onPublish && (
-          <button
-            onClick={onPublish}
-            className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            🚀 Publish Draft
-          </button>
-        )}
-        {showStripeButton && (
-          <a
-            href="/settings"
-            className="px-3 py-1 text-sm bg-yellow-500 text-black rounded hover:bg-yellow-600"
-          >
-            💵 Connect Stripe
-          </a>
         )}
       </div>
+
+      {/* Optional Actions */}
+      {onPublish && (
+        <button
+          onClick={onPublish}
+          className="w-full mt-4 py-2 bg-green-700 hover:bg-green-800 text-white rounded"
+        >
+          🚀 Publish Draft
+        </button>
+      )}
+
+      {showStripeButton && (
+        <a
+          href="/settings"
+          className="block text-center w-full mt-2 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded"
+        >
+          💸 Accept Rewards
+        </a>
+      )}
     </div>
   );
 };
