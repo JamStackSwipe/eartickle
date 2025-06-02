@@ -1,12 +1,11 @@
-// src/components/SongCard.js
+// SongCard.js – with glow based on genre_flavor + Boost button in ReactionStatsBar
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import AddToJamStackButton from './AddToJamStackButton';
-import ReactionStatsBar from './ReactionStatsBar'; // ✅ added
+import ReactionStatsBar from './ReactionStatsBar';
 import BoostTickles from './BoostTickles';
-
 
 const tickleSound = new Audio('/sounds/tickle.mp3');
 
@@ -29,7 +28,6 @@ const SongCard = ({ song, user }) => {
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
-  // Detect when the card is visible (auto-play + view count)
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
@@ -126,10 +124,20 @@ const SongCard = ({ song, user }) => {
     }
   };
 
+  const flavorGlowMap = {
+    country_roots: 'bg-yellow-50 shadow-yellow-300',
+    hiphop_flow: 'bg-gray-100 shadow-gray-400',
+    rock_raw: 'bg-red-50 shadow-red-400',
+    pop_shine: 'bg-pink-50 shadow-pink-300',
+    spiritual_soul: 'bg-purple-50 shadow-purple-400',
+  };
+
+  const glowStyle = flavorGlowMap[song.genre_flavor] || 'bg-white shadow';
+
   return (
     <div
       ref={cardRef}
-      className="bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md"
+      className={`text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md ${glowStyle}`}
     >
       <a
         href={`/artist/${song.artist_id}`}
@@ -147,23 +155,21 @@ const SongCard = ({ song, user }) => {
         />
       </a>
 
-      <h2 className="text-xl font-semibold mb-1">{song.title}</h2>
-      <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
+      <h2 className="text-xl font-semibold mb-1 text-black">{song.title}</h2>
+      <p className="text-sm text-gray-600 mb-2">by {song.artist}</p>
 
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
-            
-     <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
-{user && (
-  <div className="mt-3">
-    <BoostTickles songId={song.id} userId={user.id} />
-  </div>
-)}
 
+      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
+
+      {user && (
+        <div className="mt-3">
+          <BoostTickles songId={song.id} userId={user.id} />
+        </div>
+      )}
     </div>
   );
 };
-
-// === Helper Functions ===
 
 const emojiToStatKey = (emoji) => {
   switch (emoji) {
