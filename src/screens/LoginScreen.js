@@ -3,6 +3,19 @@ import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../components/AuthProvider';
 
+const scatteredAssets = [
+  '/login-assets/cover1.jpg',
+  '/login-assets/cover2.jpg',
+  '/login-assets/cover3.jpg',
+  '/login-assets/cover4.jpg',
+  '/login-assets/cover5.jpg',
+  '🎵',
+  '🎶',
+  '🎤',
+  '🎸',
+  '🥁',
+];
+
 const LoginScreen = () => {
   const navigate = useNavigate();
   const { user } = useUser();
@@ -45,27 +58,43 @@ const LoginScreen = () => {
   };
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-purple-900 via-black to-black text-white overflow-hidden">
-      {/* 🎶 Animated Music Notes Background */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
+    <div className="relative min-h-screen bg-white overflow-hidden">
+      {/* 🎨 Scattered Background Assets */}
+      {scatteredAssets.map((item, i) => {
+        const size = Math.random() * 40 + 40;
+        const top = Math.random() * 100;
+        const left = Math.random() * 100;
+
+        return typeof item === 'string' && item.startsWith('/login-assets') ? (
+          <img
+            key={i}
+            src={item}
+            alt={`bg-asset-${i}`}
+            className="absolute opacity-20"
+            style={{
+              width: size,
+              top: `${top}%`,
+              left: `${left}%`,
+              transform: `rotate(${Math.random() * 360}deg)`,
+            }}
+          />
+        ) : (
           <span
             key={i}
-            className="falling-note"
+            className="absolute text-2xl select-none opacity-10"
             style={{
-              left: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 10}s`,
-              fontSize: `${Math.random() * 1.5 + 1}rem`,
+              top: `${top}%`,
+              left: `${left}%`,
+              transform: `rotate(${Math.random() * 360}deg)`,
             }}
           >
-            {Math.random() > 0.5 ? '🎵' : '🎶'}
+            {item}
           </span>
-        ))}
-      </div>
+        );
+      })}
 
-      {/* Foreground Content */}
+      {/* 🧾 Login Box */}
       <div className="relative z-10 flex flex-col items-center justify-center px-4 py-20 text-center">
-        {/* Logo + Tagline */}
         <div className="mb-10 select-none">
           <a href="/" className="inline-block transition-transform hover:scale-105">
             <img
@@ -74,27 +103,23 @@ const LoginScreen = () => {
               className="w-32 h-32 mx-auto mb-2 rounded-lg shadow-lg"
             />
           </a>
-          <h1 className="text-5xl font-bold">EarTickle</h1>
-          <p className="text-base text-teal-300 mt-1">Swipe. Stack. Play.</p>
+          <h1 className="text-5xl font-bold text-black">EarTickle</h1>
+          <p className="text-base text-gray-600 mt-1">Swipe. Stack. Play.</p>
         </div>
 
-        {/* App Highlights */}
-        <div className="text-gray-300 space-y-1 text-sm mb-8">
+        <div className="text-gray-500 space-y-1 text-sm mb-8">
           <p>🎧 All Your Saved Jams, Always</p>
           <p>🔀 Stacker Shuffle: Rediscover what you love</p>
           <p>🌱 Artists: Share your full catalog with fans</p>
-          <p>📈 Real feedback, real growth</p>
         </div>
 
-        {/* OAuth Buttons */}
         <div className="space-y-3 w-full max-w-xs">
           <button
             onClick={() => handleOAuthLogin('github')}
-            className="bg-white text-black font-semibold py-2 px-4 rounded w-full hover:bg-gray-200"
+            className="bg-black text-white font-semibold py-2 px-4 rounded w-full hover:bg-gray-800"
           >
             Continue with GitHub
           </button>
-
           <button
             onClick={() => handleOAuthLogin('google')}
             className="bg-red-500 text-white font-semibold py-2 px-4 rounded w-full hover:bg-red-600"
@@ -103,7 +128,7 @@ const LoginScreen = () => {
           </button>
         </div>
 
-        {/* Magic Link Dev Only */}
+        {/* Dev-only Magic Link */}
         {process.env.NODE_ENV !== 'production' && (
           <form
             onSubmit={handleEmailLogin}
@@ -114,7 +139,7 @@ const LoginScreen = () => {
               placeholder="Email for magic link"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full p-3 rounded text-black focus:outline-none"
+              className="w-full p-3 rounded border text-black focus:outline-none"
             />
             <button
               type="submit"
@@ -125,8 +150,7 @@ const LoginScreen = () => {
           </form>
         )}
 
-        {/* Status Message */}
-        {message && <p className="mt-4 text-teal-300 text-sm">{message}</p>}
+        {message && <p className="mt-4 text-green-600 text-sm">{message}</p>}
       </div>
     </div>
   );
