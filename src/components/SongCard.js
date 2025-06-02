@@ -9,6 +9,14 @@ import BoostTickles from './BoostTickles';
 
 const tickleSound = new Audio('/sounds/tickle.mp3');
 
+const flavorGlowMap = {
+  country_roots: 'ring-yellow-400',
+  hiphop_flow: 'ring-gray-500',
+  rock_raw: 'ring-red-500',
+  pop_shine: 'ring-pink-400',
+  spiritual_soul: 'ring-purple-500',
+};
+
 const SongCard = ({ song, user }) => {
   const [localReactions, setLocalReactions] = useState({
     fires: song.fires || 0,
