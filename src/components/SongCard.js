@@ -162,7 +162,7 @@ const emojiToStatKey = (emoji) => {
   switch (emoji) {
     case '🔥': return 'fires';
     case '❤️': return 'loves';
-    case '😢': return 'sads';
+    case '😭': return 'sads';
     case '🎯': return 'bullseyes';
     default: return '';
   }
@@ -172,7 +172,7 @@ const emojiToSymbol = (word) => {
   switch (word) {
     case 'fire': return '🔥';
     case 'heart': return '❤️';
-    case 'cry': return '😢';
+    case 'cry': return '😭';
     case 'bullseye': return '🎯';
     default: return '';
   }
@@ -182,7 +182,7 @@ const emojiToDbValue = (emoji) => {
   switch (emoji) {
     case '🔥': return 'fire';
     case '❤️': return 'heart';
-    case '😢': return 'cry';
+    case '😭': return 'cry';
     case '🎯': return 'bullseye';
     default: return '';
   }
