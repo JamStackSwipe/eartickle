@@ -2,12 +2,19 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
-import { genreOptions } from '../utils/genreList';
+
+const FLAVOR_OPTIONS = [
+  { value: 'country_roots', label: 'Country & Roots 🤠' },
+  { value: 'hiphop_flow', label: 'Hip-Hop & Flow 🎤' },
+  { value: 'rock_raw', label: 'Rock & Raw 🤘' },
+  { value: 'pop_shine', label: 'Pop & Shine ✨' },
+  { value: 'spiritual_soul', label: 'Spiritual & Soul ✝️' },
+];
 
 const UploadScreen = () => {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
-  const [genre, setGenre] = useState('');
+  const [genreFlavor, setGenreFlavor] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
   const [enableGifting, setEnableGifting] = useState(false);
@@ -18,7 +25,7 @@ const UploadScreen = () => {
   const navigate = useNavigate();
 
   const handleUpload = async () => {
-    if (!title || !artist || !genre || !imageFile || !audioFile) {
+    if (!title || !artist || !genreFlavor || !imageFile || !audioFile) {
       alert('Please fill out all fields and select both files.');
       return;
     }
@@ -78,7 +85,7 @@ const UploadScreen = () => {
       {
         title,
         artist,
-        genre,
+        genre_flavor: genreFlavor,
         cover: coverUrl,
         audio: audioUrl,
         user_id: user.id,
@@ -90,21 +97,15 @@ const UploadScreen = () => {
       alert('Song metadata upload failed.');
       setIsUploading(false);
     } else {
-      await supabase
-        .from('profiles')
-        .update({ is_artist: true })
-        .eq('id', user.id);
-
+      await supabase.from('profiles').update({ is_artist: true }).eq('id', user.id);
       setMessage('✅ Song uploaded!');
       setTitle('');
       setArtist('');
-      setGenre('');
+      setGenreFlavor('');
       setEnableGifting(false);
       setImageFile(null);
       setAudioFile(null);
-      setTimeout(() => {
-        navigate('/swipe');
-      }, 1500);
+      setTimeout(() => navigate('/swipe'), 1500);
     }
   };
 
@@ -128,16 +129,16 @@ const UploadScreen = () => {
         className="w-full p-2 border rounded mb-4"
       />
 
-      <label className="block mb-2 font-medium">Genre</label>
+      <label className="block mb-2 font-medium">Genre Flavor</label>
       <select
-        value={genre}
-        onChange={(e) => setGenre(e.target.value)}
+        value={genreFlavor}
+        onChange={(e) => setGenreFlavor(e.target.value)}
         className="w-full p-2 border rounded mb-4"
       >
-        <option value="">Select a genre</option>
-        {genreOptions.map((g) => (
-          <option key={g} value={g}>
-            {g.charAt(0).toUpperCase() + g.slice(1)}
+        <option value="">Select a flavor</option>
+        {FLAVOR_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>
@@ -165,7 +166,7 @@ const UploadScreen = () => {
             'audio/mp4',
             'audio/x-m4a',
             'audio/aac',
-            'video/mp4'
+            'video/mp4',
           ];
 
           if (!validAudioTypes.includes(file.type)) {
@@ -180,8 +181,6 @@ const UploadScreen = () => {
       <p className="text-xs text-gray-400 mb-4">
         Supported formats: MP3, M4A, or audio-only MP4. Make sure your MP4 does not contain video.
       </p>
-
-     
 
       <button
         onClick={handleUpload}
