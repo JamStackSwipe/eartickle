@@ -15,6 +15,14 @@ const genreLabels = {
   spiritual_soul: { name: 'Spiritual & Soul', color: 'bg-purple-500 text-white' },
 };
 
+const flavorLabelMap = {
+  country_roots: 'Country & Roots 🤠',
+  hiphop_flow: 'Hip-Hop & Flow 🎤',
+  rock_raw: 'Rock & Raw 🎸',
+  pop_shine: 'Pop & Shine ✨',
+  spiritual_soul: 'Spiritual & Soul ✝️',
+};
+
 const flavorGlowMap = {
   country_roots: 'bg-yellow-50 shadow-yellow-300 ring-yellow-400',
   hiphop_flow: 'bg-gray-100 shadow-gray-400 ring-gray-500',
