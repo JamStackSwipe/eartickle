@@ -54,11 +54,25 @@ const ProfileScreen = () => {
   const fetchJamStack = async () => {
     const { data, error } = await supabase
       .from('jamstacksongs')
-      .select('*, songs(*)')
+      .select(`
+        song_id,
+        songs (
+          id,
+          title,
+          artist_id,
+          audio_url,
+          cover_url,
+          is_draft,
+          created_at
+        )
+      `)
       .eq('user_id', user.id);
 
     if (!error && data) {
-      const songsOnly = data.map((item) => item.songs);
+      const songsOnly = data.map((item) => ({
+        ...item.songs,
+        id: item.song_id || item.songs.id,
+      }));
       setJamStackSongs(songsOnly);
     }
   };
