@@ -1,10 +1,8 @@
-// src/screens/ProfileScreen.js
-
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
-import { genreOptions } from '../utils/genreList';
 import MySongCard from '../components/MySongCard';
+import Footer from '../components/Footer';
 
 const ProfileScreen = () => {
   const { user } = useUser();
@@ -14,14 +12,10 @@ const ProfileScreen = () => {
   const [songs, setSongs] = useState([]);
   const [jamStackSongs, setJamStackSongs] = useState([]);
   const [tickleStats, setTickleStats] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [expandedSection, setExpandedSection] = useState('uploads');
-
-  const toggleSection = (section) => {
-    setExpandedSection((prev) => (prev === section ? null : section));
-  };
+  const [showSocial, setShowSocial] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -32,70 +26,72 @@ const ProfileScreen = () => {
   }, [user]);
 
   const fetchProfile = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    if (!error && data) setProfile(data);
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    if (data) setProfile(data);
+  };
+
+  const fetchReactionStats = async (songIds) => {
+    if (!songIds.length) return;
+
+    const [reactionsData, viewsData, jamData] = await Promise.all([
+      supabase.from('reactions').select('song_id, emoji'),
+      supabase.from('views').select('song_id'),
+      supabase.from('jamstacksongs').select('song_id'),
+    ]);
+
+    const stats = {};
+
+    reactionsData.data?.forEach(({ song_id, emoji }) => {
+      if (songIds.includes(song_id)) {
+        stats[song_id] = stats[song_id] || {};
+        stats[song_id][emoji] = (stats[song_id][emoji] || 0) + 1;
+      }
+    });
+
+    viewsData.data?.forEach(({ song_id }) => {
+      if (songIds.includes(song_id)) {
+        stats[song_id] = stats[song_id] || {};
+        stats[song_id].views = (stats[song_id].views || 0) + 1;
+      }
+    });
+
+    jamData.data?.forEach(({ song_id }) => {
+      if (songIds.includes(song_id)) {
+        stats[song_id] = stats[song_id] || {};
+        stats[song_id].jam_saves = (stats[song_id].jam_saves || 0) + 1;
+      }
+    });
+
+    setTickleStats(stats);
   };
 
   const fetchUploads = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('songs')
       .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
-    if (!error) {
+
+    if (data) {
       setSongs(data);
-      fetchTickleStats(data.map((s) => s.id));
+      fetchReactionStats(data.map((s) => s.id));
     }
-    setLoading(false);
   };
 
   const fetchJamStack = async () => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('jamstacksongs')
-      .select(`
-        song_id,
-        songs (
-          id,
-          title,
-          artist_id,
-          audio_url,
-          cover_url,
-          is_draft,
-          created_at
-        )
-      `)
+      .select(`song_id, songs ( id, title, artist_id, audio, cover, is_draft, created_at )`)
       .eq('user_id', user.id);
 
-    if (!error && data) {
+    if (data) {
       const songsOnly = data.map((item) => ({
         ...item.songs,
         id: item.song_id || item.songs.id,
       }));
       setJamStackSongs(songsOnly);
+      fetchReactionStats(songsOnly.map((s) => s.id));
     }
-  };
-
-  const fetchTickleStats = async (songIds) => {
-    if (!songIds.length) return;
-    const { data, error } = await supabase
-      .from('tickles')
-      .select('song_id, emoji');
-    if (error) {
-      console.error('❌ Error fetching tickles:', error.message);
-      return;
-    }
-    const stats = {};
-    data
-      .filter((t) => songIds.includes(t.song_id))
-      .forEach(({ song_id, emoji }) => {
-        if (!stats[song_id]) stats[song_id] = {};
-        stats[song_id][emoji] = (stats[song_id][emoji] || 0) + 1;
-      });
-    setTickleStats(stats);
   };
 
   const handleChange = (field, value) => {
@@ -103,78 +99,23 @@ const ProfileScreen = () => {
   };
 
   const handleSave = async () => {
-    const updates = {
-      id: user.id,
-      email: user.email || '',
-      display_name: profile.display_name || '',
-      bio: profile.bio || '',
-      avatar_url: profile.avatar_url || '',
-      booking_email: profile.booking_email || '',
-      website: profile.website || '',
-      spotify: profile.spotify || '',
-      youtube: profile.youtube || '',
-      instagram: profile.instagram || '',
-      soundcloud: profile.soundcloud || '',
-      tiktok: profile.tiktok || '',
-      bandlab: profile.bandlab || '',
-      updated_at: new Date(),
-    };
-
-    const { error } = await supabase
-      .from('profiles')
-      .upsert(updates, { onConflict: ['id'] });
-
-    if (error) {
-      console.error('❌ Full save error:', error);
-      setMessage(`❌ Save failed: ${error.message || 'Unknown error'}`);
-    } else {
-      setProfile((prev) => ({ ...prev, ...updates }));
-      setMessage('✅ Profile saved!');
-    }
+    const updates = { id: user.id, ...profile, updated_at: new Date() };
+    const { error } = await supabase.from('profiles').upsert(updates);
+    setMessage(error ? `❌ ${error.message}` : '✅ Profile saved!');
+    setEditing(false);
   };
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
     const filePath = `${user.id}/avatar.png`;
     setUploading(true);
-    setMessage('');
-
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) {
-      console.error('❌ Upload error:', uploadError.message);
-      setMessage('Upload failed.');
-      setUploading(false);
-      return;
-    }
-
-    await new Promise((r) => setTimeout(r, 300));
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('avatars').getPublicUrl(filePath);
-    const avatarWithCacheBust = `${publicUrl}?t=${Date.now()}`;
-
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ avatar_url: avatarWithCacheBust })
-      .eq('id', user.id);
-
-    if (updateError) {
-      console.error('❌ Profile update error:', updateError.message);
-      setMessage('Avatar saved but profile update failed.');
-    } else {
-      setProfile((prev) => ({ ...prev, avatar_url: avatarWithCacheBust }));
-      setMessage('✅ Avatar updated!');
-    }
+    await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
+    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    const url = `${data.publicUrl}?t=${Date.now()}`;
+    await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id);
+    setProfile((prev) => ({ ...prev, avatar_url: url }));
     setUploading(false);
-  };
-
-  const handleAvatarClick = () => {
-    fileInputRef.current?.click();
   };
 
   const handleDelete = async (songId) => {
@@ -196,112 +137,105 @@ const ProfileScreen = () => {
     if (!error) setJamStackSongs((prev) => prev.filter((s) => s.id !== songId));
   };
 
-  const avatarSrc = profile.avatar_url?.trim()
-    ? `${profile.avatar_url}`
-    : user?.user_metadata?.avatar_url || '/default-avatar.png';
+  const avatarSrc = profile.avatar_url || user?.user_metadata?.avatar_url || '/default-avatar.png';
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <div className="flex items-center space-x-4 mb-6">
+    <div className="p-4 max-w-2xl mx-auto">
+      {/* Avatar + Display Name */}
+      <div className="text-center">
         <img
           src={avatarSrc}
           alt="avatar"
-          onClick={handleAvatarClick}
-          className="w-24 h-24 rounded-full object-cover border shadow cursor-pointer hover:opacity-80"
+          onClick={() => fileInputRef.current?.click()}
+          className="w-24 h-24 mx-auto rounded-full object-cover cursor-pointer hover:opacity-80 border shadow"
         />
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          onChange={handleAvatarChange}
-          style={{ display: 'none' }}
-        />
-        <div className="flex-1">
-          <input
-            type="text"
-            value={profile.display_name || ''}
-            onChange={(e) => handleChange('display_name', e.target.value)}
-            placeholder="Display Name"
-            className="text-xl font-bold w-full border-b p-1"
-          />
-          <textarea
-            value={profile.bio || ''}
-            onChange={(e) => handleChange('bio', e.target.value)}
-            placeholder="Tell us about you..."
-            className="w-full mt-2 p-2 border rounded"
-            rows={3}
-          />
-        </div>
+        <input type="file" hidden ref={fileInputRef} accept="image/*" onChange={handleAvatarChange} />
+
+        {editing ? (
+          <div className="mt-2">
+            <input
+              value={profile.display_name || ''}
+              onChange={(e) => handleChange('display_name', e.target.value)}
+              className="text-xl font-bold w-full border-b text-center"
+            />
+            <textarea
+              value={profile.bio || ''}
+              onChange={(e) => handleChange('bio', e.target.value)}
+              placeholder="Tell us about yourself..."
+              className="w-full mt-2 p-2 border rounded"
+              rows={2}
+            />
+            <button onClick={handleSave} className="mt-2 bg-blue-600 text-white px-4 py-1 rounded">
+              Save
+            </button>
+          </div>
+        ) : (
+          <div className="mt-2">
+            <h2 className="text-xl font-bold">{profile.display_name || 'Unnamed Artist'}</h2>
+            <p className="text-sm text-gray-600">{profile.bio || 'No bio yet.'}</p>
+            <button onClick={() => setEditing(true)} className="text-blue-500 text-sm mt-1">✏️ Edit</button>
+          </div>
+        )}
       </div>
 
-      {[ 'booking_email', 'website', 'spotify', 'youtube', 'instagram', 'soundcloud', 'tiktok', 'bandlab' ].map((field) => (
-        <div key={field} className="mb-2">
-          <label className="block text-sm font-semibold capitalize">
-            {field.replace('_', ' ')}
-          </label>
-          <input
-            type="text"
-            value={profile[field] || ''}
-            onChange={(e) => handleChange(field, e.target.value)}
-            className="w-full p-2 border rounded"
-            placeholder={`Enter your ${field}`}
-          />
-        </div>
-      ))}
-
-      <button
-        onClick={handleSave}
-        className="mt-4 bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700"
-      >
-        Save Profile
-      </button>
-
-      {message && <p className="mt-2 text-green-600">{message}</p>}
-
-      {/* Uploaded Songs Section */}
-      <div className="mt-10">
+      {/* Collapsed Social Links */}
+      <div className="mt-4">
         <button
-          className="text-lg font-bold underline"
-          onClick={() => toggleSection('uploads')}
+          onClick={() => setShowSocial(!showSocial)}
+          className="text-blue-600 underline text-sm"
         >
-          {expandedSection === 'uploads' ? '🔽 Hide Uploaded Songs' : '▶️ Show Uploaded Songs'}
+          {showSocial ? 'Hide Social Links' : 'Show Social Links'}
         </button>
-        {expandedSection === 'uploads' && (
-          <div className="space-y-4 mt-4">
-            {songs.map((song) => (
-              <MySongCard
-                key={song.id}
-                song={song} variant="jamstack"
-                onDelete={handleDelete}
-                onPublish={handlePublish}
+        {showSocial && (
+          <div className="grid grid-cols-2 gap-2 mt-2 text-sm">
+            {['website', 'spotify', 'youtube', 'instagram', 'soundcloud', 'tiktok', 'bandlab'].map((field) => (
+              <input
+                key={field}
+                value={profile[field] || ''}
+                onChange={(e) => handleChange(field, e.target.value)}
+                placeholder={field}
+                className="border p-1 rounded"
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Jam Stack Songs Section */}
-      <div className="mt-10">
-        <button
-          className="text-lg font-bold underline"
-          onClick={() => toggleSection('jamstack')}
-        >
-          {expandedSection === 'jamstack'
-            ? '🔽 Hide My Jam Stack'
-            : '▶️ Show My Jam Stack'}
-        </button>
-        {expandedSection === 'jamstack' && (
-          <div className="space-y-4 mt-4">
-            {jamStackSongs.map((song) => (
-              <MySongCard
-                key={song.id}
-                song={song} variant="jamstack"
-                onDelete={handleDeleteJam}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Uploads */}
+      {songs.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-xl font-bold mb-4">📤 My Uploads</h3>
+          {songs.map((song) => (
+            <MySongCard
+              key={song.id}
+              song={song}
+              editable
+              stats={tickleStats[song.id] || {}}
+              onDelete={() => handleDelete(song.id)}
+              onPublish={song.is_draft ? () => handlePublish(song.id) : undefined}
+              showStripeButton={!profile.stripe_account_id && !song.is_draft}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Jam Stack */}
+      {jamStackSongs.length > 0 && (
+        <div className="mt-10">
+          <h3 className="text-2xl font-extrabold text-blue-800 mb-4 tracking-tight uppercase">🎵 My Jam Stack</h3>
+          {jamStackSongs.map((song) => (
+            <MySongCard
+              key={song.id}
+              song={song}
+              stats={tickleStats[song.id] || {}}
+              onDeleteWithConfirm={() => handleDeleteJam(song.id)}
+              compact
+            />
+          ))}
+        </div>
+      )}
+
+      <Footer />
     </div>
   );
 };
