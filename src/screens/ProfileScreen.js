@@ -12,7 +12,7 @@ const ProfileScreen = () => {
   const [songs, setSongs] = useState([]);
   const [jamStackSongs, setJamStackSongs] = useState([]);
   const [tickleStats, setTickleStats] = useState({});
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(null); // 'name' or 'bio'
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
   const [showSocial, setShowSocial] = useState(false);
@@ -102,7 +102,7 @@ const ProfileScreen = () => {
     const updates = { id: user.id, ...profile, updated_at: new Date() };
     const { error } = await supabase.from('profiles').upsert(updates);
     setMessage(error ? `❌ ${error.message}` : '✅ Profile saved!');
-    setEditing(false);
+    setEditing(null);
   };
 
   const handleAvatarChange = async (e) => {
@@ -141,7 +141,7 @@ const ProfileScreen = () => {
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
-      {/* Avatar + Display Name */}
+      {/* Avatar (locked) */}
       <div className="text-center">
         <img
           src={avatarSrc}
@@ -150,35 +150,63 @@ const ProfileScreen = () => {
           className="w-24 h-24 mx-auto rounded-full object-cover cursor-pointer hover:opacity-80 border shadow"
         />
         <input type="file" hidden ref={fileInputRef} accept="image/*" onChange={handleAvatarChange} />
+      </div>
 
-        {editing ? (
-          <div className="mt-2">
+      {/* Display Name */}
+      <div className="mt-4">
+        <label className="block text-sm font-semibold mb-1">Display Name</label>
+        {editing === 'name' ? (
+          <div className="flex gap-2 items-center">
             <input
+              type="text"
               value={profile.display_name || ''}
               onChange={(e) => handleChange('display_name', e.target.value)}
-              className="text-xl font-bold w-full border-b text-center"
+              placeholder="Add a short artist name..."
+              className="border p-1 rounded w-full"
             />
-            <textarea
-              value={profile.bio || ''}
-              onChange={(e) => handleChange('bio', e.target.value)}
-              placeholder="Tell us about yourself..."
-              className="w-full mt-2 p-2 border rounded"
-              rows={2}
-            />
-            <button onClick={handleSave} className="mt-2 bg-blue-600 text-white px-4 py-1 rounded">
-              Save
+            <button
+              onClick={handleSave}
+              className="text-sm px-3 py-1 bg-blue-600 text-white rounded"
+            >
+              💾 Save
             </button>
           </div>
         ) : (
-          <div className="mt-2">
-            <h2 className="text-xl font-bold">{profile.display_name || 'Unnamed Artist'}</h2>
-            <p className="text-sm text-gray-600">{profile.bio || 'No bio yet.'}</p>
-            <button onClick={() => setEditing(true)} className="text-blue-500 text-sm mt-1">✏️ Edit</button>
+          <div className="flex justify-between items-center">
+            <span className="text-lg font-bold">{profile.display_name || 'Unnamed Artist'}</span>
+            <button onClick={() => setEditing('name')} className="text-blue-500 text-sm">✏️</button>
           </div>
         )}
       </div>
 
-      {/* Collapsed Social Links */}
+      {/* Bio */}
+      <div className="mt-4">
+        <label className="block text-sm font-semibold mb-1">Bio</label>
+        {editing === 'bio' ? (
+          <div>
+            <textarea
+              value={profile.bio || ''}
+              onChange={(e) => handleChange('bio', e.target.value)}
+              placeholder="Tell fans what makes you different..."
+              rows={3}
+              className="border p-2 w-full rounded"
+            />
+            <button
+              onClick={handleSave}
+              className="mt-1 text-sm px-3 py-1 bg-blue-600 text-white rounded"
+            >
+              💾 Save
+            </button>
+          </div>
+        ) : (
+          <div className="flex justify-between items-start">
+            <p className="text-gray-700 text-sm">{profile.bio || 'No bio yet.'}</p>
+            <button onClick={() => setEditing('bio')} className="text-blue-500 text-sm ml-2 mt-1">✏️</button>
+          </div>
+        )}
+      </div>
+
+      {/* Collapsible Social Links */}
       <div className="mt-4">
         <button
           onClick={() => setShowSocial(!showSocial)}
