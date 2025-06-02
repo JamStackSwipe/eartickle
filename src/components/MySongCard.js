@@ -1,8 +1,6 @@
-// For The Profile Page Same Base Logic as SongCard.js but has the profile CRUD
-// Added Some Styling For My Jams
-
-// MySongCard.js - with compact, editable, and confirm delete support
-import { useState, useEffect } from 'react';
+// MySongCard.js - now supports cover upload and delete on uploads
+import { useState, useEffect, useRef } from 'react';
+import { supabase } from '../supabase';
 
 const emojiIcons = {
   '🔥': '🔥',
@@ -26,6 +24,7 @@ const MySongCard = ({
   const [fadeOut, setFadeOut] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [title, setTitle] = useState(song.title || '');
+  const fileInputRef = useRef();
   const isDraft = song.is_draft;
 
   useEffect(() => {
@@ -46,17 +45,46 @@ const MySongCard = ({
     }
   };
 
+  const handleCoverClick = () => {
+    if (editable) fileInputRef.current?.click();
+  };
+
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const path = `covers/${song.id}.jpg`;
+    await supabase.storage.from('covers').upload(path, file, { upsert: true });
+    const { data } = supabase.storage.from('covers').getPublicUrl(path);
+    const newUrl = `${data.publicUrl}?t=${Date.now()}`;
+    await supabase.from('songs').update({ cover: newUrl }).eq('id', song.id);
+    window.location.reload();
+  };
+
   return (
     <div
       className={`flex items-center gap-4 border p-3 rounded shadow-sm relative transition-all duration-500 ${
         fadeOut ? 'opacity-30 blur-sm' : 'opacity-100'
       }`}
     >
-      <img
-        src={song.cover || '/default-cover.png'}
-        alt="cover"
-        className={`rounded ${compact ? 'w-16 h-16' : 'w-24 h-24'} object-cover`}
-      />
+      <div className="relative" onClick={handleCoverClick}>
+        <img
+          src={song.cover || '/default-cover.png'}
+          alt="cover"
+          className={`rounded ${compact ? 'w-16 h-16' : 'w-24 h-24'} object-cover cursor-pointer`}
+        />
+        {editable && (
+          <div className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs p-1 rounded">
+            📷
+          </div>
+        )}
+        <input
+          type="file"
+          accept="image/*"
+          ref={fileInputRef}
+          onChange={handleCoverUpload}
+          hidden
+        />
+      </div>
 
       <div className="flex-1">
         {editable ? (
