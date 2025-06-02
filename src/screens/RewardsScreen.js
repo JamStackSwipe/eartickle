@@ -1,5 +1,3 @@
-// src/screens/RewardsScreen.js
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -9,12 +7,14 @@ const RewardsScreen = () => {
   const { user } = useUser();
   const [tickles, setTickles] = useState(0);
   const [rewards, setRewards] = useState([]);
+  const [totalReceived, setTotalReceived] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       fetchTickles();
       fetchRewards();
+      fetchTotalReceived();
     }
   }, [user]);
 
@@ -36,12 +36,9 @@ const RewardsScreen = () => {
   const fetchRewards = async () => {
     const { data, error } = await supabase
       .from('rewards')
-      .select(`
-        *,
-        songs ( title )
-      `)
+      .select(`*, songs ( title )`)
       .eq('receiver_id', user.id)
-      .not('emoji', 'is', null) // 🧼 Filter out broken rows
+      .not('emoji', 'is', null)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -55,7 +52,23 @@ const RewardsScreen = () => {
       if (latest.amount >= 20) playTickleSpecial();
       else playTickle();
     }
+
     setLoading(false);
+  };
+
+  const fetchTotalReceived = async () => {
+    const { data, error } = await supabase
+      .from('tickles')
+      .select('amount')
+      .eq('artist_id', user.id);
+
+    if (error) {
+      console.error('❌ Error fetching tickles total:', error);
+      return;
+    }
+
+    const total = data?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
+    setTotalReceived(total);
   };
 
   const handleBuy = async (amount) => {
@@ -78,14 +91,6 @@ const RewardsScreen = () => {
     if (data?.url) window.location.href = data.url;
     else alert('⚠️ Failed to create Stripe session');
   };
-
-  const { data: received } = await supabase
-  .from('tickles')
-  .select('amount')
-  .eq('artist_id', user.id);
-
-const totalReceived = received?.reduce((sum, t) => sum + (t.amount || 0), 0);
-
 
   if (!user) return <p className="text-center mt-10">Please log in to view your Tickles.</p>;
   if (loading) return <p className="text-center mt-10">Loading Tickles...</p>;
@@ -112,9 +117,10 @@ const totalReceived = received?.reduce((sum, t) => sum + (t.amount || 0), 0);
       </div>
 
       <hr className="my-8 border-gray-300" />
-            <div className="text-yellow-300 text-sm font-semibold">
-  🪙 Tickles Received: {totalReceived}
-</div>
+
+      <div className="text-yellow-300 text-sm font-semibold">
+        🪙 Tickles Received: {totalReceived}
+      </div>
 
       <h3 className="text-2xl font-semibold mb-4 text-center">Recent Tickles Received</h3>
 
