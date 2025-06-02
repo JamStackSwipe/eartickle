@@ -153,7 +153,7 @@ const ProfileScreen = () => {
       </div>
 
       {/* Display Name */}
-      <div className="mt-4">
+      <div className="mt-4 relative">
         <label className="block text-sm font-semibold mb-1">Display Name</label>
         {editing === 'name' ? (
           <div className="flex gap-2 items-center">
@@ -172,15 +172,22 @@ const ProfileScreen = () => {
             </button>
           </div>
         ) : (
-          <div className="flex justify-between items-center">
-            <span className="text-lg font-bold">{profile.display_name || 'Unnamed Artist'}</span>
-            <button onClick={() => setEditing('name')} className="text-blue-500 text-sm">✏️</button>
+          <div className="relative group">
+            <span className="text-lg font-bold block text-center">
+              {profile.display_name || 'Unnamed Artist'}
+            </span>
+            <button 
+              onClick={() => setEditing('name')} 
+              className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity text-blue-500"
+            >
+              ✏️
+            </button>
           </div>
         )}
       </div>
 
       {/* Bio */}
-      <div className="mt-4">
+      <div className="mt-4 relative">
         <label className="block text-sm font-semibold mb-1">Bio</label>
         {editing === 'bio' ? (
           <div>
@@ -199,9 +206,16 @@ const ProfileScreen = () => {
             </button>
           </div>
         ) : (
-          <div className="flex justify-between items-start">
-            <p className="text-gray-700 text-sm">{profile.bio || 'No bio yet.'}</p>
-            <button onClick={() => setEditing('bio')} className="text-blue-500 text-sm ml-2 mt-1">✏️</button>
+          <div className="relative group">
+            <p className="text-gray-700 text-sm text-center">
+              {profile.bio || 'No bio yet.'}
+            </p>
+            <button 
+              onClick={() => setEditing('bio')} 
+              className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity text-blue-500"
+            >
+              ✏️
+            </button>
           </div>
         )}
       </div>
