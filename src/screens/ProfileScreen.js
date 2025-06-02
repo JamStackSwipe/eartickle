@@ -1,4 +1,4 @@
-// Rebuilt ProfileScreen.js - updated for MySongCard delete + stats fix
+// Rebuilt ProfileScreen.js - with editable display name and bio
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -14,6 +14,7 @@ const ProfileScreen = () => {
   const [jamStackSongs, setJamStackSongs] = useState([]);
   const [tickleStats, setTickleStats] = useState({});
   const [showSocial, setShowSocial] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState('');
   const [uploading, setUploading] = useState(false);
 
@@ -75,6 +76,7 @@ const ProfileScreen = () => {
     const updates = { id: user.id, ...profile, updated_at: new Date() };
     const { error } = await supabase.from('profiles').upsert(updates);
     setMessage(error ? `❌ ${error.message}` : '✅ Profile saved!');
+    setEditing(false);
   };
 
   const handleAvatarChange = async (e) => {
@@ -120,8 +122,36 @@ const ProfileScreen = () => {
           className="w-24 h-24 mx-auto rounded-full border cursor-pointer"
         />
         <input type="file" accept="image/*" ref={fileInputRef} onChange={handleAvatarChange} hidden />
-        <h2 className="mt-4 text-2xl font-bold">{profile.display_name || 'Your Name'}</h2>
-        <p className="text-gray-600 text-sm mt-1">{profile.bio || 'Tell us about yourself'}</p>
+
+        {editing ? (
+          <input
+            value={profile.display_name || ''}
+            onChange={(e) => handleChange('display_name', e.target.value)}
+            className="mt-4 text-2xl font-bold w-full text-center border-b"
+          />
+        ) : (
+          <h2 className="mt-4 text-2xl font-bold flex justify-center items-center gap-2">
+            {profile.display_name || 'Your Name'}
+            <button onClick={() => setEditing(true)} className="text-sm text-blue-500">✏️</button>
+          </h2>
+        )}
+
+        {editing ? (
+          <textarea
+            value={profile.bio || ''}
+            onChange={(e) => handleChange('bio', e.target.value)}
+            className="w-full mt-2 p-2 border rounded"
+            rows={2}
+          />
+        ) : (
+          <p className="text-gray-600 text-sm mt-1">{profile.bio || 'Tell us about yourself'}</p>
+        )}
+
+        {editing && (
+          <button onClick={handleSave} className="mt-2 bg-blue-600 text-white px-4 py-1 rounded">
+            Save
+          </button>
+        )}
       </div>
 
       <div className="mb-6">
