@@ -7,7 +7,7 @@ import { playTickle } from '../utils/tickleSound';
 import toast from 'react-hot-toast';
 import AddToJamStackButton from './AddToJamStackButton'; // ✅ Added back
 
-const emojis = ['🔥', '❤️', '😢', '🎯'];
+const emojis = ['🔥', '💖', '😢', '🎯'];
 
 const ReactionStatsBar = ({ song }) => {
   const { user } = useUser();
@@ -88,7 +88,7 @@ const ReactionStatsBar = ({ song }) => {
       playTickle();
       toast.success('1 Tickle sent!');
       setTickleBalance((prev) => (prev || 1) - 1);
-      loadStats(); // 🔁 Refresh the stats after sending tickle
+      loadStats();
     } else {
       toast.error(result.error || 'Failed to send tickle');
     }
