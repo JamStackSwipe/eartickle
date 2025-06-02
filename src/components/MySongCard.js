@@ -131,7 +131,7 @@ const MySongCard = ({
       </div>
 
       <div className="flex items-center gap-3 text-white text-sm">
-        {['🔥', '💖', '😢', '🎯'].map((emoji) => (
+        {['🔥', '💖', '😭', '🎯'].map((emoji) => (
           <span key={emoji} className="flex items-center gap-1">
             {emojiIcons[emoji]} {songStats[emoji] || 0}
           </span>
