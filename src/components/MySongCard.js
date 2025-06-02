@@ -1,10 +1,11 @@
 // For The Profile Page Same Base Logic as SongCard.js but has the profile CRUD
+// Added Some Styling For My Jams
 import React from 'react';
-import { playAudioPreview } from '../utils/audioPlayer'; // Assuming this handles playback
+import { playAudioPreview } from '../utils/audioPlayer';
 import { useUser } from './AuthProvider';
 import { supabase } from '../supabase';
 
-const MySongCard = ({ song, onEdit, onDelete, onPublish }) => {
+const MySongCard = ({ song, onEdit, onDelete, onPublish, variant }) => {
   const { user } = useUser();
 
   const handleDelete = async () => {
@@ -14,7 +15,7 @@ const MySongCard = ({ song, onEdit, onDelete, onPublish }) => {
       if (error) {
         console.error('❌ Error deleting song:', error.message);
       } else {
-        onDelete?.(song.id); // Let parent refresh the list
+        onDelete?.(song.id);
       }
     }
   };
@@ -27,12 +28,21 @@ const MySongCard = ({ song, onEdit, onDelete, onPublish }) => {
     if (error) {
       console.error('❌ Error publishing song:', error.message);
     } else {
-      onPublish?.(song.id); // Let parent refresh the list
+      onPublish?.(song.id);
     }
   };
 
+  const cardStyle = variant === 'jamstack'
+    ? 'bg-blue-50 ring-2 ring-purple-300'
+    : 'bg-white';
+
   return (
-    <div className="bg-white rounded-2xl shadow-md p-4 mb-4 flex flex-col gap-2 relative">
+    <div className={`relative p-4 rounded-2xl shadow-md ${cardStyle}`}>
+      {variant === 'jamstack' && (
+        <div className="absolute top-2 left-2 bg-purple-600 text-white text-xs px-2 py-1 rounded-full shadow">
+          🎵 My Jam
+        </div>
+      )}
       {song.is_draft && (
         <div className="absolute top-2 right-2 text-xs bg-yellow-400 text-white px-2 py-1 rounded-full">
           Draft
@@ -40,28 +50,30 @@ const MySongCard = ({ song, onEdit, onDelete, onPublish }) => {
       )}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">{song.title}</h3>
-        <button onClick={() => playAudioPreview(song.audio_url)}>
-          🔊
-        </button>
+        <button onClick={() => playAudioPreview(song.audio_url)}>🔊</button>
       </div>
-      <div className="flex items-center justify-start gap-2 text-sm text-gray-600">
-        {song.genre && <span>🎵 {song.genre}</span>}
+      <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
+        {song.genre && <span>🎶 {song.genre}</span>}
         {song.created_at && <span>📅 {new Date(song.created_at).toLocaleDateString()}</span>}
       </div>
-      <div className="flex gap-2 mt-2">
-        <button
-          onClick={() => onEdit(song)}
-          className="text-blue-600 border border-blue-600 px-2 py-1 rounded hover:bg-blue-100 text-sm"
-        >
-          Edit
-        </button>
-        <button
-          onClick={handleDelete}
-          className="text-red-600 border border-red-600 px-2 py-1 rounded hover:bg-red-100 text-sm"
-        >
-          Delete
-        </button>
-        {song.is_draft && (
+      <div className="flex gap-2 mt-3">
+        {onEdit && (
+          <button
+            onClick={() => onEdit(song)}
+            className="text-blue-600 border border-blue-600 px-2 py-1 rounded hover:bg-blue-100 text-sm"
+          >
+            Edit
+          </button>
+        )}
+        {onDelete && (
+          <button
+            onClick={handleDelete}
+            className="text-red-600 border border-red-600 px-2 py-1 rounded hover:bg-red-100 text-sm"
+          >
+            Delete
+          </button>
+        )}
+        {song.is_draft && onPublish && (
           <button
             onClick={handlePublish}
             className="text-green-600 border border-green-600 px-2 py-1 rounded hover:bg-green-100 text-sm"
