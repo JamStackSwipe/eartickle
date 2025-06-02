@@ -1,15 +1,6 @@
 /**
  * 🎵 StackerScreen.js
- * 
- * JamStack autoplay screen. Plays user's favorited songs one-by-one.
- * Pulls from `jamstacksongs` table and displays each using <SongCard>.
- * Auto-plays next track when the current song ends.
- * 
- * ✅ Uses full SongCard layout for visual consistency
- * ✅ AutoPlay + Manual Skip (Next button)
- * 🔁 Could later support shuffle/repeat, mini-player, etc.
- * 
- * This is the "sit back and listen" mode for users' JamStack.
+ * Autoplay JamStack player screen
  */
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -23,6 +14,10 @@ const StackerScreen = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const audioRef = useRef(null);
 
+  // Shuffle helper
+  const shuffleArray = (arr) => [...arr].sort(() => Math.random() - 0.5);
+
+  // Load JamStack songs
   useEffect(() => {
     const fetchJamStack = async () => {
       const { data, error } = await supabase
@@ -31,25 +26,28 @@ const StackerScreen = () => {
         .eq('user_id', user.id);
 
       if (error) {
-        console.error('Error fetching JamStack:', error.message);
-      } else {
-        setSongs(data.map(entry => entry.songs));
+        console.error('❌ Error fetching JamStack:', error.message);
+      } else if (data?.length) {
+        const loadedSongs = data.map((entry) => entry.songs).filter((s) => s.audio);
+        setSongs(shuffleArray(loadedSongs));
+        setCurrentIndex(0); // reset index on load
       }
     };
 
     if (user?.id) fetchJamStack();
   }, [user?.id]);
 
+  // Handle autoplay
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || !songs[currentIndex]?.audio) return;
 
-    // Reset and play the new audio track
     audio.pause();
     audio.load();
-    audio.play().catch(() => {});
+    audio.play().catch(() => {
+      // silently ignore autoplay block
+    });
 
-    // Auto-skip listener
     const handleEnded = () => {
       setCurrentIndex((prev) => (prev + 1) % songs.length);
     };
@@ -58,10 +56,16 @@ const StackerScreen = () => {
     return () => {
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [currentIndex, songs.length]);
+  }, [currentIndex, songs]);
 
   if (!songs.length) {
-    return <div className="text-white text-center mt-10">No songs in your JamStack yet.</div>;
+    return (
+      <div className="text-white text-center mt-10">
+        No songs in your JamStack yet.
+        <br />
+        Go add some from Swipe or Charts!
+      </div>
+    );
   }
 
   const currentSong = songs[currentIndex];
@@ -76,12 +80,12 @@ const StackerScreen = () => {
         key={currentSong.id}
       />
 
-      <div className="flex justify-center mt-4">
+      <div className="flex justify-center mt-6">
         <button
           onClick={() => setCurrentIndex((prev) => (prev + 1) % songs.length)}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
         >
-          Next Song
+          ⏭️ Next Song
         </button>
       </div>
     </div>
