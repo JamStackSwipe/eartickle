@@ -3,30 +3,39 @@ import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../components/AuthProvider';
 
-const scatteredAssets = [
-  '/login-assets/cover1.jpg',
-  '/login-assets/cover2.jpg',
-  '/login-assets/cover3.jpg',
-  '/login-assets/cover4.jpg',
-  '/login-assets/cover5.jpg',
-  '🎵',
-  '🎶',
-  '🎤',
-  '🎸',
-  '🥁',
-];
-
 const LoginScreen = () => {
   const navigate = useNavigate();
   const { user } = useUser();
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [covers, setCovers] = useState([]);
+  const staticEmojis = ['🎵', '🎶', '🎤', '🎸', '🥁'];
 
   useEffect(() => {
     if (user) {
       navigate('/swipe');
     }
   }, [user]);
+
+  useEffect(() => {
+    const fetchCovers = async () => {
+      const { data, error } = await supabase
+        .from('songs')
+        .select('cover')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('❌ Error fetching song covers:', error.message);
+        return;
+      }
+
+      const urls = data.map((s) => s.cover).filter(Boolean);
+      setCovers(urls);
+    };
+
+    fetchCovers();
+  }, []);
 
   const handleOAuthLogin = async (provider) => {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -59,17 +68,17 @@ const LoginScreen = () => {
 
   return (
     <div className="relative min-h-screen bg-white overflow-hidden">
-      {/* 🎨 Scattered Background Assets */}
-      {scatteredAssets.map((item, i) => {
+      {/* 🎨 Background: scattered covers and emojis */}
+      {[...covers, ...staticEmojis].map((item, i) => {
         const size = Math.random() * 40 + 40;
         const top = Math.random() * 100;
         const left = Math.random() * 100;
 
-        return typeof item === 'string' && item.startsWith('/login-assets') ? (
+        return item.startsWith('http') ? (
           <img
             key={i}
             src={item}
-            alt={`bg-asset-${i}`}
+            alt={`cover-${i}`}
             className="absolute opacity-20"
             style={{
               width: size,
@@ -93,7 +102,7 @@ const LoginScreen = () => {
         );
       })}
 
-      {/* 🧾 Login Box */}
+      {/* 🧾 Login Card */}
       <div className="relative z-10 flex flex-col items-center justify-center px-4 py-20 text-center">
         <div className="mb-10 select-none">
           <a href="/" className="inline-block transition-transform hover:scale-105">
