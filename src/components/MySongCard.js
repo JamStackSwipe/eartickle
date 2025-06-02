@@ -1,7 +1,11 @@
 // For The Profile Page Same Base Logic as SongCard.js but has the profile CRUD
 // Added Some Styling For My Jams
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../supabase';
 import ReactionStatsBar from './ReactionStatsBar';
+import toast from 'react-hot-toast';
+
+const tickleSound = new Audio('/sounds/tickle.mp3');
 
 const MySongCard = ({ song, variant, onDelete, onPublish }) => {
   if (!song || !song.id || !song.artist_id) return null;
@@ -13,7 +17,34 @@ const MySongCard = ({ song, variant, onDelete, onPublish }) => {
     cover_url,
     is_draft,
     created_at,
+    fires = 0,
+    loves = 0,
+    sads = 0,
+    bullseyes = 0,
   } = song;
+
+  const [localReactions, setLocalReactions] = useState({ fires, loves, sads, bullseyes });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const { data, error } = await supabase
+        .from('songs')
+        .select('fires, loves, sads, bullseyes')
+        .eq('id', id)
+        .single();
+
+      if (data) {
+        setLocalReactions({
+          fires: data.fires || 0,
+          loves: data.loves || 0,
+          sads: data.sads || 0,
+          bullseyes: data.bullseyes || 0,
+        });
+      }
+    };
+
+    fetchStats();
+  }, [id]);
 
   const handleDelete = () => {
     if (onDelete) onDelete(id);
@@ -51,7 +82,7 @@ const MySongCard = ({ song, variant, onDelete, onPublish }) => {
 
       {song && song.id && song.artist_id && (
         <div className="mt-2">
-          <ReactionStatsBar song={song} />
+          <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
         </div>
       )}
 
