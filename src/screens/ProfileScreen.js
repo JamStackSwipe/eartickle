@@ -249,14 +249,7 @@ const ProfileScreen = () => {
                 onPublish={song.is_draft ? () => handlePublish(song.id) : undefined}
                 showStripeButton={!profile.stripe_account_id && !song.is_draft}
               />
-              {profile.is_artist && !song.is_draft && (
-                <SpendTickles
-                  userId={user.id}
-                  songId={song.id}
-                  tickleBalance={profile.tickle_balance}
-                  onSpent={fetchProfile}
-                />
-              )}
+       
             </div>
           ))}
         </div>
