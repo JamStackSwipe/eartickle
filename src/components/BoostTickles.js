@@ -44,16 +44,11 @@ const BoostTickles = ({ songId, userId }) => {
     if (res.ok) {
       toast.success(`${amount} Tickles used!`);
       playTickleSpecial();
-
-      // Animate the boost
       const card = document.querySelector(`[data-song-id="${songId}"]`);
       if (card) {
         card.classList.add('animate-boost');
         setTimeout(() => card.classList.remove('animate-boost'), 1000);
       }
-
-      // ✅ Notify ReactionStatsBar to reload tickle balance
-      window.dispatchEvent(new CustomEvent('ticklesUpdated'));
     } else {
       toast.error(result.error || 'Boost failed');
     }
