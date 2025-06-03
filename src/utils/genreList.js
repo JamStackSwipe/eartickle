@@ -1,40 +1,22 @@
-// src/utils/genreList.js
-
 export const genreFlavorMap = {
-  country: {
-    label: 'Country',
-    emoji: '🤠',
+  country_roots: {
+    label: 'Country & Roots 🤠',
     color: 'amber',
-    hex: '#f59e0b', // amber-500
   },
-  christian: {
-    label: 'Christian',
-    emoji: '🙏',
-    color: 'blue',
-    hex: '#3b82f6', // blue-500
-  },
-  pop: {
-    label: 'Pop',
-    emoji: '🎤',
-    color: 'pink',
-    hex: '#ec4899', // pink-500
-  },
-  hiphop: {
-    label: 'Hip-Hop',
-    emoji: '🎧',
+  hiphop_flow: {
+    label: 'Hip-Hop & Flow 🎤',
     color: 'purple',
-    hex: '#8b5cf6', // purple-500
   },
-  edm: {
-    label: 'EDM',
-    emoji: '🔊',
-    color: 'cyan',
-    hex: '#06b6d4', // cyan-500
-  },
-  rock: {
-    label: 'Rock',
-    emoji: '🎸',
+  rock_raw: {
+    label: 'Rock & Raw 🤘',
     color: 'red',
-    hex: '#ef4444', // red-500
+  },
+  pop_shine: {
+    label: 'Pop & Shine ✨',
+    color: 'pink',
+  },
+  spiritual_soul: {
+    label: 'Spiritual & Soul ✝️',
+    color: 'blue',
   },
 };
