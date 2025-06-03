@@ -129,7 +129,8 @@ const SongCard = ({ song, user }) => {
     <div
       ref={cardRef}
       data-song-id={song.id}
-      className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${ringClass} ${flavor ? 'animate-genre-pulse' : ''}`}
+      className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${ringClass} ${flavor ? 'hover:animate-genre-pulse' : ''}
+      
       style={flavor ? { '--glow-color': `var(--tw-${glowColor}-500)` } : {}}
     >
       <div className="relative">
