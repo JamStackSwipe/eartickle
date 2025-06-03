@@ -28,9 +28,7 @@ const BoostTickles = ({ userId, songId }) => {
   const handleBoost = async (amount, label) => {
     if (!userId || !songId) return;
 
-    const cost = Number.parseInt(amount, 10); // ✅ force integer for RPC
-
-    if ((balance ?? 0) < cost) {
+    if ((balance ?? 0) < amount) {
       toast.error('Not enough Tickles!');
       return;
     }
@@ -41,7 +39,7 @@ const BoostTickles = ({ userId, songId }) => {
       user_id_input: userId,
       song_id_input: songId,
       reason: 'boost',
-      cost,
+      cost: Number.parseInt(amount, 10),
     });
 
     if (error) {
@@ -54,6 +52,7 @@ const BoostTickles = ({ userId, songId }) => {
     toast.success(`${label} sent!`);
     boostSound.play();
 
+    // Visual flash effect on card
     const card = document.querySelector(`[data-song-id="${songId}"]`);
     if (card) {
       card.classList.add('animate-pulse', 'ring-4', 'ring-lime-400');
@@ -62,7 +61,9 @@ const BoostTickles = ({ userId, songId }) => {
       }, 1000);
     }
 
-    await fetchBalance();
+    // Instantly update balance
+    setBalance((prev) => (prev ?? 0) - amount);
+    await fetchBalance(); // Silent confirm
     setLoading(false);
   };
 
@@ -73,19 +74,27 @@ const BoostTickles = ({ userId, songId }) => {
   ];
 
   return (
-    <div className="mt-3 flex gap-2 justify-end flex-wrap">
-      {boostOptions.map(({ amount, label, color }) => (
-        <button
-          key={amount}
-          onClick={() => handleBoost(amount, label)}
-          disabled={loading}
-          className={`px-3 py-1 text-sm rounded-full font-semibold transition ${color} ${
-            loading ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
-        >
-          {label} ({amount})
-        </button>
-      ))}
+    <div className="mt-3">
+      {balance !== null && (
+        <div className="text-sm text-right text-gray-400 mb-2">
+          Available Tickles: <span className="text-white font-semibold">{balance}</span>
+        </div>
+      )}
+
+      <div className="flex gap-2 justify-end flex-wrap">
+        {boostOptions.map(({ amount, label, color }) => (
+          <button
+            key={amount}
+            onClick={() => handleBoost(amount, label)}
+            disabled={loading}
+            className={`px-3 py-1 text-sm rounded-full font-semibold transition ${color} ${
+              loading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            {label} ({amount})
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
