@@ -47,15 +47,13 @@ const ReactionStatsBar = ({ song }) => {
     loadStats();
   }, [song.id, user]);
 
-  useEffect(() => {
-  const refreshFromBoost = () => loadStats();
-  const el = document.querySelector(`[data-song-id="${song.id}"]`);
-  if (el) el.addEventListener('boosted', refreshFromBoost);
+useEffect(() => {
+  const handleTicklesUpdated = () => loadStats();
+  window.addEventListener('ticklesUpdated', handleTicklesUpdated);
   return () => {
-    if (el) el.removeEventListener('boosted', refreshFromBoost);
+    window.removeEventListener('ticklesUpdated', handleTicklesUpdated);
   };
-}, [song.id]);
-
+}, []);
 
   const handleEmojiClick = async (emoji) => {
     if (!user) return toast.error('Login to react');
