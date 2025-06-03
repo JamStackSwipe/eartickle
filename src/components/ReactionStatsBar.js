@@ -1,10 +1,12 @@
+// src/components/ReactionStatsBar.js
+
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
 import { playTickle } from '../utils/tickleSound';
 import toast from 'react-hot-toast';
 import AddToJamStackButton from './AddToJamStackButton';
-import BoostTickles from './BoostTickles'; // ✅ Import
+import BoostTickles from './BoostTickles'; // ✅ NEW: Boost tickles!
 
 const emojis = ['🔥', '❤️', '😢', '🎯'];
 
@@ -66,6 +68,7 @@ const ReactionStatsBar = ({ song }) => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
+
     if (!token) return toast.error('Not authorized');
 
     const res = await fetch('/api/send-tickle', {
@@ -86,7 +89,7 @@ const ReactionStatsBar = ({ song }) => {
       playTickle();
       toast.success('1 Tickle sent!');
       setTickleBalance((prev) => (prev || 1) - 1);
-      loadStats(); // Refresh stats
+      loadStats(); // Refresh stats after sending
     } else {
       toast.error(result.error || 'Failed to send tickle');
     }
@@ -100,9 +103,9 @@ const ReactionStatsBar = ({ song }) => {
             key={emoji}
             onClick={() => handleEmojiClick(emoji)}
             disabled={hasReacted[emoji]}
-            className={`flex items-center gap-1 ${hasReacted[emoji] ? 'opacity-50' : 'hover:scale-110'} transition-transform`}
+            className={\`flex items-center gap-1 \${hasReacted[emoji] ? 'opacity-50' : 'hover:scale-110'} transition-transform\`}
           >
-            <span>{emoji}</span>
+            <span className="text-xl">{emoji}</span>
             <span>{stats[emoji] || 0}</span>
           </button>
         ))}
@@ -111,20 +114,20 @@ const ReactionStatsBar = ({ song }) => {
       </div>
 
       <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
-        <AddToJamStackButton songId={song.id} user={user} className="bg-yellow-400 text-black hover:bg-yellow-500" />
-
+        <AddToJamStackButton songId={song.id} user={user} />
         <div className="text-xs text-yellow-300 font-semibold bg-zinc-800 px-2 py-1 rounded shadow">
           🎶 Tickles Left: {loading ? '...' : tickleBalance}
         </div>
-
         <button
           onClick={handleSendTickle}
           className="px-3 py-1 bg-yellow-400 rounded text-black text-sm font-medium hover:bg-yellow-500"
         >
           🎁 Send Tickle
         </button>
+      </div>
 
-        {user && <BoostTickles songId={song.id} userId={user.id} />} {/* ✅ Boost */}
+      <div className="mt-3">
+        <BoostTickles songId={song.id} user={user} onBoosted={loadStats} />
       </div>
     </div>
   );
