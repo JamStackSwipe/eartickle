@@ -113,19 +113,23 @@ const ReactionStatsBar = ({ song }) => {
       </div>
 
       {/* Jam + Tickle */}
-      <div className="flex items-center justify-between mt-3">
-        <AddToJamStackButton songId={song.id} user={user} className="bg-yellow-400 text-black hover:bg-yellow-500" />
-        <div className="text-xs text-yellow-300 font-semibold bg-zinc-800 px-2 py-1 rounded shadow">
-  🎶 Tickles Left: {loading ? '...' : tickleBalance}
+      // Inside ReactionStatsBar.js, replace the lower block with:
+
+<div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
+  <AddToJamStackButton songId={song.id} user={user} />
+  
+  <div className="text-sm font-semibold text-yellow-300 bg-zinc-800 px-3 py-1 rounded-full shadow">
+    🎶 My Tickles: {loading ? '...' : tickleBalance}
+  </div>
+
+  <button
+    onClick={handleSendTickle}
+    className="px-3 py-1 text-sm rounded-full font-semibold transition bg-yellow-400 text-black hover:bg-yellow-500"
+  >
+    🎁 Send Tickle
+  </button>
 </div>
 
-        <button
-          onClick={handleSendTickle}
-          className="px-3 py-1 bg-yellow-400 rounded text-black text-sm font-medium hover:bg-yellow-500"
-        >
-          🎁 Send Tickle
-        </button>
-      </div>
     </div>
   );
 };
