@@ -128,18 +128,28 @@ const ReactionStatsBar = ({ songId, artistId }) => {
 
   return (
     <div className="w-full text-sm text-white mt-2 px-2 space-y-2">
-      <div className="flex items-center justify-between">
-        <AddToJamStackButton songId={songId} />
-        <div className="text-center text-xs text-pink-300">
+
+      <div className="flex items-center justify-between space-x-2 text-sm h-8">
+        <div className="flex-1">
+          <AddToJamStackButton
+            songId={songId}
+            className="w-full h-8 px-3 py-1 rounded-md bg-black bg-opacity-40 text-white text-sm"
+          />
+        </div>
+
+        <div className="flex items-center justify-center flex-shrink-0 min-w-[100px] h-8 px-3 py-1 rounded-md bg-black bg-opacity-40 text-pink-300 text-sm">
           🎁 {tickleBalance} Tickles
         </div>
-        <button
-          onClick={handleSendTickle}
-          disabled={sending || tickleBalance < 1}
-          className="text-lg disabled:opacity-50 hover:scale-110 transition"
-        >
-          🎁 Send Tickle
-        </button>
+
+        <div className="flex-1 text-right">
+          <button
+            onClick={handleSendTickle}
+            disabled={sending || tickleBalance < 1}
+            className="h-8 px-3 py-1 rounded-md bg-black bg-opacity-40 text-white text-sm disabled:opacity-50 hover:scale-105 transition"
+          >
+            🎁 Send Tickle
+          </button>
+        </div>
       </div>
 
       <div className="flex justify-center items-center space-x-3 text-lg">
