@@ -5,7 +5,7 @@ import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
 import { playTickle } from '../utils/tickleSound';
 import toast from 'react-hot-toast';
-import AddToJamStackButton from './AddToJamStackButton'; // ✅ Added back
+import AddToJamStackButton from './AddToJamStackButton';
 
 const emojis = ['🔥', '💖', '😭', '🎯'];
 
@@ -67,7 +67,6 @@ const ReactionStatsBar = ({ song }) => {
 
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
-
     if (!token) return toast.error('Not authorized');
 
     const res = await fetch('/api/send-tickle', {
@@ -96,7 +95,8 @@ const ReactionStatsBar = ({ song }) => {
 
   return (
     <div className="w-full mt-2 text-sm">
-      <div className="flex flex-wrap items-center gap-4">
+      {/* Emoji Reaction Row */}
+      <div className="flex justify-center items-center gap-6 text-2xl font-semibold mb-3">
         {emojis.map((emoji) => (
           <button
             key={emoji}
@@ -105,13 +105,14 @@ const ReactionStatsBar = ({ song }) => {
             className={`flex items-center gap-1 ${hasReacted[emoji] ? 'opacity-50' : 'hover:scale-110'} transition-transform`}
           >
             <span>{emoji}</span>
-            <span>{stats[emoji] || 0}</span>
+            <span className="text-sm">{stats[emoji] || 0}</span>
           </button>
         ))}
-        <span className="text-gray-400">👁️ {song.views || 0}</span>
-        <span className="text-gray-400">📥 {song.jams || 0}</span>
+        <span className="text-gray-400 text-sm">👁️ {song.views || 0}</span>
+        <span className="text-gray-400 text-sm">📥 {song.jams || 0}</span>
       </div>
 
+      {/* Jam + Tickle */}
       <div className="flex items-center justify-between mt-3">
         <AddToJamStackButton songId={song.id} user={user} className="bg-yellow-400 text-black hover:bg-yellow-500" />
         <div className="text-xs text-yellow-300 font-semibold bg-zinc-800 px-2 py-1 rounded shadow">
