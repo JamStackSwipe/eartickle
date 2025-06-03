@@ -6,9 +6,9 @@ import toast from 'react-hot-toast';
 import { playTickleSpecial } from '../utils/tickleSound';
 
 const boostOptions = [
-  { amount: 5, label: '⚡ Boost', color: 'bg-yellow-400 text-black hover:bg-yellow-500' },
-  { amount: 10, label: '🚀 Mega', color: 'bg-pink-500 text-white hover:bg-pink-600' },
-  { amount: 25, label: '🌟 Super', color: 'bg-purple-600 text-white hover:bg-purple-700' },
+  { amount: 5, label: '⚡ Boost 5', color: 'bg-yellow-400 text-black hover:bg-yellow-500' },
+  { amount: 10, label: '🚀 Mega 10', color: 'bg-pink-500 text-white hover:bg-pink-600' },
+  { amount: 25, label: '🌟 Super 25', color: 'bg-purple-600 text-white hover:bg-purple-700' },
 ];
 
 const BoostTickles = ({ songId, userId }) => {
