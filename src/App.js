@@ -19,6 +19,7 @@ function App() {
   return (
     <>
       <Header />
+      <FooterGlobal>
       <Routes>
         <Route path="/" element={<HomePage />} /> {/* ✅ Set homepage */}
         <Route path="/auth" element={<LoginScreen />} />
