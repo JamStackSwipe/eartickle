@@ -1,133 +1,153 @@
-// src/components/ReactionStatsBar.js
+// ReactionStatsBar.js — full working version with ❤️ 😭 fix, tickle balance, sound, and BoostTickles
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
-import { playTickle } from '../utils/tickleSound';
-import toast from 'react-hot-toast';
+import { playReaction, playTickle } from '../utils/sounds';
+import BoostTickles from './BoostTickles';
 import AddToJamStackButton from './AddToJamStackButton';
-import BoostTickles from './BoostTickles'; // ✅ NEW: Boost tickles!
 
-const emojis = ['🔥', '❤️', '😢', '🎯'];
+const emojiMap = {
+  '🔥': 'fire',
+  '❤️': 'heart',
+  '😭': 'cry', // gushing cry
+  '🎯': 'target',
+  '👁️': 'views',
+  '📥': 'jamstack'
+};
 
-const ReactionStatsBar = ({ song }) => {
+const ReactionStatsBar = ({ songId, artistId }) => {
   const { user } = useUser();
-  const [stats, setStats] = useState({});
-  const [tickleBalance, setTickleBalance] = useState(null);
-  const [hasReacted, setHasReacted] = useState({});
-  const [loading, setLoading] = useState(true);
-
-  const loadStats = async () => {
-    const [{ data: reactionsData }, { data: balanceData }, { data: userReactions }] = await Promise.all([
-      supabase.from('song_reactions').select('emoji').eq('song_id', song.id),
-      user
-        ? supabase.from('profiles').select('tickle_balance').eq('id', user.id).maybeSingle()
-        : { data: null },
-      user
-        ? supabase.from('song_reactions').select('emoji').eq('song_id', song.id).eq('user_id', user.id)
-        : { data: [] },
-    ]);
-
-    const counts = {};
-    reactionsData?.forEach(({ emoji }) => {
-      counts[emoji] = (counts[emoji] || 0) + 1;
-    });
-
-    const reacted = {};
-    userReactions?.forEach(({ emoji }) => {
-      reacted[emoji] = true;
-    });
-
-    setStats(counts);
-    setHasReacted(reacted);
-    setTickleBalance(balanceData?.tickle_balance ?? 0);
-    setLoading(false);
-  };
+  const [reactions, setReactions] = useState({});
+  const [userReactions, setUserReactions] = useState({});
+  const [tickleBalance, setTickleBalance] = useState(0);
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    loadStats();
-  }, [song.id, user]);
+    if (songId) {
+      fetchReactions();
+      fetchUserReactions();
+    }
+  }, [songId]);
 
-  const handleEmojiClick = async (emoji) => {
-    if (!user) return toast.error('Login to react');
-    if (hasReacted[emoji]) return toast('Already reacted');
+  useEffect(() => {
+    if (user?.id) fetchTickleBalance();
+  }, [user]);
 
-    const { error } = await supabase.from('song_reactions').insert([
-      { user_id: user.id, song_id: song.id, emoji },
-    ]);
+  const fetchReactions = async () => {
+    const { data, error } = await supabase
+      .from('song_reactions')
+      .select('*')
+      .eq('song_id', songId);
 
     if (!error) {
-      setStats((prev) => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
-      setHasReacted((prev) => ({ ...prev, [emoji]: true }));
+      const grouped = {};
+      data.forEach(({ emoji }) => {
+        grouped[emoji] = (grouped[emoji] || 0) + 1;
+      });
+      setReactions(grouped);
+    }
+  };
+
+  const fetchUserReactions = async () => {
+    const { data, error } = await supabase
+      .from('reactions')
+      .select('*')
+      .eq('user_id', user?.id)
+      .eq('song_id', songId);
+
+    if (!error) {
+      const userEmojis = {};
+      data.forEach(({ emoji }) => {
+        userEmojis[emoji] = true;
+      });
+      setUserReactions(userEmojis);
+    }
+  };
+
+  const fetchTickleBalance = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('tickle_balance')
+      .eq('id', user?.id)
+      .single();
+
+    if (!error && data) setTickleBalance(data.tickle_balance || 0);
+  };
+
+  const handleReaction = async (emoji) => {
+    if (!user || userReactions[emoji]) return;
+
+    const { error } = await supabase.from('reactions').insert({
+      user_id: user.id,
+      song_id: songId,
+      emoji,
+    });
+
+    if (!error) {
+      playReaction(emoji);
+      fetchReactions();
+      fetchUserReactions();
     }
   };
 
   const handleSendTickle = async () => {
-    if (!user) return toast.error('Login required');
-    if ((tickleBalance ?? 0) < 1) return toast.error('Not enough Tickles');
+    if (!user || !artistId || sending || tickleBalance < 1) return;
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData?.session?.access_token;
+    setSending(true);
 
-    if (!token) return toast.error('Not authorized');
-
-    const res = await fetch('/api/send-tickle', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        artist_id: song.user_id,
-        song_id: song.id,
-        emoji: '🎁',
-      }),
+    const { error } = await supabase.rpc('spend_tickles', {
+      user_id_input: user.id,
+      song_id_input: songId,
+      reason: '🎁',
+      cost: 1,
     });
 
-    const result = await res.json();
-    if (res.ok) {
+    if (!error) {
       playTickle();
-      toast.success('1 Tickle sent!');
-      setTickleBalance((prev) => (prev || 1) - 1);
-      loadStats(); // Refresh stats after sending
-    } else {
-      toast.error(result.error || 'Failed to send tickle');
+      fetchTickleBalance();
     }
+
+    setSending(false);
   };
 
-  return (
-    <div className="w-full mt-2 text-sm">
-      <div className="flex flex-wrap items-center gap-4">
-        {emojis.map((emoji) => (
-          <button
-            key={emoji}
-            onClick={() => handleEmojiClick(emoji)}
-            disabled={hasReacted[emoji]}
-            className={\`flex items-center gap-1 \${hasReacted[emoji] ? 'opacity-50' : 'hover:scale-110'} transition-transform\`}
-          >
-            <span className="text-xl">{emoji}</span>
-            <span>{stats[emoji] || 0}</span>
-          </button>
-        ))}
-        <span className="text-gray-400">👁️ {song.views || 0}</span>
-        <span className="text-gray-400">📥 {song.jams || 0}</span>
-      </div>
+  const renderStat = (emoji) => (
+    <button
+      key={emoji}
+      onClick={() => handleReaction(emoji)}
+      className={`text-xl mx-1 ${userReactions[emoji] ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
+    >
+      {emoji} {reactions[emoji] || 0}
+    </button>
+  );
 
-      <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
-        <AddToJamStackButton songId={song.id} user={user} />
-        <div className="text-xs text-yellow-300 font-semibold bg-zinc-800 px-2 py-1 rounded shadow">
-          🎶 Tickles Left: {loading ? '...' : tickleBalance}
+  return (
+    <div className="w-full text-sm text-white mt-2 px-2 space-y-2">
+      <div className="flex items-center justify-between">
+        <AddToJamStackButton songId={songId} />
+        <div className="text-center text-xs text-gray-300">
+          🎁 Tickles: {tickleBalance}
         </div>
         <button
           onClick={handleSendTickle}
-          className="px-3 py-1 bg-yellow-400 rounded text-black text-sm font-medium hover:bg-yellow-500"
+          disabled={sending || tickleBalance < 1}
+          className="text-lg disabled:opacity-50 hover:scale-110 transition"
         >
           🎁 Send Tickle
         </button>
       </div>
 
-      <div className="mt-3">
-        <BoostTickles songId={song.id} user={user} onBoosted={loadStats} />
+      <div className="flex justify-center items-center space-x-3 text-lg">
+        {renderStat('🔥')}
+        {renderStat('❤️')}
+        {renderStat('😭')}
+        {renderStat('🎯')}
+        {renderStat('👁️')}
+        {renderStat('📥')}
+      </div>
+
+      <div className="flex justify-center">
+        <BoostTickles songId={songId} artistId={artistId} onBoost={fetchTickleBalance} />
       </div>
     </div>
   );
