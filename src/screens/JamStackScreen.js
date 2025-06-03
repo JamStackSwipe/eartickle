@@ -16,7 +16,7 @@ const StackerScreen = () => {
     const fetchJamStack = async () => {
       const { data, error } = await supabase
         .from('jamstacksongs')
-        .select('id, song_id, songs:song_id(id, title, audio, cover, artist, artist_id)')
+        .select('id, title, cover, audio, artist, genre, genre_flavor, artist_id, fires, loves, sads, bullseyes, views, jams')
         .eq('user_id', user.id);
 
       if (error) {
