@@ -1,20 +1,20 @@
 // src/components/BoostTickles.js
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import { playTickleSpecial } from '../utils/tickleSound';
 
 const boostOptions = [
-  { amount: 5, label: '1 Hour Boost', color: 'bg-yellow-400 hover:bg-yellow-300' },
-  { amount: 10, label: '3 Hour Boost', color: 'bg-pink-400 hover:bg-pink-300' },
-  { amount: 25, label: 'All Day Boost', color: 'bg-purple-500 hover:bg-purple-400' },
+  { amount: 5, label: '⚡ Boost', color: 'bg-yellow-400 text-black hover:bg-yellow-500' },
+  { amount: 10, label: '🚀 Mega', color: 'bg-pink-500 text-white hover:bg-pink-600' },
+  { amount: 25, label: '🌟 Super', color: 'bg-purple-600 text-white hover:bg-purple-700' },
 ];
 
-const BoostTickles = ({ songId, userId }) => {
+const BoostTickles = ({ songId, userId, onBoostComplete }) => {
   const [loading, setLoading] = useState(false);
 
-  const handleBoost = async (amount, label) => {
+  const handleBoost = async (amount, reason) => {
     setLoading(true);
 
     const { data: sessionData } = await supabase.auth.getSession();
@@ -26,33 +26,34 @@ const BoostTickles = ({ songId, userId }) => {
       return;
     }
 
-    const res = await fetch('/api/spend-tickle', {
+    const res = await fetch('/api/spend-tickles', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        song_id: songId,
-        user_id: userId,
+        user_id_input: userId,
+        song_id_input: songId,
+        reason,
         cost: amount,
-        reason: 'boost',
       }),
     });
 
     const result = await res.json();
-
     if (res.ok) {
+      toast.success(`${amount} Tickles used!`);
       playTickleSpecial();
-      toast.success(`${label} activated!`);
 
-      // Flash the song card
-      const el = document.querySelector(`[data-song-id="${songId}"]`);
-      if (el) {
-        el.classList.add('animate-boost');
-        el.dispatchEvent(new Event('boosted'));
-        setTimeout(() => el.classList.remove('animate-boost'), 1000);
+      // Trigger card flash animation
+      const card = document.querySelector(`[data-song-id="${songId}"]`);
+      if (card) {
+        card.classList.add('animate-boost');
+        setTimeout(() => card.classList.remove('animate-boost'), 1000);
       }
+
+      // Refresh balance and stats if parent provided a hook
+      if (typeof onBoostComplete === 'function') onBoostComplete();
     } else {
       toast.error(result.error || 'Boost failed');
     }
@@ -61,19 +62,21 @@ const BoostTickles = ({ songId, userId }) => {
   };
 
   return (
-    <div className="flex flex-wrap justify-center gap-2">
-      {boostOptions.map(({ amount, label, color }) => (
-        <button
-          key={amount}
-          onClick={() => handleBoost(amount, label)}
-          disabled={loading}
-          className={`px-3 py-1 text-sm rounded-full font-semibold transition-all hover:scale-105 ${color} ${
-            loading ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
-        >
-          🚀 {label}
-        </button>
-      ))}
+    <div className="mt-3 flex justify-center">
+      <div className="flex flex-wrap justify-center gap-2">
+        {boostOptions.map(({ amount, label, color }) => (
+          <button
+            key={amount}
+            onClick={() => handleBoost(amount, label)}
+            disabled={loading}
+            className={`px-3 py-1 text-sm rounded-full font-semibold transition ${color} ${
+              loading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
