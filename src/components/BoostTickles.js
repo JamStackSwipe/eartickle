@@ -1,90 +1,77 @@
 // src/components/BoostTickles.js
 
-import { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
+import { playTickleSpecial } from '../utils/tickleSound';
 
-const boostSound = new Audio('/sounds/tickle-welcome.mp3');
+const boostOptions = [
+  { amount: 5, label: '⚡ Boost', color: 'bg-yellow-400 text-black hover:bg-yellow-500' },
+  { amount: 10, label: '🚀 Mega', color: 'bg-pink-500 text-white hover:bg-pink-600' },
+  { amount: 25, label: '🌟 Super', color: 'bg-purple-600 text-white hover:bg-purple-700' },
+];
 
-const BoostTickles = ({ userId, songId }) => {
-  const [balance, setBalance] = useState(null);
+const BoostTickles = ({ songId, userId }) => {
   const [loading, setLoading] = useState(false);
 
-  const fetchBalance = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('tickle_balance')
-      .eq('id', userId)
-      .single();
-
-    if (!error && data) {
-      setBalance(data.tickle_balance);
-    }
-  };
-
-  useEffect(() => {
-    if (userId) fetchBalance();
-  }, [userId]);
-
-  const handleBoost = async (amount, label) => {
-    if (!userId || !songId) return;
-
-    if ((balance ?? 0) < amount) {
-      toast.error('Not enough Tickles!');
-      return;
-    }
-
+  const handleBoost = async (amount, reason) => {
     setLoading(true);
 
-    const { error } = await supabase.rpc('spend_tickles', {
-      user_id_input: userId,
-      song_id_input: songId,
-      reason: 'boost',
-      cost: Number.parseInt(amount, 10),
-    });
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
 
-    if (error) {
-      console.error('❌ Boost RPC failed:', error.message);
-      toast.error('Boost failed.');
+    if (!token) {
+      toast.error('Not logged in');
       setLoading(false);
       return;
     }
 
-    toast.success(`${label} sent!`);
-    boostSound.play();
+    const res = await fetch('/api/spend-tickles', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        user_id_input: userId,
+        song_id_input: songId,
+        reason,
+        cost: amount,
+      }),
+    });
 
-    const card = document.querySelector(`[data-song-id="${songId}"]`);
-    if (card) {
-      card.classList.add('animate-pulse', 'ring-4', 'ring-lime-400');
-      setTimeout(() => {
-        card.classList.remove('animate-pulse', 'ring-4', 'ring-lime-400');
-      }, 1000);
+    const result = await res.json();
+    if (res.ok) {
+      toast.success(`${amount} Tickles used!`);
+      playTickleSpecial();
+      const card = document.querySelector(`[data-song-id="${songId}"]`);
+      if (card) {
+        card.classList.add('animate-boost');
+        setTimeout(() => card.classList.remove('animate-boost'), 1000);
+      }
+    } else {
+      toast.error(result.error || 'Boost failed');
     }
 
-    await fetchBalance(); // silently refresh
     setLoading(false);
   };
 
-  const boostOptions = [
-    { amount: 5, label: '🎁 Boost', color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-    { amount: 10, label: '🔥 Mega', color: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
-    { amount: 25, label: '🚀 Super', color: 'bg-rose-100 text-rose-700 hover:bg-rose-200' },
-  ];
-
   return (
-    <div className="mt-3 flex gap-2 justify-end flex-wrap">
-      {boostOptions.map(({ amount, label, color }) => (
-        <button
-          key={amount}
-          onClick={() => handleBoost(amount, label)}
-          disabled={loading}
-          className={`px-3 py-1 text-sm rounded-full font-semibold transition ${color} ${
-            loading ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
-        >
-          {label} ({amount})
-        </button>
-      ))}
+    <div className="mt-3 flex justify-center">
+      <div className="flex flex-wrap justify-center gap-2">
+        {boostOptions.map(({ amount, label, color }) => (
+          <button
+            key={amount}
+            onClick={() => handleBoost(amount, label)}
+            disabled={loading}
+            className={`px-3 py-1 text-sm rounded-full font-semibold transition ${color} ${
+              loading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
