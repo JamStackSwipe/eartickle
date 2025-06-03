@@ -1,106 +1,109 @@
 // src/components/SongCard.js
-import React, { useRef, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+// 🚫 DO NOT MODIFY WITHOUT OWNER APPROVAL
+
+import { useState, useEffect, useRef } from 'react';
+import { supabase } from '../supabase';
+import toast from 'react-hot-toast';
 import ReactionStatsBar from './ReactionStatsBar';
 
-const getFlavor = (genre) => {
-  switch (genre) {
-    case 'Country':
-      return { label: 'Country', emoji: '🤠', ring: 'ring-yellow-400' };
-    case 'Christian':
-      return { label: 'Christian', emoji: '🙏', ring: 'ring-blue-400' };
-    case 'Pop':
-      return { label: 'Pop', emoji: '🎤', ring: 'ring-pink-400' };
-    case 'Hip-Hop':
-      return { label: 'Hip-Hop', emoji: '🎧', ring: 'ring-red-400' };
-    case 'Rock':
-      return { label: 'Rock', emoji: '🎸', ring: 'ring-orange-400' };
-    default:
-      return { label: genre, emoji: '🎵', ring: 'ring-gray-500' };
-  }
+const tickleSound = new Audio('/sounds/tickle.mp3');
+
+const genreLabels = {
+  country_roots: { name: 'Country & Roots', color: 'bg-yellow-400 text-black' },
+  hiphop_flow: { name: 'Hip-Hop & Flow', color: 'bg-gray-500 text-white' },
+  rock_raw: { name: 'Rock & Raw', color: 'bg-red-500 text-white' },
+  pop_shine: { name: 'Pop & Shine', color: 'bg-pink-500 text-white' },
+  spiritual_soul: { name: 'Spiritual & Soul', color: 'bg-purple-500 text-white' },
 };
 
-const SongCard = ({ songId, artistId, title, artist, audio, cover, genre }) => {
+const flavorGlowMap = {
+  country_roots: 'shadow-yellow-300 ring-yellow-400',
+  hiphop_flow: 'shadow-gray-400 ring-gray-500',
+  rock_raw: 'shadow-red-400 ring-red-500',
+  pop_shine: 'shadow-pink-300 ring-pink-400',
+  spiritual_soul: 'shadow-purple-400 ring-purple-500',
+};
+
+const flavorLabelMap = {
+  country_roots: 'Country & Roots 🤠',
+  hiphop_flow: 'Hip-Hop & Flow 🎤',
+  rock_raw: 'Rock & Raw 🎸',
+  pop_shine: 'Pop & Shine ✨',
+  spiritual_soul: 'Spiritual & Soul ✝️',
+};
+
+const SongCard = ({ song, user }) => {
   const audioRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const flavor = getFlavor(genre);
+  const cardRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  const glowStyle = flavorGlowMap[song.genre_flavor] || '';
+  const genreInfo = genreLabels[song.genre_flavor];
 
   useEffect(() => {
-    const stopOthers = () => {
-      document.querySelectorAll('audio').forEach((el) => {
-        if (el !== audioRef.current) el.pause();
-      });
-    };
-    stopOthers();
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.5 }
+    );
+    if (cardRef.current) observer.observe(cardRef.current);
+    return () => observer.disconnect();
   }, []);
 
-  const togglePlay = () => {
+  useEffect(() => {
     if (!audioRef.current) return;
-    const audio = audioRef.current;
-    if (audio.paused) {
-      document.querySelectorAll('audio').forEach((a) => {
-        if (a !== audio) a.pause();
-      });
-      audio.play();
-      setIsPlaying(true);
+    if (isVisible) {
+      audioRef.current.play().catch(() => {});
+      incrementViews();
     } else {
-      audio.pause();
-      setIsPlaying(false);
+      audioRef.current.pause();
     }
+  }, [isVisible]);
+
+  const incrementViews = async () => {
+    await supabase.rpc('increment_song_view', { song_id_input: song.id });
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-black text-white rounded-2xl shadow-xl overflow-hidden mb-6">
-      {/* Album Cover */}
-      <div className="relative">
-        <img
-          src={cover}
-          alt={title}
-          className={`w-full h-64 object-cover ring-4 ${flavor.ring}`}
-        />
-        {/* Genre Badge */}
-        <div className="absolute top-2 left-2 bg-black bg-opacity-60 text-xs px-3 py-1 rounded-full shadow">
-          {flavor.emoji} {flavor.label}
+    <div
+      ref={cardRef}
+      data-song-id={song.id}
+      className={`relative w-full max-w-md mx-auto mb-10 p-4 rounded-xl ring-2 ring-offset-2 bg-black ${glowStyle}`}
+    >
+      {/* Genre Badge */}
+      {genreInfo && (
+        <div className={`absolute top-2 left-2 px-3 py-1 rounded-full text-xs font-semibold ${genreInfo.color}`}>
+          {genreInfo.name}
         </div>
-      </div>
+      )}
 
-      {/* Title and Artist */}
-      <div className="px-4 py-3">
-        <h2 className="text-xl font-semibold truncate">{title}</h2>
-        <Link
-          to={`/artist/${artistId}`}
-          className="text-sm text-pink-300 hover:underline"
-        >
-          {artist}
-        </Link>
-      </div>
-
-      {/* Audio Player */}
-      <div className="px-4 pb-3">
-        <audio
-          ref={audioRef}
-          src={audio}
-          preload="metadata"
-          onEnded={() => setIsPlaying(false)}
+      <a
+        href={`/artist/${song.artist_id}`}
+        onClick={(e) => {
+          e.preventDefault();
+          incrementViews().finally(() => {
+            window.location.href = `/artist/${song.artist_id}`;
+          });
+        }}
+      >
+        <img
+          src={song.cover}
+          alt={song.title}
+          className="w-full h-auto rounded-xl mb-4"
         />
-        <button
-          onClick={togglePlay}
-          className="w-full bg-gray-800 text-white py-2 rounded hover:bg-gray-700 transition"
-        >
-          {isPlaying ? '⏸ Pause' : '▶️ Play Preview'}
-        </button>
-      </div>
+      </a>
 
-      {/* Reaction Bar */}
-      <div className="px-2 pb-4">
-        <ReactionStatsBar
-          songId={songId}
-          artistId={artistId}
-          cover={cover}
-          artist={artist}
-          genre={genre}
-        />
-      </div>
+      <h2 className="text-xl font-semibold text-white mb-1">{song.title}</h2>
+      <p className="text-sm text-gray-300 mb-1">by {song.artist}</p>
+
+      {song.genre_flavor && (
+        <span className="inline-block text-xs font-semibold px-2 py-1 rounded-full mb-1 bg-yellow-300 text-black">
+          {flavorLabelMap[song.genre_flavor] || 'Unlabeled'}
+        </span>
+      )}
+
+      <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
+
+      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
     </div>
   );
 };
