@@ -1,3 +1,5 @@
+// ReactionStatsBar.js - Full working version with stats, sounds, buttons, and live updates
+
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
