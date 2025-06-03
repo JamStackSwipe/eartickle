@@ -47,13 +47,13 @@ const ReactionStatsBar = ({ song }) => {
     loadStats();
   }, [song.id, user]);
 
-useEffect(() => {
-  const handleTicklesUpdated = () => loadStats();
-  window.addEventListener('ticklesUpdated', handleTicklesUpdated);
-  return () => {
-    window.removeEventListener('ticklesUpdated', handleTicklesUpdated);
-  };
-}, []);
+  useEffect(() => {
+    const handleTicklesUpdated = () => loadStats();
+    window.addEventListener('ticklesUpdated', handleTicklesUpdated);
+    return () => {
+      window.removeEventListener('ticklesUpdated', handleTicklesUpdated);
+    };
+  }, []);
 
   const handleEmojiClick = async (emoji) => {
     if (!user) return toast.error('Login to react');
@@ -120,24 +120,21 @@ useEffect(() => {
         <span className="text-gray-400 text-sm">📥 {song.jams || 0}</span>
       </div>
 
-      {/* Jam + Tickle */}
-  
+      {/* Jam + Tickle – color updated to match brand */}
+      <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
+        <AddToJamStackButton songId={song.id} user={user} />
 
-<div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
-  <AddToJamStackButton songId={song.id} user={user} />
-  
-  <div className="text-sm font-semibold text-yellow-300 bg-zinc-800 px-3 py-1 rounded-full shadow">
-    🎶 My Tickles: {loading ? '...' : tickleBalance}
-  </div>
+        <div className="text-sm font-semibold text-[#00CEC8] border border-[#00CEC8] px-3 py-1 rounded-full shadow">
+          🎶 My Tickles: {loading ? '...' : tickleBalance}
+        </div>
 
-  <button
-    onClick={handleSendTickle}
-    className="px-3 py-1 text-sm rounded-full font-semibold transition bg-yellow-400 text-black hover:bg-yellow-500"
-  >
-    🎁 Send Tickle
-  </button>
-</div>
-
+        <button
+          onClick={handleSendTickle}
+          className="px-3 py-1 text-sm rounded-full font-semibold transition bg-[#00CEC8] text-black hover:opacity-90"
+        >
+          🎁 Send Tickle
+        </button>
+      </div>
     </div>
   );
 };
