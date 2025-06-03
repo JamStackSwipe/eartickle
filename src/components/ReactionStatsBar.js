@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
-import { playReaction, playTickle } from '../utils/sounds';
 import BoostTickles from './BoostTickles';
 import AddToJamStackButton from './AddToJamStackButton';
 
@@ -63,6 +62,21 @@ const ReactionStatsBar = ({ songId, artistId }) => {
     }
   };
 
+  const playSound = (emoji) => {
+    let filename = null;
+    switch (emoji) {
+      case '🔥': filename = 'fire.mp3'; break;
+      case '💖': filename = 'love.mp3'; break;
+      case '😭': filename = 'sad.mp3'; break;
+      case '🎯': filename = 'bullseye.mp3'; break;
+      case '👁️': filename = 'meh.mp3'; break;
+      case '📥': filename = 'add.mp3'; break;
+      case '🎁': filename = 'tickle.mp3'; break;
+      default: return;
+    }
+    new Audio(`/sounds/${filename}`).play().catch(() => {});
+  };
+
   const handleReaction = async (emoji) => {
     if (!user || userReactions[emoji]) return;
 
@@ -73,7 +87,7 @@ const ReactionStatsBar = ({ songId, artistId }) => {
     });
 
     if (!error) {
-      playReaction(emoji);
+      playSound(emoji);
       fetchReactions();
       fetchUserReactions();
     }
@@ -92,7 +106,7 @@ const ReactionStatsBar = ({ songId, artistId }) => {
     });
 
     if (!error) {
-      playTickle();
+      playSound('🎁');
       fetchTickleBalance();
     }
 
