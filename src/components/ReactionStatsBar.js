@@ -1,5 +1,3 @@
-// ReactionStatsBar.js - Full working version with stats, sounds, buttons, and live updates
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
@@ -16,15 +14,18 @@ const ReactionStatsBar = ({ songId, artistId }) => {
   useEffect(() => {
     if (songId) {
       fetchReactions();
-      fetchUserReactions();
     }
   }, [songId]);
 
   useEffect(() => {
-    if (user?.id) fetchTickleBalance();
-  }, [user]);
+    if (user?.id && songId) {
+      fetchUserReactions();
+      fetchTickleBalance();
+    }
+  }, [user, songId]);
 
   const fetchReactions = async () => {
+    if (!songId) return;
     const { data, error } = await supabase
       .from('song_reactions')
       .select('*')
@@ -45,10 +46,11 @@ const ReactionStatsBar = ({ songId, artistId }) => {
   };
 
   const fetchUserReactions = async () => {
+    if (!user?.id || !songId) return;
     const { data, error } = await supabase
       .from('reactions')
       .select('emoji')
-      .eq('user_id', user?.id)
+      .eq('user_id', user.id)
       .eq('song_id', songId);
 
     if (!error && data) {
@@ -61,11 +63,13 @@ const ReactionStatsBar = ({ songId, artistId }) => {
   };
 
   const fetchTickleBalance = async () => {
+    if (!user?.id) return;
     const { data, error } = await supabase
       .from('profiles')
       .select('tickle_balance')
-      .eq('id', user?.id)
+      .eq('id', user.id)
       .single();
+
     if (!error && data) {
       setTickleBalance(data.tickle_balance || 0);
     }
@@ -88,7 +92,7 @@ const ReactionStatsBar = ({ songId, artistId }) => {
   };
 
   const handleReaction = async (emoji) => {
-    if (!user || userReactions[emoji]) return;
+    if (!user?.id || !songId || userReactions[emoji]) return;
 
     const { error } = await supabase.from('reactions').insert({
       user_id: user.id,
@@ -104,7 +108,7 @@ const ReactionStatsBar = ({ songId, artistId }) => {
   };
 
   const handleSendTickle = async () => {
-    if (!user || !artistId || sending || tickleBalance < 1) return;
+    if (!user?.id || !artistId || sending || tickleBalance < 1) return;
 
     setSending(true);
 
@@ -138,7 +142,7 @@ const ReactionStatsBar = ({ songId, artistId }) => {
   return (
     <div className="w-full text-sm text-white mt-2 px-2 space-y-2">
 
-      {/* Emoji Reactions Row - Above Controls */}
+      {/* Emoji Reactions Row */}
       <div className="flex justify-center items-center space-x-3 text-lg">
         {renderStat('🔥')}
         {renderStat('💖')}
@@ -148,24 +152,22 @@ const ReactionStatsBar = ({ songId, artistId }) => {
         {renderStat('📥')}
       </div>
 
-      {/* Control Row: Add Jam | Tickles | Send Tickle */}
+      {/* Control Row */}
       <div className="flex items-center justify-between gap-x-2 text-sm h-8">
         <AddToJamStackButton
           songId={songId}
           user={user}
           className="h-8 px-3 py-1 rounded-md bg-black bg-opacity-40 text-white text-sm"
         />
-
         <div className="flex items-center justify-center min-w-[100px] h-8 px-3 py-1 rounded-md bg-black bg-opacity-40 text-pink-300 text-sm">
           🎁 {tickleBalance} Tickles
         </div>
-
         <button
           onClick={handleSendTickle}
           disabled={sending || tickleBalance < 1}
           className="h-8 px-3 py-1 rounded-md bg-black bg-opacity-40 text-white text-sm disabled:opacity-50 hover:scale-105 transition"
         >
-          🎁 Send Tickle
+          🎁 Gift Tickle
         </button>
       </div>
 
@@ -173,7 +175,6 @@ const ReactionStatsBar = ({ songId, artistId }) => {
       <div className="flex justify-center">
         <BoostTickles songId={songId} artistId={artistId} onBoost={fetchTickleBalance} />
       </div>
-
     </div>
   );
 };
