@@ -14,7 +14,7 @@ const SwipeScreen = () => {
     const fetchSongs = async () => {
       const { data, error } = await supabase
         .from('songs')
-        .select('id, title, cover, audio, artist, genre, artist_id, fires, loves, sads, bullseyes, views, jams')
+        .select('id, title, cover, audio, artist, genre, genre_flavor, artist_id, fires, loves, sads, bullseyes, views, jams')
         .order('created_at', { ascending: false })
         .limit(20);
 
