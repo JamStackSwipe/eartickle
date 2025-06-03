@@ -118,17 +118,26 @@ const SongCard = ({ song, user }) => {
         </span>
       )}
 
-      {/* Boost Buttons */}
+      {/* Boost Buttons (Profile-style) */}
       <div className="flex justify-between gap-2 mb-3">
-        {[5, 10, 25].map((amount) => (
-          <button
-            key={amount}
-            onClick={() => handleBoost(amount)}
-            className="flex-1 text-sm font-semibold py-1 rounded bg-yellow-500 text-black hover:bg-yellow-600 transition"
-          >
-            Boost {amount}
-          </button>
-        ))}
+        <button
+          onClick={() => handleBoost(5)}
+          className="flex-1 text-sm font-semibold py-1 rounded bg-blue-300 text-black hover:bg-blue-400 transition"
+        >
+          🎁 Boost (5)
+        </button>
+        <button
+          onClick={() => handleBoost(10)}
+          className="flex-1 text-sm font-semibold py-1 rounded bg-purple-300 text-black hover:bg-purple-400 transition"
+        >
+          🔥 Mega (10)
+        </button>
+        <button
+          onClick={() => handleBoost(25)}
+          className="flex-1 text-sm font-semibold py-1 rounded bg-red-300 text-black hover:bg-red-400 transition"
+        >
+          🚀 Super (25)
+        </button>
       </div>
 
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
