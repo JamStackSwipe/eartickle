@@ -113,7 +113,7 @@ const ReactionStatsBar = ({ song }) => {
       </div>
 
       {/* Jam + Tickle */}
-      // Inside ReactionStatsBar.js, replace the lower block with:
+  
 
 <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
   <AddToJamStackButton songId={song.id} user={user} />
