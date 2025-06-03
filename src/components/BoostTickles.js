@@ -35,7 +35,7 @@ const BoostTickles = ({ songId, userId }) => {
       body: JSON.stringify({
         artist_id: userId,
         song_id: songId,
-        emoji: reason, // treat label as emoji
+        emoji: reason, // using label as emoji
       }),
     });
 
