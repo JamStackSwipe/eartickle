@@ -5,8 +5,6 @@ import { playReaction, playTickle } from '../utils/sounds';
 import BoostTickles from './BoostTickles';
 import AddToJamStackButton from './AddToJamStackButton';
 
-const emojiList = ['🔥', '💖', '😭', '🎯', '👁️', '📥'];
-
 const ReactionStatsBar = ({ songId, artistId }) => {
   const { user } = useUser();
   const [reactions, setReactions] = useState({});
@@ -128,7 +126,12 @@ const ReactionStatsBar = ({ songId, artistId }) => {
       </div>
 
       <div className="flex justify-center items-center space-x-3 text-lg">
-        {emojiList.map(renderStat)}
+        {renderStat('🔥')}
+        {renderStat('💖')}
+        {renderStat('😭')}
+        {renderStat('🎯')}
+        {renderStat('👁️')}
+        {renderStat('📥')}
       </div>
 
       <div className="flex justify-center">
