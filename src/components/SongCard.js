@@ -1,5 +1,3 @@
-// src/components/SongCard.js
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
@@ -29,7 +27,6 @@ const SongCard = ({ song, user }) => {
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
-  // 🧠 Genre glow logic
   const flavor = genreFlavorMap[song.genre_flavor] || null;
   const ringColor = flavor ? `ring-4 ring-${flavor.color}-500` : '';
 
@@ -128,13 +125,11 @@ const SongCard = ({ song, user }) => {
   };
 
   return (
- <div
-  ref={cardRef}
-  data-song-id={song.id}
-  className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${ringColor} ${flavor ? 'animate-genre-pulse' : ''}`}
-  style={glowStyle}
->
-
+    <div
+      ref={cardRef}
+      data-song-id={song.id}
+      className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${ringColor} ${flavor ? 'animate-genre-pulse' : ''}`}
+    >
       <div className="relative">
         <a
           href={`/artist/${song.artist_id}`}
@@ -162,15 +157,15 @@ const SongCard = ({ song, user }) => {
       <h2 className="text-xl font-semibold mb-1">{song.title}</h2>
       <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
 
-      <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
-
-      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
-
       {user && (
-        <div className="mt-3">
+        <div className="mt-3 flex justify-center">
           <BoostTickles songId={song.id} userId={user.id} />
         </div>
       )}
+
+      <audio ref={audioRef} src={song.audio} controls className="w-full mb-3 mt-2" />
+
+      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
     </div>
   );
 };
