@@ -44,6 +44,7 @@ const ReactionStatsBar = ({ song }) => {
     loadBalance();
   }, [song.id, user]);
 
+  // Handle emoji reaction
   const handleEmojiClick = async (emoji) => {
     if (!user) {
       toast.error('Login required to react');
@@ -59,8 +60,10 @@ const ReactionStatsBar = ({ song }) => {
     ]);
 
     setStats((prev) => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
+    setShowConfirm(emoji);
   };
 
+  // Send tickle via secure API
   const handleSendTickle = async () => {
     if (!user) return;
 
@@ -83,7 +86,7 @@ const ReactionStatsBar = ({ song }) => {
       body: JSON.stringify({
         artist_id: song.user_id,
         song_id: song.id,
-        emoji: "🎁",
+        emoji: showConfirm,
       }),
     });
 
@@ -95,6 +98,8 @@ const ReactionStatsBar = ({ song }) => {
     } else {
       toast.error(result.error || 'Failed to send tickle.');
     }
+
+    setShowConfirm(null);
   };
 
   return (
@@ -123,11 +128,28 @@ const ReactionStatsBar = ({ song }) => {
 
       {/* Gift Button */}
       <button
-        onClick={handleSendTickle}
+        onClick={() => setShowConfirm('🎁')}
         className="self-end px-3 py-1 bg-yellow-400 rounded text-black text-sm font-medium"
       >
         🎁 Send Tickle
       </button>
+
+      {/* Confirm Tickle Modal */}
+      {showConfirm && showConfirm !== '🎁' && (
+        <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-white p-4 shadow-lg rounded z-50">
+          <p className="text-center text-lg mb-3">
+            Send 1 Tickle with your {showConfirm}?
+          </p>
+          <div className="flex justify-center space-x-4">
+            <button onClick={handleSendTickle} className="bg-purple-600 text-white px-4 py-1 rounded">
+              Yes, Send
+            </button>
+            <button onClick={() => setShowConfirm(null)} className="px-4 py-1">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
