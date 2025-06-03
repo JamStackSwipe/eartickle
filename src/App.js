@@ -1,6 +1,8 @@
+// src/App.js
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
+import Footer from './components/Footer'; // ✅ Imported footer
 import SwipeScreen from './screens/SwipeScreen';
 import UploadScreen from './screens/UploadScreen';
 import JamStackScreen from './screens/JamStackScreen';
@@ -16,9 +18,9 @@ import Terms from './screens/Terms';
 
 function App() {
   return (
-    <div className="app">
+    <div className="app flex flex-col min-h-screen">
       <Header />
-      <main className="main-content">
+      <main className="main-content flex-grow">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/auth" element={<LoginScreen />} />
@@ -34,6 +36,7 @@ function App() {
           <Route path="/terms" element={<Terms />} />
         </Routes>
       </main>
+      <Footer /> {/* ✅ Footer now shows on all pages */}
     </div>
   );
 }
