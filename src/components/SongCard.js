@@ -31,6 +31,19 @@ const SongCard = ({ song, user }) => {
   const ringClass = flavor ? `ring-4 ring-${flavor.color}-500` : '';
   const glowColor = flavor ? flavor.color : 'white';
 
+  const getGlowColor = (color) => {
+  switch (color) {
+    case 'amber': return '#f59e0b';
+    case 'blue': return '#3b82f6';
+    case 'pink': return '#ec4899';
+    case 'purple': return '#a855f7';
+    case 'cyan': return '#06b6d4';
+    case 'red': return '#ef4444';
+    default: return '#ffffff';
+  }
+};
+
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
@@ -127,12 +140,12 @@ const SongCard = ({ song, user }) => {
 
   return (
     <div
-      ref={cardRef}
-      data-song-id={song.id}
-      className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${ringClass} ${flavor ? 'hover:animate-genre-pulse' : ''}
-      
-      style={flavor ? { '--glow-color': `var(--tw-${glowColor}-500)` } : {}}
-    >
+  ref={cardRef}
+  data-song-id={song.id}
+  className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${flavor ? 'hover:animate-genre-pulse' : ''}`}
+  style={flavor ? { boxShadow: `0 0 15px ${getGlowColor(flavor.color)}` } : {}}
+>
+
       <div className="relative">
         <a
           href={`/artist/${song.artist_id}`}
