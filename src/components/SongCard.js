@@ -2,13 +2,28 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ReactionStatsBar from './ReactionStatsBar';
-import { genreFlavorMap } from '../utils/genreList'; // contains color/emoji by genre
+
+const getFlavor = (genre) => {
+  switch (genre) {
+    case 'Country':
+      return { label: 'Country', emoji: '🤠', color: 'yellow' };
+    case 'Christian':
+      return { label: 'Christian', emoji: '🙏', color: 'blue' };
+    case 'Pop':
+      return { label: 'Pop', emoji: '🎤', color: 'pink' };
+    case 'Hip-Hop':
+      return { label: 'Hip-Hop', emoji: '🎧', color: 'red' };
+    case 'Rock':
+      return { label: 'Rock', emoji: '🎸', color: 'orange' };
+    default:
+      return { label: genre, emoji: '🎵', color: 'gray' };
+  }
+};
 
 const SongCard = ({ songId, artistId, title, artist, audio, cover, genre }) => {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
-
-  const flavor = genreFlavorMap[genre] || { label: genre, emoji: '', color: 'gray' };
+  const flavor = getFlavor(genre);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -25,8 +40,12 @@ const SongCard = ({ songId, artistId, title, artist, audio, cover, genre }) => {
     const audio = audioRef.current;
     if (!audio) return;
 
+    // Stop other audio
+    document.querySelectorAll('audio').forEach((a) => {
+      if (a !== audio) a.pause();
+    });
+
     if (audio.paused) {
-      document.querySelectorAll('audio').forEach((a) => a.pause()); // Stop others
       audio.play();
       setIsPlaying(true);
     } else {
@@ -37,7 +56,7 @@ const SongCard = ({ songId, artistId, title, artist, audio, cover, genre }) => {
 
   return (
     <div className={`w-full max-w-md mx-auto bg-black rounded-2xl shadow-md overflow-hidden mb-6 border-2 border-${flavor.color}-500`}>
-      {/* Cover + Genre Glow */}
+      {/* Cover with glow */}
       <div className="relative">
         <img
           src={cover}
@@ -68,7 +87,7 @@ const SongCard = ({ songId, artistId, title, artist, audio, cover, genre }) => {
         </button>
       </div>
 
-      {/* Reaction Bar */}
+      {/* Reactions Bar */}
       <div className="px-2 pb-4">
         <ReactionStatsBar
           songId={songId}
