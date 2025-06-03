@@ -148,12 +148,11 @@ const ReactionStatsBar = ({ songId, artistId }) => {
 
       {/* Control Row: Add Jam | Tickles | Send Tickle */}
       <div className="flex items-center justify-between gap-x-2 text-sm h-8">
-        <button
-          onClick={() => {}}
+        <AddToJamStackButton
+          songId={songId}
+          user={user}
           className="h-8 px-3 py-1 rounded-md bg-black bg-opacity-40 text-white text-sm"
-        >
-          Add Jam
-        </button>
+        />
 
         <div className="flex items-center justify-center min-w-[100px] h-8 px-3 py-1 rounded-md bg-black bg-opacity-40 text-pink-300 text-sm">
           🎁 {tickleBalance} Tickles
