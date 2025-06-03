@@ -1,3 +1,5 @@
+// src/screens/StackerScreen.js
+
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
@@ -9,40 +11,26 @@ const StackerScreen = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const audioRef = useRef(null);
 
-  const FILTER_OPTIONS = [
-  { key: 'views', label: '🔥 Top' },
-  { key: 'loves', label: '❤️ Loved' },
-  { key: 'fires', label: '🔥 Fire' },
-  { key: 'bullseyes', label: '🎯 Bullseye' },
-  { key: 'sads', label: '😢 Sad' },
-  { key: 'jams', label: '📥 Jammed' },
-  { key: 'tickles', label: '🎁 Tickled' }
-];
-
-const emojiMap = {
-  views: '🔥',
-  loves: '❤️',
-  fires: '🔥',
-  bullseyes: '🎯',
-  sads: '😢',
-  jams: '📥',
-  tickles: '🎁'
-};
-
   const shuffleArray = (arr) => [...arr].sort(() => Math.random() - 0.5);
 
-  // Fetch and shuffle JamStack songs
   useEffect(() => {
     const fetchJamStack = async () => {
       const { data, error } = await supabase
         .from('jamstacksongs')
-        .select('id, title, cover, audio, artist, genre, genre_flavor, artist_id, fires, loves, sads, bullseyes, views, jams')
+        .select(`
+          id,
+          song_id,
+          songs (
+            id, title, cover, audio, artist, genre, genre_flavor, artist_id,
+            fires, loves, sads, bullseyes, views, jams
+          )
+        `)
         .eq('user_id', user.id);
 
       if (error) {
         console.error('❌ Error fetching JamStack:', error.message);
       } else if (data?.length) {
-        const loadedSongs = data.map((entry) => entry.songs).filter((s) => s.audio);
+        const loadedSongs = data.map((entry) => entry.songs).filter((s) => s?.audio);
         setSongs(shuffleArray(loadedSongs));
         setCurrentIndex(0);
       }
@@ -51,14 +39,13 @@ const emojiMap = {
     if (user?.id) fetchJamStack();
   }, [user?.id]);
 
-  // Handle autoplay
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !songs[currentIndex]?.audio) return;
 
     audio.pause();
     audio.load();
-    audio.play().catch(() => {}); // ignore autoplay block
+    audio.play().catch(() => {});
 
     const handleEnded = () => {
       setCurrentIndex((prev) => (prev + 1) % songs.length);
@@ -104,7 +91,6 @@ const emojiMap = {
         </button>
       </div>
 
-      {/* Up Next Queue */}
       {songs.length > 1 && (
         <div className="mt-8">
           <div className="text-sm text-gray-300 text-center mb-2">Up Next</div>
