@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import ReactionStatsBar from './ReactionStatsBar';
+import BoostTickles from './BoostTickles'; // heavy logic lives here
 
 const tickleSound = new Audio('/sounds/tickle.mp3');
 
@@ -63,23 +64,6 @@ const SongCard = ({ song, user }) => {
     await supabase.rpc('increment_song_view', { song_id_input: song.id });
   };
 
-  const handleBoost = async (amount) => {
-    if (!user) return toast.error('Please log in to boost!');
-    const { data, error } = await supabase.rpc('spend_tickles', {
-      user_id_input: user.id,
-      song_id_input: song.id,
-      reason: '🎁',
-      cost: amount,
-    });
-
-    if (error) {
-      console.error('Boost failed:', error.message);
-      toast.error('Failed to boost this song.');
-    } else {
-      toast.success(`Boosted with ${amount} Tickles! 🎉`);
-    }
-  };
-
   return (
     <div
       ref={cardRef}
@@ -118,27 +102,10 @@ const SongCard = ({ song, user }) => {
         </span>
       )}
 
-      {/* Boost Buttons (Profile-style) */}
-      <div className="flex justify-between gap-2 mb-3">
-        <button
-          onClick={() => handleBoost(5)}
-          className="flex-1 text-sm font-semibold py-1 rounded bg-blue-300 text-black hover:bg-blue-400 transition"
-        >
-          🎁 Boost (5)
-        </button>
-        <button
-          onClick={() => handleBoost(10)}
-          className="flex-1 text-sm font-semibold py-1 rounded bg-purple-300 text-black hover:bg-purple-400 transition"
-        >
-          🔥 Mega (10)
-        </button>
-        <button
-          onClick={() => handleBoost(25)}
-          className="flex-1 text-sm font-semibold py-1 rounded bg-red-300 text-black hover:bg-red-400 transition"
-        >
-          🚀 Super (25)
-        </button>
-      </div>
+      {/* Boost Tickles Logic Injected Here */}
+      {user?.id && (
+        <BoostTickles userId={user.id} songId={song.id} />
+      )}
 
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
 
