@@ -3,6 +3,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
+import FooterGlobal from './components/FooterGlobal';
 import SwipeScreen from './screens/SwipeScreen';
 import UploadScreen from './screens/UploadScreen';
 import JamStackScreen from './screens/JamStackScreen';
@@ -22,6 +23,7 @@ function App() {
   return (
     <>
       <Header />
+      <FooterGlobal>
       <Routes>
         <Route path="/" element={<HomePage />} /> {/* ✅ Set homepage */}
         <Route path="/auth" element={<LoginScreen />} />
@@ -35,7 +37,7 @@ function App() {
         <Route path="/artist/:id" element={<ArtistProfileScreen />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
-
+      </FooterGlobal>
       </Routes>
     </>
   );
