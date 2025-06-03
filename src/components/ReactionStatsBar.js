@@ -1,5 +1,3 @@
-// ReactionStatsBar.js — full working version with ❤️ 😭 fix, tickle balance, sound, and BoostTickles
-
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
@@ -7,14 +5,7 @@ import { playReaction, playTickle } from '../utils/sounds';
 import BoostTickles from './BoostTickles';
 import AddToJamStackButton from './AddToJamStackButton';
 
-const emojiMap = {
-  '🔥': 'fire',
-  '❤️': 'heart',
-  '😭': 'cry', // gushing cry
-  '🎯': 'target',
-  '👁️': 'views',
-  '📥': 'jamstack'
-};
+const emojiList = ['🔥', '💖', '😭', '🎯', '👁️', '📥'];
 
 const ReactionStatsBar = ({ songId, artistId }) => {
   const { user } = useUser();
@@ -39,7 +30,6 @@ const ReactionStatsBar = ({ songId, artistId }) => {
       .from('song_reactions')
       .select('*')
       .eq('song_id', songId);
-
     if (!error) {
       const grouped = {};
       data.forEach(({ emoji }) => {
@@ -55,7 +45,6 @@ const ReactionStatsBar = ({ songId, artistId }) => {
       .select('*')
       .eq('user_id', user?.id)
       .eq('song_id', songId);
-
     if (!error) {
       const userEmojis = {};
       data.forEach(({ emoji }) => {
@@ -71,8 +60,9 @@ const ReactionStatsBar = ({ songId, artistId }) => {
       .select('tickle_balance')
       .eq('id', user?.id)
       .single();
-
-    if (!error && data) setTickleBalance(data.tickle_balance || 0);
+    if (!error && data) {
+      setTickleBalance(data.tickle_balance || 0);
+    }
   };
 
   const handleReaction = async (emoji) => {
@@ -125,8 +115,8 @@ const ReactionStatsBar = ({ songId, artistId }) => {
     <div className="w-full text-sm text-white mt-2 px-2 space-y-2">
       <div className="flex items-center justify-between">
         <AddToJamStackButton songId={songId} />
-        <div className="text-center text-xs text-gray-300">
-          🎁 Tickles: {tickleBalance}
+        <div className="text-center text-xs text-pink-300">
+          🎁 {tickleBalance} Tickles
         </div>
         <button
           onClick={handleSendTickle}
@@ -138,12 +128,7 @@ const ReactionStatsBar = ({ songId, artistId }) => {
       </div>
 
       <div className="flex justify-center items-center space-x-3 text-lg">
-        {renderStat('🔥')}
-        {renderStat('❤️')}
-        {renderStat('😭')}
-        {renderStat('🎯')}
-        {renderStat('👁️')}
-        {renderStat('📥')}
+        {emojiList.map(renderStat)}
       </div>
 
       <div className="flex justify-center">
