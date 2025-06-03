@@ -5,7 +5,7 @@ import { playTickle } from '../utils/tickleSound';
 import toast from 'react-hot-toast';
 import AddToJamStackButton from './AddToJamStackButton';
 
-const emojis = ['🔥', '❤️', '😢', '🎯'];
+const emojis = ['🔥', '💖', '😢', '🎯'];
 
 const ReactionStatsBar = ({ song }) => {
   const { user } = useUser();
