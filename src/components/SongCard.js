@@ -1,22 +1,22 @@
 // src/components/SongCard.js
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ReactionStatsBar from './ReactionStatsBar';
 
 const getFlavor = (genre) => {
   switch (genre) {
     case 'Country':
-      return { label: 'Country', emoji: '🤠', color: 'yellow' };
+      return { label: 'Country', emoji: '🤠', ring: 'ring-yellow-400' };
     case 'Christian':
-      return { label: 'Christian', emoji: '🙏', color: 'blue' };
+      return { label: 'Christian', emoji: '🙏', ring: 'ring-blue-400' };
     case 'Pop':
-      return { label: 'Pop', emoji: '🎤', color: 'pink' };
+      return { label: 'Pop', emoji: '🎤', ring: 'ring-pink-400' };
     case 'Hip-Hop':
-      return { label: 'Hip-Hop', emoji: '🎧', color: 'red' };
+      return { label: 'Hip-Hop', emoji: '🎧', ring: 'ring-red-400' };
     case 'Rock':
-      return { label: 'Rock', emoji: '🎸', color: 'orange' };
+      return { label: 'Rock', emoji: '🎸', ring: 'ring-orange-400' };
     default:
-      return { label: genre, emoji: '🎵', color: 'gray' };
+      return { label: genre, emoji: '🎵', ring: 'ring-gray-500' };
   }
 };
 
@@ -26,26 +26,21 @@ const SongCard = ({ songId, artistId, title, artist, audio, cover, genre }) => {
   const flavor = getFlavor(genre);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && isPlaying) {
-        audioRef.current?.pause();
-        setIsPlaying(false);
-      }
+    const stopOthers = () => {
+      document.querySelectorAll('audio').forEach((el) => {
+        if (el !== audioRef.current) el.pause();
+      });
     };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isPlaying]);
+    stopOthers();
+  }, []);
 
   const togglePlay = () => {
+    if (!audioRef.current) return;
     const audio = audioRef.current;
-    if (!audio) return;
-
-    // Stop other audio
-    document.querySelectorAll('audio').forEach((a) => {
-      if (a !== audio) a.pause();
-    });
-
     if (audio.paused) {
+      document.querySelectorAll('audio').forEach((a) => {
+        if (a !== audio) a.pause();
+      });
       audio.play();
       setIsPlaying(true);
     } else {
@@ -55,39 +50,48 @@ const SongCard = ({ songId, artistId, title, artist, audio, cover, genre }) => {
   };
 
   return (
-    <div className={`w-full max-w-md mx-auto bg-black rounded-2xl shadow-md overflow-hidden mb-6 border-2 border-${flavor.color}-500`}>
-      {/* Cover with glow */}
+    <div className="w-full max-w-md mx-auto bg-black text-white rounded-2xl shadow-xl overflow-hidden mb-6">
+      {/* Album Cover */}
       <div className="relative">
         <img
           src={cover}
           alt={title}
-          className={`w-full h-64 object-cover border-b-2 border-${flavor.color}-500`}
+          className={`w-full h-64 object-cover ring-4 ${flavor.ring}`}
         />
-        <div className={`absolute top-2 left-2 bg-${flavor.color}-700 text-white text-xs px-2 py-1 rounded`}>
+        {/* Genre Badge */}
+        <div className="absolute top-2 left-2 bg-black bg-opacity-60 text-xs px-3 py-1 rounded-full shadow">
           {flavor.emoji} {flavor.label}
         </div>
       </div>
 
-      {/* Title + Artist */}
+      {/* Title and Artist */}
       <div className="px-4 py-3">
-        <h2 className="text-xl font-bold text-white truncate">{title}</h2>
-        <Link to={`/artist/${artistId}`} className="text-sm text-pink-300 hover:underline">
+        <h2 className="text-xl font-semibold truncate">{title}</h2>
+        <Link
+          to={`/artist/${artistId}`}
+          className="text-sm text-pink-300 hover:underline"
+        >
           {artist}
         </Link>
       </div>
 
-      {/* Audio Controls */}
+      {/* Audio Player */}
       <div className="px-4 pb-3">
-        <audio ref={audioRef} src={audio} preload="metadata" onEnded={() => setIsPlaying(false)} />
+        <audio
+          ref={audioRef}
+          src={audio}
+          preload="metadata"
+          onEnded={() => setIsPlaying(false)}
+        />
         <button
           onClick={togglePlay}
-          className="w-full bg-gray-800 text-white rounded px-4 py-2 mt-2 hover:bg-gray-700 transition"
+          className="w-full bg-gray-800 text-white py-2 rounded hover:bg-gray-700 transition"
         >
           {isPlaying ? '⏸ Pause' : '▶️ Play Preview'}
         </button>
       </div>
 
-      {/* Reactions Bar */}
+      {/* Reaction Bar */}
       <div className="px-2 pb-4">
         <ReactionStatsBar
           songId={songId}
