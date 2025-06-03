@@ -37,7 +37,7 @@ function App() {
         <Route path="/artist/:id" element={<ArtistProfileScreen />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
-      </FooterGlobal>
+      <FooterGlobal>
       </Routes>
     </>
   );
