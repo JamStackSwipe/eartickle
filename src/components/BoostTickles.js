@@ -1,9 +1,7 @@
-// src/components/BoostTickles.js
-
 import React, { useState } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
-import { playTickleSpecial } from '../utils/tickleSound';
+import { playTickleSent } from '../utils/tickleSound';
 
 const boostOptions = [
   { amount: 5, label: '⚡ Boost 5', color: 'bg-yellow-400 text-black hover:bg-yellow-500' },
@@ -11,45 +9,58 @@ const boostOptions = [
   { amount: 25, label: '🌟 Super 25', color: 'bg-purple-600 text-white hover:bg-purple-700' },
 ];
 
-const BoostTickles = ({ songId, userId }) => {
+const BoostTickles = ({ songId, userId, artistId }) => {
   const [loading, setLoading] = useState(false);
 
   const handleBoost = async (amount, reason) => {
     setLoading(true);
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData?.session?.access_token;
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
 
-    if (!token) {
-      toast.error('Not logged in');
-      setLoading(false);
-      return;
-    }
-
-    const res = await fetch('/api/send-tickle', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        artist_id: userId,
-        song_id: songId,
-        emoji: reason, // using label as emoji
-      }),
-    });
-
-    const result = await res.json();
-    if (res.ok) {
-      toast.success(`${amount} Tickles used!`);
-      playTickleSpecial();
-      const card = document.querySelector(`[data-song-id="${songId}"]`);
-      if (card) {
-        card.classList.add('animate-boost');
-        setTimeout(() => card.classList.remove('animate-boost'), 1000);
+      if (!token) {
+        toast.error('Not logged in');
+        setLoading(false);
+        return;
       }
-    } else {
-      toast.error(result.error || 'Boost failed');
+
+      const res = await fetch('/api/boost-tickles', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          artist_id: artistId,
+          song_id: songId,
+          amount,
+          reason,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        toast.success(`${amount} Tickles used!`);
+        playTickleSent();
+
+        // Animate the boost
+        const card = document.querySelector(`[data-song-id="${songId}"]`);
+        if (card) {
+          card.classList.add('animate-boost');
+          setTimeout(() => card.classList.remove('animate-boost'), 1000);
+        }
+
+        // Notify app to reload balance and stats
+        window.dispatchEvent(new CustomEvent('ticklesUpdated'));
+      } else {
+        toast.error(result.error || 'Boost failed');
+      }
+    } catch (err) {
+      toast.error('Unexpected error');
+      console.error('❌ BoostTickles error:', err);
     }
 
     setLoading(false);
