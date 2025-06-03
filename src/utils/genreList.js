@@ -2,36 +2,39 @@
 
 export const genreFlavorMap = {
   country: {
-    color: 'amber-500',
     label: 'Country',
     emoji: '🤠',
+    color: 'amber',
+    hex: '#f59e0b', // amber-500
   },
   christian: {
-    color: 'blue-400',
     label: 'Christian',
     emoji: '🙏',
-  },
-  rock: {
-    color: 'red-500',
-    label: 'Rock',
-    emoji: '🎸',
-  },
-  hiphop: {
-    color: 'green-500',
-    label: 'Hip-Hop',
-    emoji: '🎤',
+    color: 'blue',
+    hex: '#3b82f6', // blue-500
   },
   pop: {
-    color: 'pink-400',
     label: 'Pop',
-    emoji: '💃',
+    emoji: '🎤',
+    color: 'pink',
+    hex: '#ec4899', // pink-500
   },
-  acoustic: {
-    color: 'yellow-400',
-    label: 'Acoustic',
-    emoji: '🎻',
+  hiphop: {
+    label: 'Hip-Hop',
+    emoji: '🎧',
+    color: 'purple',
+    hex: '#8b5cf6', // purple-500
+  },
+  edm: {
+    label: 'EDM',
+    emoji: '🔊',
+    color: 'cyan',
+    hex: '#06b6d4', // cyan-500
+  },
+  rock: {
+    label: 'Rock',
+    emoji: '🎸',
+    color: 'red',
+    hex: '#ef4444', // red-500
   },
 };
-
-// Optional: use this if you want to list genres in a dropdown
-export const genreOptions = Object.keys(genreFlavorMap);
