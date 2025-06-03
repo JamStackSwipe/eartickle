@@ -6,6 +6,7 @@ const Footer = () => (
       <Link to="/privacy" className="hover:underline">🔒 Privacy</Link>
       <Link to="/terms" className="hover:underline">📄 Terms</Link>
       <Link to="/about" className="hover:underline">📖 About</Link>
+      <Link to="/genres" className="hover:underline">🎨 Genres</Link>
       <a href="https://github.com/JamStackSwipe/eartickle/wiki" target="_blank" rel="noreferrer" className="hover:underline">📘 Wiki</a>
       <a href="https://github.com/JamStackSwipe/eartickle" target="_blank" rel="noreferrer" className="hover:underline">🔗 GitHub</a>
     </div>
