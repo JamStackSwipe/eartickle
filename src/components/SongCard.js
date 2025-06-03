@@ -1,11 +1,10 @@
-// SongCard.js – with black base, genre glow, flavor label, and top-left genre badge
+// src/components/SongCard.js
 // 🚫 DO NOT MODIFY WITHOUT OWNER APPROVAL
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import ReactionStatsBar from './ReactionStatsBar';
-import BoostTickles from './BoostTickles'; // heavy logic lives here
 
 const tickleSound = new Audio('/sounds/tickle.mp3');
 
@@ -100,11 +99,6 @@ const SongCard = ({ song, user }) => {
         <span className="inline-block text-xs font-semibold px-2 py-1 rounded-full mb-1 bg-yellow-300 text-black">
           {flavorLabelMap[song.genre_flavor] || 'Unlabeled'}
         </span>
-      )}
-
-      {/* Boost Tickles Logic Injected Here */}
-      {user?.id && (
-        <BoostTickles userId={user.id} songId={song.id} />
       )}
 
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
