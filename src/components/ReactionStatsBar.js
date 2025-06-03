@@ -1,74 +1,78 @@
-// src/components/ReactionStatsBar.js
-
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
 import { playTickle } from '../utils/tickleSound';
 import toast from 'react-hot-toast';
-import AddToJamStackButton from './AddToJamStackButton'; // ✅ Added back
 
-const emojis = ['🔥', '💖', '😭', '🎯'];
+const emojis = ["🔥", "❤️", "😢", "🎯"];
 
 const ReactionStatsBar = ({ song }) => {
   const { user } = useUser();
   const [stats, setStats] = useState({});
+  const [showConfirm, setShowConfirm] = useState(null);
   const [tickleBalance, setTickleBalance] = useState(null);
-  const [hasReacted, setHasReacted] = useState({});
-  const [loading, setLoading] = useState(true);
 
-  const loadStats = async () => {
-    const [{ data: reactionsData }, { data: balanceData }, { data: userReactions }] = await Promise.all([
-      supabase.from('song_reactions').select('emoji').eq('song_id', song.id),
-      user
-        ? supabase.from('profiles').select('tickle_balance').eq('id', user.id).maybeSingle()
-        : { data: null },
-      user
-        ? supabase.from('song_reactions').select('emoji').eq('song_id', song.id).eq('user_id', user.id)
-        : { data: [] },
-    ]);
-
-    const counts = {};
-    reactionsData?.forEach(({ emoji }) => {
-      counts[emoji] = (counts[emoji] || 0) + 1;
-    });
-
-    const reacted = {};
-    userReactions?.forEach(({ emoji }) => {
-      reacted[emoji] = true;
-    });
-
-    setStats(counts);
-    setHasReacted(reacted);
-    setTickleBalance(balanceData?.tickle_balance ?? 0);
-    setLoading(false);
-  };
-
+  // Load emoji counts + user balance
   useEffect(() => {
-    loadStats();
+    const loadReactions = async () => {
+      const { data, error } = await supabase
+        .from('song_reactions')
+        .select('emoji, count')
+        .eq('song_id', song.id)
+        .group('emoji');
+
+      if (!error && data) {
+        const mapped = {};
+        data.forEach(({ emoji, count }) => {
+          mapped[emoji] = count;
+        });
+        setStats(mapped);
+      }
+    };
+
+    const loadBalance = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('tickle_balance')
+        .eq('id', user.id)
+        .maybeSingle();
+      setTickleBalance(data?.tickle_balance ?? 0);
+    };
+
+    loadReactions();
+    loadBalance();
   }, [song.id, user]);
 
   const handleEmojiClick = async (emoji) => {
-    if (!user) return toast.error('Login to react');
-    if (hasReacted[emoji]) return toast('Already reacted');
+    if (!user) {
+      toast.error('Login required to react');
+      return;
+    }
 
-    const { error } = await supabase.from('song_reactions').insert([
-      { user_id: user.id, song_id: song.id, emoji },
+    await supabase.from('song_reactions').insert([
+      {
+        user_id: user.id,
+        song_id: song.id,
+        emoji,
+      },
     ]);
 
-    if (!error) {
-      setStats((prev) => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
-      setHasReacted((prev) => ({ ...prev, [emoji]: true }));
-    }
+    setStats((prev) => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
   };
 
   const handleSendTickle = async () => {
-    if (!user) return toast.error('Login required');
-    if ((tickleBalance ?? 0) < 1) return toast.error('Not enough Tickles');
+    if (!user) return;
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData?.session?.access_token;
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (!token) return toast.error('Not authorized');
+    const token = session?.access_token;
+    if (!token) {
+      toast.error('Login required');
+      return;
+    }
 
     const res = await fetch('/api/send-tickle', {
       method: 'POST',
@@ -79,51 +83,51 @@ const ReactionStatsBar = ({ song }) => {
       body: JSON.stringify({
         artist_id: song.user_id,
         song_id: song.id,
-        emoji: '🎁',
+        emoji: "🎁",
       }),
     });
 
     const result = await res.json();
     if (res.ok) {
       playTickle();
-      toast.success('1 Tickle sent!');
+      toast.success('1 Tickle sent to the artist!');
       setTickleBalance((prev) => (prev || 1) - 1);
-      loadStats();
     } else {
-      toast.error(result.error || 'Failed to send tickle');
+      toast.error(result.error || 'Failed to send tickle.');
     }
   };
 
   return (
-    <div className="w-full mt-2 text-sm">
-      <div className="flex flex-wrap items-center gap-4">
+    <div className="flex flex-col gap-2 text-lg mt-2 w-full">
+
+      {/* Emoji Reactions */}
+      <div className="flex flex-wrap gap-4">
         {emojis.map((emoji) => (
           <button
             key={emoji}
             onClick={() => handleEmojiClick(emoji)}
-            disabled={hasReacted[emoji]}
-            className={`flex items-center gap-1 ${hasReacted[emoji] ? 'opacity-50' : 'hover:scale-110'} transition-transform`}
+            className="flex items-center space-x-1 hover:scale-110 transition-transform"
           >
             <span>{emoji}</span>
-            <span>{stats[emoji] || 0}</span>
+            <span className="text-sm">{stats[emoji] || 0}</span>
           </button>
         ))}
-        <span className="text-gray-400">👁️ {song.views || 0}</span>
-        <span className="text-gray-400">📥 {song.jams || 0}</span>
       </div>
 
-      <div className="flex items-center justify-between mt-3">
-        <AddToJamStackButton songId={song.id} user={user} className="bg-yellow-400 text-black hover:bg-yellow-500" />
-        <div className="text-xs text-yellow-300 font-semibold bg-zinc-800 px-2 py-1 rounded shadow">
-          🎶 Tickles Left: {loading ? '...' : tickleBalance}
+      {/* Tickle Balance */}
+      {user && (
+        <div className="text-xs text-gray-600 text-right mr-1">
+          Tickles Left: {tickleBalance ?? '...'}
         </div>
-        <button
-          onClick={handleSendTickle}
-          className="px-3 py-1 bg-yellow-400 rounded text-black text-sm font-medium hover:bg-yellow-500"
-        >
-          🎁 Send Tickle
-        </button>
-      </div>
+      )}
+
+      {/* Gift Button */}
+      <button
+        onClick={handleSendTickle}
+        className="self-end px-3 py-1 bg-yellow-400 rounded text-black text-sm font-medium"
+      >
+        🎁 Send Tickle
+      </button>
     </div>
   );
 };
