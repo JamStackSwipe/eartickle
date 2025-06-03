@@ -11,7 +11,7 @@ const boostOptions = [
   { amount: 25, label: '🌟 Super', color: 'bg-purple-600 text-white hover:bg-purple-700' },
 ];
 
-const BoostTickles = ({ songId, userId, onBoostComplete }) => {
+const BoostTickles = ({ songId, userId }) => {
   const [loading, setLoading] = useState(false);
 
   const handleBoost = async (amount, reason) => {
@@ -45,15 +45,15 @@ const BoostTickles = ({ songId, userId, onBoostComplete }) => {
       toast.success(`${amount} Tickles used!`);
       playTickleSpecial();
 
-      // Trigger card flash animation
+      // Animate the boost
       const card = document.querySelector(`[data-song-id="${songId}"]`);
       if (card) {
         card.classList.add('animate-boost');
         setTimeout(() => card.classList.remove('animate-boost'), 1000);
       }
 
-      // Refresh balance and stats if parent provided a hook
-      if (typeof onBoostComplete === 'function') onBoostComplete();
+      // ✅ Notify ReactionStatsBar to reload tickle balance
+      window.dispatchEvent(new CustomEvent('ticklesUpdated'));
     } else {
       toast.error(result.error || 'Boost failed');
     }
