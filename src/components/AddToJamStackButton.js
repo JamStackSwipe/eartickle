@@ -1,7 +1,9 @@
+// src/components/AddToJamStackButton.js
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 
-const AddToJamStackButton = ({ songId, user, className = '' }) => {
+const AddToJamStackButton = ({ songId, user }) => {
   const [added, setAdded] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -45,13 +47,11 @@ const AddToJamStackButton = ({ songId, user, className = '' }) => {
     <button
       onClick={handleAddToJamStack}
       disabled={loading || added}
-      className={`px-3 py-1 rounded text-sm font-medium transition-all shadow-sm ${
-        added
-          ? 'bg-green-500 text-white cursor-not-allowed'
-          : 'bg-black border border-yellow-400 text-yellow-300 hover:bg-yellow-500 hover:text-black'
-      } ${className}`}
+      className={`px-3 py-1 bg-black border border-yellow-400 text-yellow-300 text-sm font-medium rounded hover:bg-yellow-500 hover:text-black transition-colors ${
+        added ? 'opacity-60 cursor-not-allowed' : ''
+      }`}
     >
-      {added ? '✅ In JamStack' : loading ? 'Adding...' : '➕ Add to JamStack'}
+      {added ? '✅ In Stack' : loading ? 'Adding...' : '➕ Stack This'}
     </button>
   );
 };
