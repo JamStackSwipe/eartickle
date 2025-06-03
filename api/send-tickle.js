@@ -1,3 +1,11 @@
+// /api/send-tickle.js
+//
+// ✅ Purpose: Handles gifting 1 Tickle to an artist
+// ✅ Used by: "Send Tickle" button in ReactionStatsBar.js
+// 🚫 Do NOT use this file for Boost Tickles or multi-cost actions
+//    Boosting requires a different path (see: BoostTickles.js or /api/spend-tickles.js)
+
+
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
