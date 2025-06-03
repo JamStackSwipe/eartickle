@@ -45,11 +45,11 @@ const AddToJamStackButton = ({ songId, user, className = '' }) => {
     <button
       onClick={handleAddToJamStack}
       disabled={loading || added}
-      className={`px-4 py-2 mt-2 text-sm font-semibold rounded transition-colors ${
+      className={`px-3 py-1 rounded text-sm font-medium transition-all shadow-sm ${
         added
           ? 'bg-green-500 text-white cursor-not-allowed'
-          : className
-      }`}
+          : 'bg-black border border-yellow-400 text-yellow-300 hover:bg-yellow-500 hover:text-black'
+      } ${className}`}
     >
       {added ? '✅ In JamStack' : loading ? 'Adding...' : '➕ Add to JamStack'}
     </button>
