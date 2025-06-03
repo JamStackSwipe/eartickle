@@ -128,11 +128,13 @@ const SongCard = ({ song, user }) => {
   };
 
   return (
-    <div
-      ref={cardRef}
-      data-song-id={song.id}
-      className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${ringColor}`}
-    >
+ <div
+  ref={cardRef}
+  data-song-id={song.id}
+  className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${ringColor} ${flavor ? 'animate-genre-pulse' : ''}`}
+  style={glowStyle}
+>
+
       <div className="relative">
         <a
           href={`/artist/${song.artist_id}`}
