@@ -1,5 +1,3 @@
-// src/components/SongCard.js
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
@@ -30,9 +28,8 @@ const SongCard = ({ song, user }) => {
   const [isVisible, setIsVisible] = useState(false);
 
   const flavor = genreFlavorMap[song.genre_flavor] || null;
-  const glowStyle = flavor
-    ? { boxShadow: `0 0 16px 4px ${flavor.hex}` }
-    : {};
+  const ringClass = flavor ? `ring-4 ring-${flavor.color}-500` : '';
+  const glowColor = flavor ? flavor.color : 'white';
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -56,8 +53,7 @@ const SongCard = ({ song, user }) => {
   useEffect(() => {
     const fetchStatsAndReactions = async () => {
       const [emojiStats, reactionFlags] = await Promise.all([
-        supabase
-          .from('songs')
+        supabase.from('songs')
           .select('fires, loves, sads, bullseyes, jams')
           .eq('id', song.id)
           .single(),
@@ -133,8 +129,8 @@ const SongCard = ({ song, user }) => {
     <div
       ref={cardRef}
       data-song-id={song.id}
-      className="bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all"
-      style={glowStyle}
+      className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${ringClass} ${flavor ? 'animate-genre-pulse' : ''}`}
+      style={flavor ? { '--glow-color': `var(--tw-${glowColor}-500)` } : {}}
     >
       <div className="relative">
         <a
@@ -154,10 +150,7 @@ const SongCard = ({ song, user }) => {
         </a>
 
         {flavor && (
-          <div
-            className="absolute top-2 left-2 text-white text-xs font-bold px-2 py-1 rounded shadow"
-            style={{ backgroundColor: flavor.hex }}
-          >
+          <div className={`absolute top-2 left-2 bg-${flavor.color}-600 text-white text-xs font-bold px-2 py-1 rounded shadow`}>
             {flavor.label}
           </div>
         )}
