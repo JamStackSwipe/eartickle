@@ -1,29 +1,7 @@
-// src/App.js
-
-import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Header from './components/Header';
-import FooterGlobal from './components/FooterGlobal';
-import SwipeScreen from './screens/SwipeScreen';
-import UploadScreen from './screens/UploadScreen';
-import JamStackScreen from './screens/JamStackScreen';
-import LoginScreen from './screens/LoginScreen';
-import RewardsScreen from './screens/RewardsScreen';
-import ProfileScreen from './screens/ProfileScreen';
-import SettingsScreen from './screens/SettingsScreen';
-import ArtistProfileScreen from './screens/ArtistProfileScreen';
-import HomePage from './screens/HomePage'; // ✅ NEW
-import ChartsScreen from './screens/ChartsScreen';
-import Privacy from './screens/Privacy';
-import Terms from './screens/Terms';
-
-
-
 function App() {
   return (
     <>
       <Header />
-      <FooterGlobal>
       <Routes>
         <Route path="/" element={<HomePage />} /> {/* ✅ Set homepage */}
         <Route path="/auth" element={<LoginScreen />} />
@@ -37,10 +15,8 @@ function App() {
         <Route path="/artist/:id" element={<ArtistProfileScreen />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
-      <FooterGlobal>
       </Routes>
+      <FooterGlobal />
     </>
   );
 }
-
-export default App;
