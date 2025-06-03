@@ -1,3 +1,20 @@
+mport React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Header from './components/Header';
+import FooterGlobal from './components/FooterGlobal';
+import SwipeScreen from './screens/SwipeScreen';
+import UploadScreen from './screens/UploadScreen';
+import JamStackScreen from './screens/JamStackScreen';
+import LoginScreen from './screens/LoginScreen';
+import RewardsScreen from './screens/RewardsScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import SettingsScreen from './screens/SettingsScreen';
+import ArtistProfileScreen from './screens/ArtistProfileScreen';
+import HomePage from './screens/HomePage'; // ✅ NEW
+import ChartsScreen from './screens/ChartsScreen';
+import Privacy from './screens/Privacy';
+import Terms from './screens/Terms';
+
 function App() {
   return (
     <>
