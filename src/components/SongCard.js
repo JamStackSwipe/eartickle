@@ -97,7 +97,32 @@ const SongCard = ({ song, user }) => {
         }
         setHasReacted(flags);
       }
-    };
+    };<ReactionStatsBar
+  song={{ ...song, user_id: song.artist_id }}
+  onBalanceRefresh={() => {
+    // Force reload if we pass this through
+    if (typeof loadStats === 'function') loadStats();
+  }}
+/>
+
+{user && (
+  <div className="mt-3 flex justify-center">
+    <BoostTickles
+      songId={song.id}
+      userId={user.id}
+      onBoosted={() => {
+        const tickleStatBar = document.querySelector(`[data-song-id="${song.id}"]`);
+        if (tickleStatBar) {
+          const event = new CustomEvent('boosted', { detail: { songId: song.id } });
+          tickleStatBar.dispatchEvent(event);
+        }
+      }}
+    />
+  </div>
+)}
+
+
+    
 
     fetchStatsAndReactions();
   }, [user, song.id]);
