@@ -47,6 +47,16 @@ const ReactionStatsBar = ({ song }) => {
     loadStats();
   }, [song.id, user]);
 
+  useEffect(() => {
+  const refreshFromBoost = () => loadStats();
+  const el = document.querySelector(`[data-song-id="${song.id}"]`);
+  if (el) el.addEventListener('boosted', refreshFromBoost);
+  return () => {
+    if (el) el.removeEventListener('boosted', refreshFromBoost);
+  };
+}, [song.id]);
+
+
   const handleEmojiClick = async (emoji) => {
     if (!user) return toast.error('Login to react');
     if (hasReacted[emoji]) return toast('Already reacted');
