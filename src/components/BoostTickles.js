@@ -26,17 +26,16 @@ const BoostTickles = ({ songId, userId }) => {
       return;
     }
 
-    const res = await fetch('/api/spend-tickles', {
+    const res = await fetch('/api/send-tickle', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        user_id_input: userId,
-        song_id_input: songId,
-        reason,
-        cost: amount,
+        artist_id: userId,
+        song_id: songId,
+        emoji: reason, // treat label as emoji
       }),
     });
 
