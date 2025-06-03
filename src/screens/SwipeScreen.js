@@ -10,6 +10,26 @@ const SwipeScreen = () => {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const FILTER_OPTIONS = [
+  { key: 'views', label: '🔥 Top' },
+  { key: 'loves', label: '❤️ Loved' },
+  { key: 'fires', label: '🔥 Fire' },
+  { key: 'bullseyes', label: '🎯 Bullseye' },
+  { key: 'sads', label: '😢 Sad' },
+  { key: 'jams', label: '📥 Jammed' },
+  { key: 'tickles', label: '🎁 Tickled' }
+];
+
+const emojiMap = {
+  views: '🔥',
+  loves: '❤️',
+  fires: '🔥',
+  bullseyes: '🎯',
+  sads: '😢',
+  jams: '📥',
+  tickles: '🎁'
+};
+
   useEffect(() => {
     const fetchSongs = async () => {
       const { data, error } = await supabase
