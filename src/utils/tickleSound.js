@@ -16,6 +16,8 @@ export const playTickleWelcome = () => {
 };
 
 export const playTickleSpecial = () => {
-  const audio = new Audio('/sounds/tickle-special.mp3');
-  audio.play();
+  const audio = new Audio('/sounds/tickle-sent.mp3'); // ✅ this file exists
+  audio.play().catch((err) => {
+    console.warn('⚠️ Boost sound failed:', err);
+  });
 };
