@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
+import toast from 'react-hot-toast';
 import ReactionStatsBar from './ReactionStatsBar';
 
 const tickleSound = new Audio('/sounds/tickle.mp3');
