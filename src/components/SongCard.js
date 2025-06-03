@@ -118,10 +118,6 @@ const SongCard = ({ song, user }) => {
         </span>
       )}
 
-      {song.genre && (
-        <p className="text-xs text-gray-400 mb-2 italic">Genre: {song.genre}</p>
-      )}
-
       {/* Boost Buttons */}
       <div className="flex justify-between gap-2 mb-3">
         {[5, 10, 25].map((amount) => (
