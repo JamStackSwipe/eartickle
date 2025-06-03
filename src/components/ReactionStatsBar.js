@@ -63,18 +63,19 @@ const ReactionStatsBar = ({ songId, artistId }) => {
   };
 
   const playSound = (emoji) => {
-    let filename = null;
-    switch (emoji) {
-      case '🔥': filename = 'fire.mp3'; break;
-      case '💖': filename = 'love.mp3'; break;
-      case '😭': filename = 'sad.mp3'; break;
-      case '🎯': filename = 'bullseye.mp3'; break;
-      case '👁️': filename = 'meh.mp3'; break;
-      case '📥': filename = 'add.mp3'; break;
-      case '🎁': filename = 'tickle.mp3'; break;
-      default: return;
+    const map = {
+      '🔥': 'fire.mp3',
+      '💖': 'love.mp3',
+      '😭': 'sad.mp3',
+      '🎯': 'bullseye.mp3',
+      '👁️': 'meh.mp3',
+      '📥': 'add.mp3',
+      '🎁': 'tickle.mp3',
+    };
+    const file = map[emoji];
+    if (file) {
+      new Audio(`/sounds/${file}`).play().catch(() => {});
     }
-    new Audio(`/sounds/${filename}`).play().catch(() => {});
   };
 
   const handleReaction = async (emoji) => {
@@ -117,7 +118,9 @@ const ReactionStatsBar = ({ songId, artistId }) => {
     <button
       key={emoji}
       onClick={() => handleReaction(emoji)}
-      className={`text-xl mx-1 ${userReactions[emoji] ? 'opacity-100' : 'opacity-60 hover:opacity-100'}`}
+      className={`text-xl mx-1 cursor-pointer transition-transform duration-150 ${
+        userReactions[emoji] ? 'opacity-100' : 'opacity-60 hover:opacity-100'
+      }`}
     >
       {emoji} {reactions[emoji] || 0}
     </button>
