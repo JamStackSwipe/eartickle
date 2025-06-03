@@ -47,8 +47,10 @@ const AddToJamStackButton = ({ songId, user }) => {
     <button
       onClick={handleAddToJamStack}
       disabled={loading || added}
-      className={`px-3 py-1 bg-black border border-yellow-400 text-yellow-300 text-sm font-medium rounded hover:bg-yellow-500 hover:text-black transition-colors ${
-        added ? 'opacity-60 cursor-not-allowed' : ''
+      className={`px-4 py-1.5 text-sm font-semibold rounded-full shadow transition-all duration-200 ${
+        added
+          ? 'bg-[#00CEC8] text-black opacity-80 cursor-not-allowed'
+          : 'bg-black border border-[#00CEC8] text-[#00CEC8] hover:bg-[#00CEC8] hover:text-black'
       }`}
     >
       {added ? '✅ In Stack' : loading ? 'Adding...' : '➕ Stack This'}
