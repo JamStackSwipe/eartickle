@@ -4,9 +4,9 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import AddToJamStackButton from './AddToJamStackButton';
-import ReactionStatsBar from './ReactionStatsBar'; // ✅ added
+import ReactionStatsBar from './ReactionStatsBar';
 import BoostTickles from './BoostTickles';
-
+import { genreFlavorMap } from '../utils/genreList'; // ✅ pull flavor data
 
 const tickleSound = new Audio('/sounds/tickle.mp3');
 
@@ -29,13 +29,15 @@ const SongCard = ({ song, user }) => {
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
-  // Detect when the card is visible (auto-play + view count)
+  // 🧠 Genre glow logic
+  const flavor = genreFlavorMap[song.genre_flavor] || null;
+  const ringColor = flavor ? `ring-4 ring-${flavor.color}-500` : '';
+
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
       { threshold: 0.5 }
     );
-
     if (cardRef.current) observer.observe(cardRef.current);
     return () => observer.disconnect();
   }, []);
@@ -53,8 +55,7 @@ const SongCard = ({ song, user }) => {
   useEffect(() => {
     const fetchStatsAndReactions = async () => {
       const [emojiStats, reactionFlags] = await Promise.all([
-        supabase
-          .from('songs')
+        supabase.from('songs')
           .select('fires, loves, sads, bullseyes, jams')
           .eq('id', song.id)
           .single(),
@@ -129,36 +130,45 @@ const SongCard = ({ song, user }) => {
   return (
     <div
       ref={cardRef}
-      className="bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md"
+      data-song-id={song.id}
+      className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${ringColor}`}
     >
-      <a
-        href={`/artist/${song.artist_id}`}
-        onClick={(e) => {
-          e.preventDefault();
-          incrementViews().finally(() => {
-            window.location.href = `/artist/${song.artist_id}`;
-          });
-        }}
-      >
-        <img
-          src={song.cover}
-          alt={song.title}
-          className="w-full h-auto rounded-xl mb-4"
-        />
-      </a>
+      <div className="relative">
+        <a
+          href={`/artist/${song.artist_id}`}
+          onClick={(e) => {
+            e.preventDefault();
+            incrementViews().finally(() => {
+              window.location.href = `/artist/${song.artist_id}`;
+            });
+          }}
+        >
+          <img
+            src={song.cover}
+            alt={song.title}
+            className="w-full h-auto rounded-xl mb-4"
+          />
+        </a>
+
+        {flavor && (
+          <div className={`absolute top-2 left-2 bg-${flavor.color}-600 text-white text-xs font-bold px-2 py-1 rounded shadow`}>
+            {flavor.label}
+          </div>
+        )}
+      </div>
 
       <h2 className="text-xl font-semibold mb-1">{song.title}</h2>
       <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
 
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
-            
-     <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
-{user && (
-  <div className="mt-3">
-    <BoostTickles songId={song.id} userId={user.id} />
-  </div>
-)}
 
+      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
+
+      {user && (
+        <div className="mt-3">
+          <BoostTickles songId={song.id} userId={user.id} />
+        </div>
+      )}
     </div>
   );
 };
