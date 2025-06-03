@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
-import BoostTickles from './BoostTickles';
 import AddToJamStackButton from './AddToJamStackButton';
+import BoostTickles from './BoostTickles';
 
 const ReactionStatsBar = ({ songId, artistId }) => {
   const { user } = useUser();
@@ -33,44 +33,41 @@ const ReactionStatsBar = ({ songId, artistId }) => {
       .single();
 
     if (!error && data) {
-      const grouped = {
+      setReactions({
         '🔥': data.fire || 0,
         '💖': data.heart || 0,
         '😭': data.cry || 0,
         '🎯': data.target || 0,
         '👁️': data.views || 0,
         '📥': data.jamstack || 0,
-      };
-      setReactions(grouped);
+      });
     }
   };
 
   const fetchUserReactions = async () => {
     if (!user?.id || !songId) return;
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('reactions')
       .select('emoji')
       .eq('user_id', user.id)
       .eq('song_id', songId);
 
-    if (!error && data) {
-      const reacted = {};
-      data.forEach(({ emoji }) => {
-        reacted[emoji] = true;
-      });
-      setUserReactions(reacted);
-    }
+    const reacted = {};
+    data?.forEach(({ emoji }) => {
+      reacted[emoji] = true;
+    });
+    setUserReactions(reacted);
   };
 
   const fetchTickleBalance = async () => {
     if (!user?.id) return;
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('profiles')
       .select('tickle_balance')
       .eq('id', user.id)
       .single();
 
-    if (!error && data) {
+    if (data) {
       setTickleBalance(data.tickle_balance || 0);
     }
   };
@@ -109,7 +106,6 @@ const ReactionStatsBar = ({ songId, artistId }) => {
 
   const handleSendTickle = async () => {
     if (!user?.id || !artistId || sending || tickleBalance < 1) return;
-
     setSending(true);
 
     const { error } = await supabase.rpc('spend_tickles', {
@@ -142,7 +138,7 @@ const ReactionStatsBar = ({ songId, artistId }) => {
   return (
     <div className="w-full text-sm text-white mt-2 px-2 space-y-2">
 
-      {/* Emoji Reactions Row */}
+      {/* Emoji Row */}
       <div className="flex justify-center items-center space-x-3 text-lg">
         {renderStat('🔥')}
         {renderStat('💖')}
@@ -152,7 +148,7 @@ const ReactionStatsBar = ({ songId, artistId }) => {
         {renderStat('📥')}
       </div>
 
-      {/* Control Row */}
+      {/* Button Row */}
       <div className="flex items-center justify-between gap-x-2 text-sm h-8">
         <AddToJamStackButton
           songId={songId}
@@ -171,9 +167,13 @@ const ReactionStatsBar = ({ songId, artistId }) => {
         </button>
       </div>
 
-      {/* Boost Button */}
+      {/* Boost */}
       <div className="flex justify-center">
-        <BoostTickles songId={songId} artistId={artistId} onBoost={fetchTickleBalance} />
+        <BoostTickles
+          songId={songId}
+          artistId={artistId}
+          onBoost={fetchTickleBalance}
+        />
       </div>
     </div>
   );
