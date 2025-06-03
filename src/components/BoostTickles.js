@@ -28,7 +28,9 @@ const BoostTickles = ({ userId, songId }) => {
   const handleBoost = async (amount, label) => {
     if (!userId || !songId) return;
 
-    if ((balance ?? 0) < amount) {
+    const cost = Number.parseInt(amount, 10); // ✅ force integer for RPC
+
+    if ((balance ?? 0) < cost) {
       toast.error('Not enough Tickles!');
       return;
     }
@@ -39,7 +41,7 @@ const BoostTickles = ({ userId, songId }) => {
       user_id_input: userId,
       song_id_input: songId,
       reason: 'boost',
-      cost: parseInt(amount),
+      cost,
     });
 
     if (error) {
@@ -60,7 +62,7 @@ const BoostTickles = ({ userId, songId }) => {
       }, 1000);
     }
 
-    await fetchBalance(); // silently refresh
+    await fetchBalance();
     setLoading(false);
   };
 
