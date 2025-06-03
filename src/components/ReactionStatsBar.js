@@ -1,4 +1,4 @@
-// ReactionStatsBar.js – FINAL WORKING BUILD
+// ReactionStatsBar.js – Fully Functional + Clean Layout
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
@@ -23,10 +23,9 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
   const [userReactions, setUserReactions] = useState({});
   const [tickleBalance, setTickleBalance] = useState(0);
   const [sending, setSending] = useState(false);
-  const [playCounted, setPlayCounted] = useState(false);
-  const [flash, setFlash] = useState(false);
-
   const soundRef = useRef(null);
+  const [flash, setFlash] = useState(false);
+  const [playCounted, setPlayCounted] = useState(false);
 
   useEffect(() => {
     if (songId) {
@@ -44,16 +43,19 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
 
   const incrementView = async () => {
     if (playCounted || !songId) return;
+    console.log('👁️ Incrementing view count for', songId);
     await supabase.rpc('increment_view_count', { song_id_input: songId });
     setPlayCounted(true);
   };
 
   const fetchReactions = async () => {
-    const { data } = await supabase
+    console.log('📊 Fetching song reactions...');
+    const { data, error } = await supabase
       .from('song_reactions')
       .select('*')
       .eq('song_id', songId)
       .single();
+    if (error) console.error('❌ Reactions fetch error:', error.message);
     if (data) {
       setReactions({
         '🔥': data.fire || 0,
@@ -67,22 +69,26 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
   };
 
   const fetchUserReactions = async () => {
-    const { data } = await supabase
+    console.log('🙋‍♂️ Checking user reactions...');
+    const { data, error } = await supabase
       .from('reactions')
       .select('emoji')
       .eq('user_id', user.id)
       .eq('song_id', songId);
+    if (error) console.error('❌ User reaction fetch error:', error.message);
     const reacted = {};
     data?.forEach(({ emoji }) => (reacted[emoji] = true));
     setUserReactions(reacted);
   };
 
   const fetchTickleBalance = async () => {
-    const { data } = await supabase
+    console.log('💰 Fetching tickle balance...');
+    const { data, error } = await supabase
       .from('profiles')
       .select('tickle_balance')
       .eq('id', user.id)
       .single();
+    if (error) console.error('❌ Balance fetch error:', error.message);
     setTickleBalance(data?.tickle_balance || 0);
   };
 
@@ -103,11 +109,17 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
 
   const handleReaction = async (emoji) => {
     if (!user?.id || !songId || userReactions[emoji]) return;
-    await supabase.from('reactions').insert({
+    console.log(`🎧 Reacting with ${emoji}`);
+    const { error } = await supabase.from('reactions').insert({
       user_id: user.id,
       song_id: songId,
       emoji,
     });
+    if (error) {
+      console.error('❌ Reaction error:', error.message);
+      toast.error('Failed to react');
+      return;
+    }
     playSound(emoji);
     fetchReactions();
     fetchUserReactions();
@@ -115,6 +127,7 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
 
   const handleSendTickle = async () => {
     if (!user?.id || !artistId || sending || tickleBalance < 1) return;
+    console.log('🎁 Sending tickle...');
     setSending(true);
     const { error } = await supabase.rpc('spend_tickles', {
       user_id_input: user.id,
@@ -123,14 +136,16 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
       cost: 1,
     });
     if (error) {
-      toast.error('Failed to send tickle');
-    } else {
-      playSound('🎁');
-      triggerFlash();
-      fetchTickleBalance();
-      toast.success('Tickle sent!');
+      console.error('❌ Send tickle error:', error.message);
+      toast.error('Could not send tickle');
+      setSending(false);
+      return;
     }
+    playSound('🎁');
+    fetchTickleBalance();
+    triggerFlash();
     setSending(false);
+    toast.success('Tickle sent!');
   };
 
   const renderStat = (emoji) => (
@@ -147,12 +162,17 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
 
   return (
     <div className={`w-full text-white text-sm px-2 space-y-3 ${flash ? 'animate-pulse' : ''}`}>
-      {/* Optional Genre Banner Only */}
-      {genre && (
-        <div className="absolute top-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded-full z-10">
-          {genre}
-        </div>
-      )}
+      {/* Cover and Genre Banner */}
+      <div className="relative w-full aspect-square rounded-xl overflow-hidden shadow">
+        <Link to={`/artist/${artistId}`}>
+          <img src={cover} alt="Cover" className="w-full h-full object-cover" />
+        </Link>
+        {genre && (
+          <div className="absolute top-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded-full">
+            {genre}
+          </div>
+        )}
+      </div>
 
       {/* Emoji Reactions */}
       <div className="flex justify-center items-center flex-wrap gap-3">
@@ -164,40 +184,26 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
         {renderStat('📥')}
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex justify-between items-center gap-2">
-        <button
-          onClick={() => {
-            document.getElementById(`jamstack-${songId}`)?.click();
-          }}
-          className="flex items-center gap-1 px-3 py-1 bg-pink-500 text-white rounded-full text-sm font-semibold hover:bg-pink-600 transition"
-        >
-          ➕ Add Jam
-        </button>
-
-        <div className="flex items-center gap-1 px-3 py-1 bg-black bg-opacity-50 text-white rounded-full text-sm font-semibold">
+      {/* Actions Row */}
+      <div className="flex items-center justify-between gap-2 h-8">
+        <AddToJamStackButton
+          songId={songId}
+          user={user}
+          className="h-8 px-3 py-1 bg-black bg-opacity-40 text-white rounded"
+        />
+        <div className="flex items-center justify-center min-w-[100px] h-8 px-3 py-1 rounded bg-black bg-opacity-40 text-pink-300">
           🎁 {tickleBalance} Tickles
         </div>
-
         <button
           onClick={handleSendTickle}
           disabled={sending || tickleBalance < 1}
-          className="flex items-center gap-1 px-3 py-1 bg-emerald-500 text-white rounded-full text-sm font-semibold hover:bg-emerald-600 disabled:opacity-40 transition"
+          className="h-8 px-3 py-1 rounded bg-black bg-opacity-40 text-white disabled:opacity-40 hover:scale-105 transition"
         >
           🎁 Gift Tickle
         </button>
       </div>
 
-      {/* Hidden Trigger */}
-      <div className="hidden">
-        <AddToJamStackButton
-          songId={songId}
-          user={user}
-          buttonId={`jamstack-${songId}`}
-        />
-      </div>
-
-      {/* Boost Tickles */}
+      {/* Boost */}
       <div className="flex justify-center">
         <BoostTickles
           songId={songId}
