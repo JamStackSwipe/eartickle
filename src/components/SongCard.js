@@ -1,4 +1,5 @@
 // SongCard.js – with black base, genre glow, flavor label, and top-left genre badge
+// 🚫 DO NOT MODIFY WITHOUT OWNER APPROVAL
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
@@ -63,12 +64,11 @@ const SongCard = ({ song, user }) => {
   };
 
   return (
-  <div
-  ref={cardRef}
-  data-song-id={song.id}  // required for flash targeting
-  className={`relative w-full max-w-md mx-auto mb-10 p-4 rounded-xl ring-2 ring-offset-2 ${glowStyle}`}
->
-
+    <div
+      ref={cardRef}
+      data-song-id={song.id}  // required for flash targeting
+      className={`relative w-full max-w-md mx-auto mb-10 p-4 rounded-xl ring-2 ring-offset-2 bg-black ${glowStyle}`}
+    >
       {/* Genre Badge */}
       {genreInfo && (
         <div className={`absolute top-2 left-2 px-3 py-1 rounded-full text-xs font-semibold ${genreInfo.color}`}>
