@@ -63,10 +63,27 @@ const SongCard = ({ song, user }) => {
     await supabase.rpc('increment_song_view', { song_id_input: song.id });
   };
 
+  const handleBoost = async (amount) => {
+    if (!user) return toast.error('Please log in to boost!');
+    const { data, error } = await supabase.rpc('spend_tickles', {
+      user_id_input: user.id,
+      song_id_input: song.id,
+      reason: '🎁',
+      cost: amount,
+    });
+
+    if (error) {
+      console.error('Boost failed:', error.message);
+      toast.error('Failed to boost this song.');
+    } else {
+      toast.success(`Boosted with ${amount} Tickles! 🎉`);
+    }
+  };
+
   return (
     <div
       ref={cardRef}
-      data-song-id={song.id}  // required for flash targeting
+      data-song-id={song.id}
       className={`relative w-full max-w-md mx-auto mb-10 p-4 rounded-xl ring-2 ring-offset-2 bg-black ${glowStyle}`}
     >
       {/* Genre Badge */}
@@ -104,6 +121,19 @@ const SongCard = ({ song, user }) => {
       {song.genre && (
         <p className="text-xs text-gray-400 mb-2 italic">Genre: {song.genre}</p>
       )}
+
+      {/* Boost Buttons */}
+      <div className="flex justify-between gap-2 mb-3">
+        {[5, 10, 25].map((amount) => (
+          <button
+            key={amount}
+            onClick={() => handleBoost(amount)}
+            className="flex-1 text-sm font-semibold py-1 rounded bg-yellow-500 text-black hover:bg-yellow-600 transition"
+          >
+            Boost {amount}
+          </button>
+        ))}
+      </div>
 
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3" />
 
