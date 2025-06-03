@@ -1,10 +1,12 @@
+// src/components/SongCard.js
+
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import AddToJamStackButton from './AddToJamStackButton';
 import ReactionStatsBar from './ReactionStatsBar';
 import BoostTickles from './BoostTickles';
-import { genreFlavorMap } from '../utils/genreList'; // ✅ pull flavor data
+import { genreFlavorMap } from '../utils/genreList';
 
 const tickleSound = new Audio('/sounds/tickle.mp3');
 
@@ -28,7 +30,9 @@ const SongCard = ({ song, user }) => {
   const [isVisible, setIsVisible] = useState(false);
 
   const flavor = genreFlavorMap[song.genre_flavor] || null;
-  const ringColor = flavor ? `ring-4 ring-${flavor.color}-500` : '';
+  const glowStyle = flavor
+    ? { boxShadow: `0 0 16px 4px ${flavor.hex}` }
+    : {};
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -52,7 +56,8 @@ const SongCard = ({ song, user }) => {
   useEffect(() => {
     const fetchStatsAndReactions = async () => {
       const [emojiStats, reactionFlags] = await Promise.all([
-        supabase.from('songs')
+        supabase
+          .from('songs')
           .select('fires, loves, sads, bullseyes, jams')
           .eq('id', song.id)
           .single(),
@@ -128,7 +133,8 @@ const SongCard = ({ song, user }) => {
     <div
       ref={cardRef}
       data-song-id={song.id}
-      className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${ringColor} ${flavor ? 'animate-genre-pulse' : ''}`}
+      className="bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all"
+      style={glowStyle}
     >
       <div className="relative">
         <a
@@ -148,7 +154,10 @@ const SongCard = ({ song, user }) => {
         </a>
 
         {flavor && (
-          <div className={`absolute top-2 left-2 bg-${flavor.color}-600 text-white text-xs font-bold px-2 py-1 rounded shadow`}>
+          <div
+            className="absolute top-2 left-2 text-white text-xs font-bold px-2 py-1 rounded shadow"
+            style={{ backgroundColor: flavor.hex }}
+          >
             {flavor.label}
           </div>
         )}
