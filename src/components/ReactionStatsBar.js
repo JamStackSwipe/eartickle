@@ -1,4 +1,4 @@
-// ReactionStatsBar.js - Cleaned + Fully Functional
+// src/components/ReactionStatsBar.js
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
@@ -22,9 +22,9 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
   const [userReactions, setUserReactions] = useState({});
   const [tickleBalance, setTickleBalance] = useState(0);
   const [sending, setSending] = useState(false);
-  const soundRef = useRef(null);
-  const [playCounted, setPlayCounted] = useState(false);
   const [flash, setFlash] = useState(false);
+  const soundRef = useRef(null);
+  const playCountedRef = useRef(false);
 
   useEffect(() => {
     if (songId) {
@@ -41,14 +41,11 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
   }, [user, songId]);
 
   const incrementView = async () => {
-    if (playCounted || !songId) return;
-    try {
-      await supabase.rpc('increment_view_count', { song_id_input: songId });
-      setPlayCounted(true);
-      console.log('👁️ View count incremented');
-    } catch (err) {
-      console.error('❌ View increment failed:', err.message);
-    }
+    if (playCountedRef.current || !songId) return;
+    const { error } = await supabase.rpc('increment_view_count', { song_id_input: songId });
+    if (error) console.error('❌ View count failed:', error.message);
+    else console.log('👁️ View incremented');
+    playCountedRef.current = true;
   };
 
   const fetchReactions = async () => {
@@ -58,17 +55,16 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
       .eq('song_id', songId)
       .single();
     if (error) {
-      console.error('❌ Failed to fetch song reactions:', error.message);
+      console.error('❌ fetchReactions failed:', error.message);
       return;
     }
-    console.log('📊 Reaction stats:', data);
     setReactions({
-      '🔥': data.fire || 0,
-      '💖': data.heart || 0,
-      '😭': data.cry || 0,
-      '🎯': data.target || 0,
-      '👁️': data.views || 0,
-      '📥': data.jamstack || 0,
+      '🔥': data?.fire || 0,
+      '💖': data?.heart || 0,
+      '😭': data?.cry || 0,
+      '🎯': data?.target || 0,
+      '👁️': data?.views || 0,
+      '📥': data?.jamstack || 0,
     });
   };
 
@@ -79,12 +75,11 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
       .eq('user_id', user.id)
       .eq('song_id', songId);
     if (error) {
-      console.error('❌ Failed to fetch user reactions:', error.message);
+      console.error('❌ fetchUserReactions failed:', error.message);
       return;
     }
     const reacted = {};
     data?.forEach(({ emoji }) => (reacted[emoji] = true));
-    console.log('🙋 User reactions:', reacted);
     setUserReactions(reacted);
   };
 
@@ -95,10 +90,10 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
       .eq('id', user.id)
       .single();
     if (error) {
-      console.error('❌ Error fetching tickle balance:', error.message);
+      console.error('❌ fetchTickleBalance failed:', error.message);
+      return;
     }
     setTickleBalance(data?.tickle_balance || 0);
-    console.log('🎁 Tickle balance:', data?.tickle_balance || 0);
   };
 
   const playSound = (emoji) => {
@@ -118,15 +113,14 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
 
   const handleReaction = async (emoji) => {
     if (!user?.id || !songId || userReactions[emoji]) return;
-    console.log(`👍 Sending reaction ${emoji} for ${songId}`);
     const { error } = await supabase.from('reactions').insert({
       user_id: user.id,
       song_id: songId,
       emoji,
     });
     if (error) {
-      console.error('❌ Failed to react:', error.message);
-      toast.error('Could not send reaction.');
+      console.error('❌ Reaction failed:', error.message);
+      toast.error('Failed to react');
       return;
     }
     playSound(emoji);
@@ -137,7 +131,6 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
   const handleSendTickle = async () => {
     if (!user?.id || !artistId || sending || tickleBalance < 1) return;
     setSending(true);
-    console.log('🎁 Sending tickle to', artistId);
     const { error } = await supabase.rpc('spend_tickles', {
       user_id_input: user.id,
       song_id_input: songId,
@@ -145,8 +138,8 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
       cost: 1,
     });
     if (error) {
-      console.error('❌ Tickle send failed:', error.message);
-      toast.error('Failed to send tickle.');
+      console.error('❌ Tickle failed:', error.message);
+      toast.error('Failed to send tickle');
     } else {
       playSound('🎁');
       triggerFlash();
@@ -160,7 +153,7 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
     <button
       key={emoji}
       onClick={() => handleReaction(emoji)}
-      className={`text-xl mx-1 transform transition-transform duration-150 hover:scale-125 ${
+      className={`text-xl mx-1 transition hover:scale-125 ${
         userReactions[emoji] ? 'opacity-100' : 'opacity-60 hover:opacity-100'
       }`}
     >
@@ -180,7 +173,7 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
         {renderStat('📥')}
       </div>
 
-      {/* Actions Row */}
+      {/* Action Bar */}
       <div className="flex items-center justify-between gap-2 h-9">
         <AddToJamStackButton
           songId={songId}
@@ -199,7 +192,7 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
         </button>
       </div>
 
-      {/* Boost */}
+      {/* Boost Bar */}
       <div className="flex justify-center">
         <BoostTickles
           songId={songId}
@@ -207,6 +200,7 @@ const ReactionStatsBar = ({ songId, artistId, cover, artist, genre }) => {
           onBoost={() => {
             fetchTickleBalance();
             triggerFlash();
+            playSound('🎁');
           }}
         />
       </div>
