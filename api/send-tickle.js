@@ -15,9 +15,9 @@ export default async function handler(req, res) {
 
     // Validate input
     if (!song_id || !emoji) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Missing required fields',
-        details: !song_id ? 'Missing song_id' : 'Missing emoji'
+        details: !song_id ? 'Missing song_id' : 'Missing emoji',
       });
     }
 
@@ -30,44 +30,44 @@ export default async function handler(req, res) {
     // Get user from token
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: 'Invalid authentication',
-        details: userError?.message
+        details: userError?.message,
       });
     }
 
-    // Call RPC function
+    // Call RPC function with additional logging
+    console.log('Calling RPC with:', { sender_id: user.id, song_id, amount: 1 });
     const { error: rpcError } = await supabase.rpc('send_gift_tickles', {
       sender_id: user.id,
       song_id,
-      amount: 1
+      amount: 1,
     });
 
     if (rpcError) {
       console.error('RPC Error Details:', {
         message: rpcError.message,
         code: rpcError.code,
-        details: rpcError.details
+        details: rpcError.details,
       });
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Tickle transfer failed',
-        details: rpcError.message
+        details: rpcError.message,
       });
     }
 
-    return res.status(200).json({ 
+    return res.status(200).json({
       success: true,
-      message: 'Tickle sent successfully'
+      message: 'Tickle sent successfully',
     });
-
   } catch (err) {
     console.error('Server Error:', {
       message: err.message,
-      stack: err.stack
+      stack: err.stack,
     });
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined,
     });
   }
 }
