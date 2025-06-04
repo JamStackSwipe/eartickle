@@ -1,47 +1,42 @@
-// /api/boost-tickles.js — Handles Boost Tickles independently of Send Tickle
+// /api/boost-tickles.js
+import { createMiddlewareSupabaseClient } from '@supabase/auth-helpers-nextjs';
+import { NextResponse } from 'next/server';
+import { supabase } from '../../supabase'; // adjust if needed
 
-const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    console.error('❌ Invalid method');
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    let body = req.body;
-    if (!body) {
-      let data = '';
-      for await (const chunk of req) data += chunk;
-      body = JSON.parse(data);
+    const { user_id, song_id, artist_id, amount, reason } = req.body;
+
+    if (!user_id || !song_id || !amount || !reason) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const { user_id, artist_id, song_id, amount, reason } = body;
-    console.log('⚡ Boost Tickles Request:', body);
+    // Ensure amount is an integer
+    const cost = parseInt(amount);
+    if (isNaN(cost)) {
+      return res.status(400).json({ error: 'Invalid amount value' });
+    }
 
+    // Call the fixed RPC function
     const { error } = await supabase.rpc('spend_tickles', {
       user_id_input: user_id,
       song_id_input: song_id,
-      reason,
-      cost: amount
+      reason: reason,
+      cost: cost,
     });
 
     if (error) {
-      console.error('❌ Failed spend_tickles RPC:', error);
-      return res.status(500).json({ error: 'Tickle spend failed' });
+      console.error('❌ spend_tickles error:', error);
+      return res.status(500).json({ error: error.message || 'Boost failed' });
     }
-
-    // Optionally insert into tickles manually if RPC doesn't handle it
-    // await supabase.from('tickles').insert({ user_id, artist_id, song_id, amount, emoji: reason });
 
     return res.status(200).json({ success: true });
   } catch (err) {
-    console.error('❌ Uncaught error in boost-tickles:', err);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.error('❌ Unexpected error:', err);
+    return res.status(500).json({ error: 'Server error' });
   }
-};
+}
