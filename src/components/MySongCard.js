@@ -5,7 +5,7 @@ import AddToJamStackButton from './AddToJamStackButton';
 import ReactionStatsBar from './ReactionStatsBar';
 import BoostTickles from './BoostTickles';
 import { genreFlavorMap } from '../utils/genreList';
-import { FiTrash2 } from 'react-icons/fi';
+
 
 const tickleSound = new Audio('/sounds/tickle.mp3');
 
