@@ -1,3 +1,5 @@
+// src/components/ReactionStatsBar.js
+
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
@@ -61,63 +63,41 @@ const ReactionStatsBar = ({ song }) => {
       { user_id: user.id, song_id: song.id, emoji },
     ]);
 
-    if (error) {
-      toast.error('Failed to add reaction');
-      return;
+    if (!error) {
+      setStats((prev) => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
+      setHasReacted((prev) => ({ ...prev, [emoji]: true }));
     }
-
-    setStats((prev) => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
-    setHasReacted((prev) => ({ ...prev, [emoji]: true }));
   };
 
   const handleSendTickle = async () => {
     if (!user) return toast.error('Login required');
-    if (tickleBalance < 1) return toast.error('Not enough Tickles');
-
-    // Optimistically update the balance
-    const previousBalance = tickleBalance;
-    setTickleBalance((prev) => prev - 1);
+    if ((tickleBalance ?? 0) < 1) return toast.error('Not enough Tickles');
 
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
-    if (!token) {
-      toast.error('Not authorized');
-      setTickleBalance(previousBalance); // Revert optimistic update
-      return;
-    }
+    if (!token) return toast.error('Not authorized');
 
-    try {
-      const res = await fetch('/api/send-tickle', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          artist_id: song.user_id,
-          song_id: song.id,
-          emoji: '🎁',
-        }),
-      });
+    const res = await fetch('/api/send-tickle', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        artist_id: song.user_id,
+        song_id: song.id,
+        emoji: '🎁',
+      }),
+    });
 
-      const result = await res.json();
-      if (res.ok) {
-        playTickle();
-        toast.success('1 Tickle sent!');
-        // Refresh balance from backend to ensure consistency
-        const { data: balanceData } = await supabase
-          .from('profiles')
-          .select('tickle_balance')
-          .eq('id', user.id)
-          .maybeSingle();
-        setTickleBalance(balanceData?.tickle_balance ?? 0);
-      } else {
-        toast.error(result.error || 'Failed to send tickle');
-        setTickleBalance(previousBalance); // Revert optimistic update
-      }
-    } catch (error) {
-      toast.error('Network error, please try again');
-      setTickleBalance(previousBalance); // Revert optimistic update
+    const result = await res.json();
+    if (res.ok) {
+      playTickle();
+      toast.success('1 Tickle sent!');
+      setTickleBalance((prev) => (prev || 1) - 1);
+      loadStats();
+    } else {
+      toast.error(result.error || 'Failed to send tickle');
     }
   };
 
