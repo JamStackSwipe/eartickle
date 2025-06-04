@@ -5,7 +5,6 @@
 // 🚫 Do NOT use this file for Boost Tickles or multi-cost actions
 //    Boosting requires a different path (see: BoostTickles.js or /api/spend-tickles.js)
 
-
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -19,10 +18,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { artist_id, song_id, emoji } = req.body;
+    const { song_id, emoji } = req.body;
 
-    if (!artist_id || !song_id) {
-      return res.status(400).json({ error: 'Missing artist or song ID' });
+    if (!song_id || !emoji) {
+      return res.status(400).json({ error: 'Missing song ID or emoji' });
     }
 
     const token = req.headers.authorization?.replace('Bearer ', '');
@@ -39,32 +38,16 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Unauthorized or user not found' });
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('tickle_balance')
-      .eq('id', user.id)
-      .single();
+    // ✅ Call the RPC function that handles gifting logic safely
+    const { error: rpcError } = await supabase.rpc('send_gift_tickles', {
+      sender_id: user.id,
+      song_id,
+      amount: 1
+    });
 
-    if (profileError) {
-      return res.status(500).json({ error: 'Failed to fetch profile' });
-    }
-
-    if (!profile || profile.tickle_balance < 1) {
-      return res.status(400).json({ error: 'No Tickles left — buy more to gift.' });
-    }
-
-    const { error: insertError } = await supabase
-      .from('tickles')
-      .insert({
-        user_id: user.id,
-        artist_id,
-        song_id,
-        emoji,
-        amount: 1
-      });
-
-    if (insertError) {
-      return res.status(500).json({ error: 'Failed to insert tickle' });
+    if (rpcError) {
+      console.error('❌ RPC Error:', rpcError);
+      return res.status(500).json({ error: 'Failed to send tickle' });
     }
 
     return res.status(200).json({ success: true });
