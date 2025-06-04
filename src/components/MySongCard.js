@@ -1,4 +1,3 @@
-// works with profile page
 // src/components/MySongCard.js
 
 import { useState, useEffect, useRef } from 'react';
