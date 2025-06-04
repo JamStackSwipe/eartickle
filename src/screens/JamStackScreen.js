@@ -90,33 +90,33 @@ const StackerScreen = () => {
           ⏭️ Next Song
         </button>
       </div>
-
       {songs.length > 1 && (
-        <div className="mt-8">
-          <div className="text-sm text-gray-300 text-center mb-2">Up Next</div>
-          <div className="space-y-2">
-            {upcoming.map((song, offset) => (
-              <div
-                key={song?.id || offset}
-                onClick={() => setCurrentIndex((currentIndex + offset + 1) % songs.length)}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800 cursor-pointer transition"
-              >
-                <img
-                  src={song?.cover || '/default-cover.png'}
-                  alt="cover"
-                  className="w-12 h-12 object-cover rounded shadow"
-                />
-                <div className="text-white text-sm">
-                  <div className="font-medium">{song?.title || 'Untitled'}</div>
-                  {song?.artist && (
-                    <div className="text-xs text-gray-400">by {song.artist}</div>
-                  )}
-                </div>
-              </div>
-            ))}
+  <div className="mt-8 bg-black/80 p-4 rounded-xl shadow-inner">
+    <div className="text-sm text-gray-300 text-center mb-2">Up Next</div>
+    <div className="space-y-2">
+      {upcoming.map((song, offset) => (
+        <div
+          key={song?.id || offset}
+          onClick={() => setCurrentIndex((currentIndex + offset + 1) % songs.length)}
+          className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800 cursor-pointer transition"
+        >
+          <img
+            src={song?.cover || '/default-cover.png'}
+            alt="cover"
+            className="w-12 h-12 object-cover rounded shadow ring-2 ring-[#00CEC8]"
+          />
+          <div className="text-white text-sm">
+            <div className="font-medium">{song?.title || 'Untitled'}</div>
+            {song?.artist && (
+              <div className="text-xs text-gray-400">by {song.artist}</div>
+            )}
           </div>
         </div>
-      )}
+      ))}
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
