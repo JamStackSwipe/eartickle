@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 import MySongCard from '../components/MySongCard';
-import Footer from '../components/Footer';
+
 
 const socialIcons = {
   website: '🌐',
@@ -265,7 +265,6 @@ const ProfileScreen = () => {
         </div>
       )}
 
-      <Footer />
     </div>
   );
 };
