@@ -3,16 +3,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
+import AddToJamStackButton from './AddToJamStackButton';
 import ReactionStatsBar from './ReactionStatsBar';
 import BoostTickles from './BoostTickles';
 import { genreFlavorMap } from '../utils/genreList';
 
-const MySongCard = ({
-  song,
-  user,
-  editableTitle = false,
-  onDelete
-}) => {
+const MySongCard = ({ song, user, onDelete, editableTitle = false }) => {
   const [title, setTitle] = useState(song.title);
   const [isEditing, setIsEditing] = useState(false);
   const [localReactions, setLocalReactions] = useState({
@@ -22,12 +18,21 @@ const MySongCard = ({
     bullseyes: song.bullseyes || 0,
   });
   const [jamsCount, setJamsCount] = useState(song.jams || 0);
-  const [hasReacted, setHasReacted] = useState({});
+  const [hasReacted, setHasReacted] = useState({
+    fires: false,
+    loves: false,
+    sads: false,
+    bullseyes: false,
+  });
+
   const audioRef = useRef(null);
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
   const flavor = genreFlavorMap[song.genre_flavor] || null;
+  const ringClass = flavor ? `ring-4 ring-${flavor.color}-500` : '';
+  const glowColor = flavor ? flavor.color : 'white';
+
   const getGlowColor = (color) => {
     switch (color) {
       case 'amber': return '#f59e0b';
@@ -60,7 +65,7 @@ const MySongCard = ({
   }, [isVisible]);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchStatsAndReactions = async () => {
       const [emojiStats, reactionFlags] = await Promise.all([
         supabase.from('songs')
           .select('fires, loves, sads, bullseyes, jams')
@@ -95,11 +100,43 @@ const MySongCard = ({
       }
     };
 
-    fetchStats();
+    fetchStatsAndReactions();
   }, [user, song.id]);
 
   const incrementViews = async () => {
     await supabase.rpc('increment_song_view', { song_id_input: song.id });
+  };
+
+  const handleReaction = async (emoji) => {
+    if (!user) return toast.error('Please sign in to react.');
+
+    const statKey = emojiToStatKey(emoji);
+    if (hasReacted[statKey]) {
+      toast('You already reacted with this emoji.');
+      return;
+    }
+
+    const { error } = await supabase.from('reactions').insert([
+      {
+        user_id: user.id,
+        song_id: song.id,
+        emoji: emojiToDbValue(emoji),
+      },
+    ]);
+
+    if (!error) {
+      toast.success(`You reacted with ${emoji}`);
+      setLocalReactions((prev) => ({
+        ...prev,
+        [statKey]: (prev[statKey] || 0) + 1,
+      }));
+      setHasReacted((prev) => ({
+        ...prev,
+        [statKey]: true,
+      }));
+    } else {
+      toast.error('Failed to react.');
+    }
   };
 
   const handleTitleSave = async () => {
@@ -143,6 +180,15 @@ const MySongCard = ({
             {flavor.label}
           </div>
         )}
+        {onDelete && (
+          <button
+            onClick={onDelete}
+            className="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-xl"
+            title="Remove from Jam Stack or delete upload"
+          >
+            🗑️
+          </button>
+        )}
       </div>
 
       {editableTitle && isEditing ? (
@@ -158,23 +204,12 @@ const MySongCard = ({
           </div>
         </div>
       ) : (
-        <div className="flex justify-between items-center mb-1">
-          <h2
-            className="text-xl font-semibold cursor-pointer"
-            onClick={() => editableTitle && setIsEditing(true)}
-          >
-            {title}
-          </h2>
-          {onDelete && (
-            <button
-              onClick={onDelete}
-              className="text-gray-400 hover:text-red-500 text-xl"
-              title="Delete song"
-            >
-              🗑️
-            </button>
-          )}
-        </div>
+        <h2
+          className="text-xl font-semibold mb-1 cursor-pointer"
+          onClick={() => editableTitle && setIsEditing(true)}
+        >
+          {title}
+        </h2>
       )}
 
       <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
@@ -184,22 +219,14 @@ const MySongCard = ({
 
       {user && (
         <div className="mt-3 flex justify-center">
-          <BoostTickles
-            songId={song.id}
-            userId={user.id}
-            onBoosted={() => {
-              const tickleStatBar = document.querySelector(`[data-song-id="${song.id}"]`);
-              if (tickleStatBar) {
-                const event = new CustomEvent('boosted', { detail: { songId: song.id } });
-                tickleStatBar.dispatchEvent(event);
-              }
-            }}
-          />
+          <BoostTickles songId={song.id} userId={user.id} />
         </div>
       )}
     </div>
   );
 };
+
+// === Helper Functions ===
 
 const emojiToStatKey = (emoji) => {
   switch (emoji) {
@@ -217,6 +244,16 @@ const emojiToSymbol = (word) => {
     case 'heart': return '💖';
     case 'cry': return '😭';
     case 'bullseye': return '🎯';
+    default: return '';
+  }
+};
+
+const emojiToDbValue = (emoji) => {
+  switch (emoji) {
+    case '🔥': return 'fire';
+    case '💖': return 'heart';
+    case '😭': return 'cry';
+    case '🎯': return 'bullseye';
     default: return '';
   }
 };
