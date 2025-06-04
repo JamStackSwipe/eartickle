@@ -1,5 +1,3 @@
-// src/components/MySongCard.js
-
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
@@ -7,10 +5,11 @@ import AddToJamStackButton from './AddToJamStackButton';
 import ReactionStatsBar from './ReactionStatsBar';
 import BoostTickles from './BoostTickles';
 import { genreFlavorMap } from '../utils/genreList';
+import { FiTrash2 } from 'react-icons/fi';
 
-const MySongCard = ({ song, user, onDelete, editableTitle = false }) => {
-  const [title, setTitle] = useState(song.title);
-  const [isEditing, setIsEditing] = useState(false);
+const tickleSound = new Audio('/sounds/tickle.mp3');
+
+const MySongCard = ({ song, user, onDelete }) => {
   const [localReactions, setLocalReactions] = useState({
     fires: song.fires || 0,
     loves: song.loves || 0,
@@ -25,6 +24,8 @@ const MySongCard = ({ song, user, onDelete, editableTitle = false }) => {
     bullseyes: false,
   });
 
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [title, setTitle] = useState(song.title);
   const audioRef = useRef(null);
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -144,11 +145,25 @@ const MySongCard = ({ song, user, onDelete, editableTitle = false }) => {
       .from('songs')
       .update({ title })
       .eq('id', song.id);
-    if (!error) {
-      toast.success('✅ Title updated!');
-      setIsEditing(false);
+
+    if (error) {
+      toast.error('Failed to update title.');
     } else {
-      toast.error('❌ Failed to update title.');
+      toast.success('Title updated!');
+      setEditingTitle(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirm = window.confirm('Are you sure you want to delete this song?');
+    if (!confirm) return;
+
+    const { error } = await supabase.from('songs').delete().eq('id', song.id);
+    if (!error) {
+      toast.success('Song deleted');
+      if (onDelete) onDelete(song.id);
+    } else {
+      toast.error('Error deleting song');
     }
   };
 
@@ -180,48 +195,49 @@ const MySongCard = ({ song, user, onDelete, editableTitle = false }) => {
             {flavor.label}
           </div>
         )}
-        {onDelete && (
+        {(user?.id === song.artist_id) && (
           <button
-            onClick={onDelete}
-            className="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-xl"
-            title="Remove from Jam Stack or delete upload"
+            onClick={handleDelete}
+            className="absolute top-2 right-2 text-white bg-red-600 p-1 rounded-full hover:bg-red-700"
           >
-            🗑️
+            <FiTrash2 />
           </button>
         )}
       </div>
 
-      {editableTitle && isEditing ? (
+      {user?.id === song.artist_id && editingTitle ? (
         <div className="mb-2">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-2 rounded border border-gray-600 text-black"
+            className="w-full p-1 bg-zinc-800 rounded text-white"
           />
-          <div className="flex justify-end gap-2 mt-1">
-            <button onClick={handleTitleSave} className="px-2 py-1 text-sm bg-green-600 text-white rounded">Save</button>
-            <button onClick={() => { setIsEditing(false); setTitle(song.title); }} className="px-2 py-1 text-sm bg-gray-500 text-white rounded">Cancel</button>
-          </div>
+          <button
+            onClick={handleTitleSave}
+            className="text-sm text-green-400 mt-1"
+          >
+            Save
+          </button>
         </div>
       ) : (
         <h2
           className="text-xl font-semibold mb-1 cursor-pointer"
-          onClick={() => editableTitle && setIsEditing(true)}
+          onClick={() => user?.id === song.artist_id && setEditingTitle(true)}
         >
           {title}
         </h2>
       )}
-
       <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
-      <audio ref={audioRef} src={song.audio} controls className="w-full mb-3 mt-2" />
-
-      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
 
       {user && (
         <div className="mt-3 flex justify-center">
           <BoostTickles songId={song.id} userId={user.id} />
         </div>
       )}
+
+      <audio ref={audioRef} src={song.audio} controls className="w-full mb-3 mt-2" />
+
+      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
     </div>
   );
 };
