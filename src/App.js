@@ -14,6 +14,7 @@ import ArtistProfileScreen from './screens/ArtistProfileScreen';
 import HomePage from './screens/HomePage';
 import ChartsScreen from './screens/ChartsScreen';
 import Privacy from './screens/Privacy';
+import FlavorsScreen from './screens/FlavorsScreen';
 import Terms from './screens/Terms';
 
 function App() {
@@ -33,6 +34,7 @@ function App() {
           <Route path="/charts" element={<ChartsScreen />} />
           <Route path="/artist/:id" element={<ArtistProfileScreen />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/genres" element={<FlavorsScreen />} />
           <Route path="/terms" element={<Terms />} />
         </Routes>
       </main>
