@@ -11,11 +11,10 @@ const MySongCard = ({
   song,
   user,
   editableTitle = false,
-  onDelete,
+  onDelete
 }) => {
   const [title, setTitle] = useState(song.title);
   const [isEditing, setIsEditing] = useState(false);
-
   const [localReactions, setLocalReactions] = useState({
     fires: song.fires || 0,
     loves: song.loves || 0,
@@ -24,14 +23,11 @@ const MySongCard = ({
   });
   const [jamsCount, setJamsCount] = useState(song.jams || 0);
   const [hasReacted, setHasReacted] = useState({});
-
   const audioRef = useRef(null);
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
   const flavor = genreFlavorMap[song.genre_flavor] || null;
-  const ringClass = flavor ? `ring-4 ring-${flavor.color}-500` : '';
-
   const getGlowColor = (color) => {
     switch (color) {
       case 'amber': return '#f59e0b';
