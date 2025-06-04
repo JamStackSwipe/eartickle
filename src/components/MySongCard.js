@@ -1,29 +1,52 @@
-//Works With Profile Page
+// works with profile page
 // src/components/MySongCard.js
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
+import AddToJamStackButton from './AddToJamStackButton';
+import ReactionStatsBar from './ReactionStatsBar';
+import BoostTickles from './BoostTickles';
+import { genreFlavorMap } from '../utils/genreList';
 
 const MySongCard = ({
   song,
-  stats = {},
-  editableTitle,
+  user,
+  editableTitle = false,
   onDelete,
   onPublish,
   showStripeButton,
 }) => {
   const [title, setTitle] = useState(song.title);
   const [isEditing, setIsEditing] = useState(false);
+  const [stats, setStats] = useState({});
+  const audioRef = useRef(null);
+  const cardRef = useRef(null);
+
+  const flavor = genreFlavorMap[song.genre_flavor] || null;
+  const getGlowColor = (color) => {
+    switch (color) {
+      case 'amber': return '#f59e0b';
+      case 'blue': return '#3b82f6';
+      case 'pink': return '#ec4899';
+      case 'purple': return '#a855f7';
+      case 'cyan': return '#06b6d4';
+      case 'red': return '#ef4444';
+      default: return '#ffffff';
+    }
+  };
 
   const handleTitleSave = async () => {
     const { error } = await supabase
       .from('songs')
       .update({ title })
       .eq('id', song.id);
-    if (!error) toast.success('✅ Title updated!');
-    else toast.error('❌ Failed to update title.');
-    setIsEditing(false);
+    if (!error) {
+      toast.success('✅ Title updated!');
+      setIsEditing(false);
+    } else {
+      toast.error('❌ Failed to update title.');
+    }
   };
 
   const handleBoost = async (amount) => {
@@ -33,22 +56,50 @@ const MySongCard = ({
         song_id: song.id,
         artist_id: song.artist_id,
         amount,
+        emoji: 'boost',
       },
     ]);
     if (!error) {
       toast.success(`🎁 Boosted with ${amount} Tickles!`);
+      const event = new Event('ticklesUpdated');
+      window.dispatchEvent(event);
     } else {
       toast.error('❌ Boost failed');
     }
   };
 
+  useEffect(() => {
+    const fetchStats = async () => {
+      const { data, error } = await supabase
+        .from('songs')
+        .select('fires, loves, sads, bullseyes, views, jams')
+        .eq('id', song.id)
+        .single();
+      if (data) setStats(data);
+    };
+    fetchStats();
+  }, [song.id]);
+
   return (
-    <div className="bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md">
-      <img
-        src={song.cover}
-        alt={song.title}
-        className="w-full h-auto rounded-xl mb-4"
-      />
+    <div
+      ref={cardRef}
+      className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${flavor ? 'hover:animate-genre-pulse' : ''}`}
+      style={flavor ? { boxShadow: `0 0 15px ${getGlowColor(flavor.color)}` } : {}}
+    >
+      <div className="relative">
+        <a href={`/artist/${song.artist_id}`}>
+          <img
+            src={song.cover}
+            alt={song.title}
+            className="w-full h-auto rounded-xl mb-4"
+          />
+        </a>
+        {flavor && (
+          <div className={`absolute top-2 left-2 bg-${flavor.color}-600 text-white text-xs font-bold px-2 py-1 rounded shadow`}>
+            {flavor.label}
+          </div>
+        )}
+      </div>
 
       {editableTitle && isEditing ? (
         <div className="mb-2">
@@ -58,21 +109,8 @@ const MySongCard = ({
             className="w-full p-2 rounded border border-gray-600 text-black"
           />
           <div className="flex justify-end gap-2 mt-1">
-            <button
-              onClick={handleTitleSave}
-              className="px-2 py-1 text-sm bg-green-600 text-white rounded"
-            >
-              Save
-            </button>
-            <button
-              onClick={() => {
-                setIsEditing(false);
-                setTitle(song.title);
-              }}
-              className="px-2 py-1 text-sm bg-gray-500 text-white rounded"
-            >
-              Cancel
-            </button>
+            <button onClick={handleTitleSave} className="px-2 py-1 text-sm bg-green-600 text-white rounded">Save</button>
+            <button onClick={() => { setIsEditing(false); setTitle(song.title); }} className="px-2 py-1 text-sm bg-gray-500 text-white rounded">Cancel</button>
           </div>
         </div>
       ) : (
@@ -85,44 +123,16 @@ const MySongCard = ({
       )}
 
       <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
+      <audio ref={audioRef} src={song.audio} controls className="w-full mb-3 mt-2" />
 
-      <audio src={song.audio} controls className="w-full mb-3" />
+      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
 
-      {/* Emoji Stats Row */}
-      <div className="flex justify-between text-sm text-gray-400 mb-2">
-        <div className="flex gap-3">
-          <span>🔥 {stats['🔥'] || stats.fires || 0}</span>
-          <span>💖 {stats['💖'] || stats.loves || 0}</span>
-          <span>😭 {stats['😭'] || stats.sads || 0}</span>
-          <span>🎯 {stats['🎯'] || stats.bullseyes || 0}</span>
-        </div>
-        <div className="flex gap-3">
-          <span>👁️ {stats.views || 0}</span>
-          <span>📥 {stats.jam_saves || 0}</span>
-        </div>
-      </div>
-
-      {/* Boost + Delete Inline Row */}
-      <div className="flex justify-between items-center mt-2">
+      {/* Boost + Delete Row */}
+      <div className="flex justify-between items-center mt-4 mb-2">
         <div className="flex gap-2">
-          <button
-            onClick={() => handleBoost(5)}
-            className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-full"
-          >
-            🎁 Boost (5)
-          </button>
-          <button
-            onClick={() => handleBoost(10)}
-            className="px-2 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-full"
-          >
-            🔥 Mega (10)
-          </button>
-          <button
-            onClick={() => handleBoost(25)}
-            className="px-2 py-1 text-xs bg-pink-600 hover:bg-pink-700 text-white rounded-full"
-          >
-            🚀 Super (25)
-          </button>
+          <button onClick={() => handleBoost(5)} className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-full">🎁 Boost (5)</button>
+          <button onClick={() => handleBoost(10)} className="px-2 py-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-full">🔥 Mega (10)</button>
+          <button onClick={() => handleBoost(25)} className="px-2 py-1 text-xs bg-pink-600 hover:bg-pink-700 text-white rounded-full">🚀 Super (25)</button>
         </div>
         {onDelete && (
           <button
@@ -135,11 +145,10 @@ const MySongCard = ({
         )}
       </div>
 
-      {/* Optional Actions */}
       {onPublish && (
         <button
           onClick={onPublish}
-          className="w-full mt-4 py-2 bg-green-700 hover:bg-green-800 text-white rounded"
+          className="w-full mt-3 py-2 bg-green-700 hover:bg-green-800 text-white rounded"
         >
           🚀 Publish Draft
         </button>
