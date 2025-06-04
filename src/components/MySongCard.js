@@ -48,19 +48,20 @@ const MySongCard = ({
   };
 
   const handleBoost = async (amount) => {
-    if (!user) return;
     const { error } = await supabase.rpc('spend_tickles', {
       user_id_input: user.id,
       song_id_input: song.id,
       reason: 'boost',
       cost: amount,
     });
+
     if (!error) {
       toast.success(`🎁 Boosted with ${amount} Tickles!`);
       const event = new Event('ticklesUpdated');
       window.dispatchEvent(event);
     } else {
-      toast.error('❌ Boost failed: ' + error.message);
+      toast.error('❌ Boost failed');
+      console.error('Boost error:', error);
     }
   };
 
