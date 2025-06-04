@@ -196,16 +196,13 @@ const MySongCard = ({ song, user, onDelete }) => {
           </div>
         )}
         {(user?.id === song.artist_id) && (
-          <button
-            onClick={handleDelete}
-            className="absolute top-2 right-2 text-white bg-red-600 p-1 rounded-full hover:bg-red-700"
-          >
-        <button
+         <button
   onClick={handleDelete}
   className="absolute top-2 right-2 text-white bg-red-600 p-1 rounded-full hover:bg-red-700"
 >
   🗑️
 </button>
+
 
         )}
       </div>
