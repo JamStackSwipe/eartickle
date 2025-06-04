@@ -5,7 +5,6 @@ import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import AddToJamStackButton from './AddToJamStackButton';
 import ReactionStatsBar from './ReactionStatsBar';
-import BoostTickles from './BoostTickles';
 import { genreFlavorMap } from '../utils/genreList';
 
 const MySongCard = ({
@@ -49,27 +48,25 @@ const MySongCard = ({
   };
 
   const handleBoost = async (amount) => {
-    const { error } = await supabase.from('tickles').insert([
-      {
-        user_id: song.user_id,
-        song_id: song.id,
-        artist_id: song.artist_id,
-        amount,
-        emoji: 'boost',
-      },
-    ]);
+    if (!user) return;
+    const { error } = await supabase.rpc('spend_tickles', {
+      user_id_input: user.id,
+      song_id_input: song.id,
+      reason: 'boost',
+      cost: amount,
+    });
     if (!error) {
       toast.success(`🎁 Boosted with ${amount} Tickles!`);
       const event = new Event('ticklesUpdated');
       window.dispatchEvent(event);
     } else {
-      toast.error('❌ Boost failed');
+      toast.error('❌ Boost failed: ' + error.message);
     }
   };
 
   useEffect(() => {
     const fetchStats = async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('songs')
         .select('fires, loves, sads, bullseyes, views, jams')
         .eq('id', song.id)
