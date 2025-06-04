@@ -1,182 +1,148 @@
-import { useEffect, useState } from 'react';
+// src/screens/RewardsScreen.js
+
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
-import { useUser } from './AuthProvider';
-import { playTickle } from '../utils/tickleSound';
-import toast from 'react-hot-toast';
-import AddToJamStackButton from './AddToJamStackButton';
+import { useUser } from '../components/AuthProvider';
+import { playTickle, playTickleSpecial } from '../utils/tickleSound';
 
-const emojis = ['🔥', '💖', '😭', '🎯'];
-
-const ReactionStatsBar = ({ song }) => {
+const RewardsScreen = () => {
   const { user } = useUser();
-  const [stats, setStats] = useState({});
-  const [tickleBalance, setTickleBalance] = useState(null);
-  const [hasReacted, setHasReacted] = useState({});
+  const [tickles, setTickles] = useState(0);
+  const [rewards, setRewards] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isSendingTickle, setIsSendingTickle] = useState(false); // Added to disable button during API call
-
-  const loadStats = async () => {
-    try {
-      const [{ data: reactionsData }, { data: balanceData }, { data: userReactions }] = await Promise.all([
-        supabase.from('song_reactions').select('emoji').eq('song_id', song.id),
-        user
-          ? supabase.from('profiles').select('tickle_balance').eq('id', user.id).maybeSingle()
-          : { data: null },
-        user
-          ? supabase.from('song_reactions').select('emoji').eq('song_id', song.id).eq('user_id', user.id)
-          : { data: [] },
-      ]);
-
-      const counts = {};
-      reactionsData?.forEach(({ emoji }) => {
-        counts[emoji] = (counts[emoji] || 0) + 1;
-      });
-
-      const reacted = {};
-      userReactions?.forEach(({ emoji }) => {
-        reacted[emoji] = true;
-      });
-
-      setStats(counts);
-      setHasReacted(reacted);
-      setTickleBalance(balanceData?.tickle_balance ?? 0);
-    } catch (error) {
-      console.error('Error loading stats:', error);
-      toast.error('Failed to load stats');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    loadStats();
-  }, [song.id, user]);
+    if (user?.id) {
+      fetchTickles();
+      fetchRewards();
+    }
+  }, [user?.id]);
 
-  useEffect(() => {
-    const handleTicklesUpdated = () => loadStats();
-    window.addEventListener('ticklesUpdated', handleTicklesUpdated);
-    return () => {
-      window.removeEventListener('ticklesUpdated', handleTicklesUpdated);
-    };
-  }, []);
+  const fetchTickles = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('tickle_balance')
+      .eq('id', user.id)
+      .single();
 
-  const handleEmojiClick = async (emoji) => {
-    if (!user) return toast.error('Login to react');
-    if (hasReacted[emoji]) return toast('Already reacted');
-
-    try {
-      const { error } = await supabase.from('song_reactions').insert([
-        { user_id: user.id, song_id: song.id, emoji },
-      ]);
-
-      if (error) {
-        toast.error('Failed to add reaction');
-        return;
-      }
-
-      setStats((prev) => ({ ...prev, [emoji]: (prev[emoji] || 0) + 1 }));
-      setHasReacted((prev) => ({ ...prev, [emoji]: true }));
-    } catch (error) {
-      console.error('Error adding reaction:', error);
-      toast.error('Network error, please try again');
+    if (!error) {
+      setTickles(data.tickle_balance || 0);
+    } else {
+      console.error('❌ Error fetching tickle balance:', error);
     }
   };
 
-  const handleSendTickle = async () => {
-    if (!user) return toast.error('Login required');
-    if (tickleBalance < 1) return toast.error('Not enough Tickles');
-    if (isSendingTickle) return; // Prevent multiple clicks
+  const fetchRewards = async () => {
+    const { data, error } = await supabase
+      .from('rewards')
+      .select(`*, songs ( title )`)
+      .eq('receiver_id', user.id)
+      .not('emoji', 'is', null)
+      .order('created_at', { ascending: false });
 
-    setIsSendingTickle(true);
-    const previousBalance = tickleBalance;
-    setTickleBalance((prev) => prev - 1); // Optimistic update
-
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-      if (!token) {
-        toast.error('Not authorized');
-        setTickleBalance(previousBalance);
-        return;
+    if (!error) {
+      setRewards(data);
+      if (data.length > 0) {
+        const latest = data[0];
+        if (latest.amount >= 20) playTickleSpecial();
+        else playTickle();
       }
-
-      const res = await fetch('/api/send-tickle', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          song_id: song.id, // Removed artist_id as it’s not used in the API
-          emoji: '🎁',
-        }),
-      });
-
-      const result = await res.json();
-      if (res.ok) {
-        playTickle();
-        toast.success('1 Tickle sent!');
-        // Refresh balance from backend
-        const { data: balanceData } = await supabase
-          .from('profiles')
-          .select('tickle_balance')
-          .eq('id', user.id)
-          .maybeSingle();
-        setTickleBalance(balanceData?.tickle_balance ?? 0);
-      } else {
-        toast.error(result.error || 'Failed to send tickle');
-        setTickleBalance(previousBalance); // Revert optimistic update
-      }
-    } catch (error) {
-      console.error('Error sending tickle:', error);
-      toast.error('Network error, please try again');
-      setTickleBalance(previousBalance); // Revert optimistic update
-    } finally {
-      setIsSendingTickle(false);
+    } else {
+      console.error('❌ Error fetching rewards:', error);
     }
+
+    setLoading(false);
   };
+
+  const handleBuy = async (amount) => {
+    const session = await supabase.auth.getSession();
+    const token = session.data.session.access_token;
+
+    const res = await fetch('/api/create-stripe-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        user_id: user.id,
+        amount,
+      }),
+    });
+
+    const data = await res.json();
+    if (data?.url) window.location.href = data.url;
+    else alert('⚠️ Failed to create Stripe session');
+  };
+
+  if (!user) return <p className="text-center mt-10">Please log in to view your Tickles.</p>;
+  if (loading) return <p className="text-center mt-10">Loading Tickles...</p>;
 
   return (
-    <div className="w-full mt-2 text-sm">
-      {/* Emoji Reaction Row */}
-      <div className="flex justify-center items-center gap-6 text-2xl font-semibold mb-3">
-        {emojis.map((emoji) => (
-          <button
-            key={emoji}
-            onClick={() => handleEmojiClick(emoji)}
-            disabled={hasReacted[emoji]}
-            className={`flex items-center gap-1 ${hasReacted[emoji] ? 'opacity-50' : 'hover:scale-110'} transition-transform`}
-            aria-label={`React with ${emoji} emoji`}
-          >
-            <span>{emoji}</span>
-            <span className="text-sm">{stats[emoji] || 0}</span>
-          </button>
-        ))}
-        <span className="text-gray-400 text-sm">👁️ {song.views || 0}</span>
-        <span className="text-gray-400 text-sm">📥 {song.jams || 0}</span>
-      </div>
+    <div className="max-w-2xl mx-auto mt-10 p-4">
+      <h2 className="text-3xl font-bold mb-6 text-center text-purple-600">🎁 Tickles</h2>
 
-      {/* Jam + Tickle – color updated to match brand */}
-      <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
-        <AddToJamStackButton songId={song.id} user={user} />
+      <div className="mb-6 text-center">
+        <p className="text-lg mb-2">Your current balance:</p>
+        <p className="text-4xl font-extrabold text-yellow-500 shadow-sm">{tickles} Tickles</p>
 
-        <div className="text-sm font-semibold text-[#00CEC8] border border-[#00CEC8] px-3 py-1 rounded-full shadow">
-          🎶 My Tickles: {loading ? '...' : tickleBalance}
+        <div className="mt-6 flex justify-center gap-4">
+          {[5, 10, 25].map((amount) => (
+            <button
+              key={amount}
+              onClick={() => handleBuy(amount)}
+              className="bg-yellow-400 hover:bg-yellow-500 text-black py-2 px-4 rounded-full text-sm shadow-md"
+            >
+              Buy {amount} for ${amount}
+            </button>
+          ))}
         </div>
-
-        <button
-          onClick={handleSendTickle}
-          disabled={isSendingTickle || loading || tickleBalance < 1}
-          className={`px-3 py-1 text-sm rounded-full font-semibold transition bg-[#00CEC8] text-black ${
-            isSendingTickle || loading || tickleBalance < 1 ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-90'
-          }`}
-          aria-label="Send a Tickle to the artist"
-        >
-          🎁 {isSendingTickle ? 'Sending...' : 'Send Tickle'}
-        </button>
       </div>
+
+      <hr className="my-8 border-gray-300" />
+
+      <h3 className="text-2xl font-semibold mb-4 text-center">Recent Tickles Received</h3>
+
+      {rewards.length === 0 ? (
+        <p className="text-center text-gray-500">You haven’t been tickled yet 😢</p>
+      ) : (
+        <ul className="space-y-4">
+          {rewards.map((reward) => {
+            const pts = reward.amount || 0;
+            let icon = '🪙';
+            let message = 'A tiny tickle!';
+
+            if (pts >= 5 && pts < 10) {
+              icon = '🎧';
+              message = 'You got someone grooving 🎶';
+            } else if (pts >= 10 && pts < 20) {
+              icon = '💎';
+              message = 'You made someone laugh out loud!';
+            } else if (pts >= 20) {
+              icon = '👑';
+              message = 'Your jam tickled ears all the way to the moon 🚀';
+            }
+
+            return (
+              <li key={reward.id} className="p-4 bg-white rounded-xl shadow border border-gray-200">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xl font-bold">{icon} {pts} Tickles</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      From: <span className="font-mono">{reward.sender_id?.slice(0, 8) || 'Unknown'}</span><br />
+                      Song: <span className="font-semibold">{reward.songs?.title || '—'}</span><br />
+                      {new Date(reward.created_at).toLocaleString()}
+                    </p>
+                    <p className="mt-2 text-green-600 italic">{message}</p>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 };
 
-export default ReactionStatsBar;
+export default RewardsScreen;
