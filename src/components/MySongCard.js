@@ -1,31 +1,27 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
-import AddToJamStackButton from './AddToJamStackButton';
 import ReactionStatsBar from './ReactionStatsBar';
 import BoostTickles from './BoostTickles';
 import { genreFlavorMap } from '../utils/genreList';
 
-
-const tickleSound = new Audio('/sounds/tickle.mp3');
-
-const MySongCard = ({ song, user, onDelete }) => {
+const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle, showStripeButton }) => {
   const [localReactions, setLocalReactions] = useState({
-    fires: song.fires || 0,
-    loves: song.loves || 0,
-    sads: song.sads || 0,
-    bullseyes: song.bullseyes || 0,
+    fires: stats.fires || song.fires || 0,
+    loves: stats.loves || song.loves || 0,
+    sads: stats.sads || song.sads || 0,
+    bullseyes: stats.bullseyes || song.bullseyes || 0,
   });
-  const [jamsCount, setJamsCount] = useState(song.jams || 0);
+  const [jamsCount, setJamsCount] = useState(stats.jam_saves || song.jams || 0);
   const [hasReacted, setHasReacted] = useState({
     fires: false,
     loves: false,
     sads: false,
     bullseyes: false,
   });
-
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState(song.title);
+
   const audioRef = useRef(null);
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -68,7 +64,8 @@ const MySongCard = ({ song, user, onDelete }) => {
   useEffect(() => {
     const fetchStatsAndReactions = async () => {
       const [emojiStats, reactionFlags] = await Promise.all([
-        supabase.from('songs')
+        supabase
+          .from('songs')
           .select('fires, loves, sads, bullseyes, jams')
           .eq('id', song.id)
           .single(),
@@ -83,12 +80,12 @@ const MySongCard = ({ song, user, onDelete }) => {
 
       if (emojiStats.data) {
         setLocalReactions({
-          fires: emojiStats.data.fires || 0,
-          loves: emojiStats.data.loves || 0,
-          sads: emojiStats.data.sads || 0,
-          bullseyes: emojiStats.data.bullseyes || 0,
+          fires: stats.fires || emojiStats.data.fires || 0,
+          loves: stats.loves || emojiStats.data.loves || 0,
+          sads: stats.sads || emojiStats.data.sads || 0,
+          bullseyes: stats.bullseyes || emojiStats.data.bullseyes || 0,
         });
-        setJamsCount(emojiStats.data.jams || 0);
+        setJamsCount(stats.jam_saves || emojiStats.data.jams || 0);
       }
 
       if (reactionFlags.data) {
@@ -102,7 +99,7 @@ const MySongCard = ({ song, user, onDelete }) => {
     };
 
     fetchStatsAndReactions();
-  }, [user, song.id]);
+  }, [user, song.id, stats]);
 
   const incrementViews = async () => {
     await supabase.rpc('increment_song_view', { song_id_input: song.id });
@@ -141,10 +138,12 @@ const MySongCard = ({ song, user, onDelete }) => {
   };
 
   const handleTitleSave = async () => {
+    if (!editableTitle || user?.id !== song.artist_id) return;
     const { error } = await supabase
       .from('songs')
       .update({ title })
-      .eq('id', song.id);
+      .eq('id', song.id)
+      .eq('user_id', user.id);
 
     if (error) {
       toast.error('Failed to update title.');
@@ -158,13 +157,25 @@ const MySongCard = ({ song, user, onDelete }) => {
     const confirm = window.confirm('Are you sure you want to delete this song?');
     if (!confirm) return;
 
-    const { error } = await supabase.from('songs').delete().eq('id', song.id);
+    const { error } = await supabase
+      .from('songs')
+      .delete()
+      .eq('id', song.id)
+      .eq('user_id', user.id);
+
     if (!error) {
       toast.success('Song deleted');
       if (onDelete) onDelete(song.id);
     } else {
       toast.error('Error deleting song');
     }
+  };
+
+  const handlePublish = async () => {
+    if (!onPublish) return;
+    await supabase.from('songs').update({ is_draft: false }).eq('id', song.id);
+    toast.success('Song published!');
+    onPublish(song.id);
   };
 
   return (
@@ -195,36 +206,56 @@ const MySongCard = ({ song, user, onDelete }) => {
             {flavor.label}
           </div>
         )}
-        {(user?.id === song.artist_id) && (
-         <button
-  onClick={handleDelete}
-  className="absolute top-2 right-2 text-white bg-red-600 p-1 rounded-full hover:bg-red-700"
->
-  🗑️
-</button>
-
-
+        {user && (user.id === song.artist_id || song.is_jam) && (
+          <button
+            onClick={handleDelete}
+            className="absolute top-2 right-2 text-white bg-red-600 p-1 rounded-full hover:bg-red-700"
+            aria-label="Delete song"
+          >
+            🗑️
+          </button>
+        )}
+        {user && user.id === song.artist_id && song.is_draft && onPublish && (
+          <button
+            onClick={handlePublish}
+            className="absolute top-2 right-12 text-white bg-green-600 p-1 rounded-full hover:bg-green-700"
+            aria-label="Publish song"
+          >
+            📢
+          </button>
         )}
       </div>
 
-      {user?.id === song.artist_id && editingTitle ? (
+      {editableTitle && user?.id === song.artist_id && editingTitle ? (
         <div className="mb-2">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full p-1 bg-zinc-800 rounded text-white"
+            aria-label="Edit song title"
           />
           <button
             onClick={handleTitleSave}
             className="text-sm text-green-400 mt-1"
+            aria-label="Save title"
           >
             Save
+          </button>
+          <button
+            onClick={() => {
+              setEditingTitle(false);
+              setTitle(song.title);
+            }}
+            className="text-sm text-gray-400 mt-1 ml-2"
+            aria-label="Cancel edit"
+          >
+            Cancel
           </button>
         </div>
       ) : (
         <h2
           className="text-xl font-semibold mb-1 cursor-pointer"
-          onClick={() => user?.id === song.artist_id && setEditingTitle(true)}
+          onClick={() => editableTitle && user?.id === song.artist_id && setEditingTitle(true)}
         >
           {title}
         </h2>
@@ -233,7 +264,7 @@ const MySongCard = ({ song, user, onDelete }) => {
 
       {user && (
         <div className="mt-3 flex justify-center">
-          <BoostTickles songId={song.id} userId={user.id} />
+          <BoostTickles songId={song.id} userId={user.id} artistId={song.artist_id} />
         </div>
       )}
 
@@ -244,8 +275,7 @@ const MySongCard = ({ song, user, onDelete }) => {
   );
 };
 
-// === Helper Functions ===
-
+// Helper Functions
 const emojiToStatKey = (emoji) => {
   switch (emoji) {
     case '🔥': return 'fires';
