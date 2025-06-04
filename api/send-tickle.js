@@ -1,10 +1,3 @@
-// /api/send-tickle.js
-//
-// ✅ Purpose: Handles gifting 1 Tickle to an artist
-// ✅ Used by: "Send Tickle" button in ReactionStatsBar.js
-// 🚫 Do NOT use this file for Boost Tickles or multi-cost actions
-//    Boosting requires a different path (see: BoostTickles.js or /api/spend-tickles.js)
-
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -20,25 +13,30 @@ export default async function handler(req, res) {
   try {
     const { song_id, emoji } = req.body;
 
+    // Validate input
     if (!song_id || !emoji) {
-      return res.status(400).json({ error: 'Missing song ID or emoji' });
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        details: !song_id ? 'Missing song_id' : 'Missing emoji'
+      });
     }
 
+    // Verify authentication
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
-      return res.status(401).json({ error: 'No auth token provided' });
+      return res.status(401).json({ error: 'Authorization token required' });
     }
 
-    const {
-      data: { user },
-      error: userError
-    } = await supabase.auth.getUser(token);
-
+    // Get user from token
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) {
-      return res.status(401).json({ error: 'Unauthorized or user not found' });
+      return res.status(401).json({ 
+        error: 'Invalid authentication',
+        details: userError?.message
+      });
     }
 
-    // ✅ Call the RPC function that handles gifting logic safely
+    // Call RPC function
     const { error: rpcError } = await supabase.rpc('send_gift_tickles', {
       sender_id: user.id,
       song_id,
@@ -46,14 +44,30 @@ export default async function handler(req, res) {
     });
 
     if (rpcError) {
-      console.error('❌ RPC Error:', rpcError);
-      return res.status(500).json({ error: 'Failed to send tickle' });
+      console.error('RPC Error Details:', {
+        message: rpcError.message,
+        code: rpcError.code,
+        details: rpcError.details
+      });
+      return res.status(500).json({ 
+        error: 'Tickle transfer failed',
+        details: rpcError.message
+      });
     }
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ 
+      success: true,
+      message: 'Tickle sent successfully'
+    });
 
   } catch (err) {
-    console.error('❌ Uncaught error in /api/send-tickle:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('Server Error:', {
+      message: err.message,
+      stack: err.stack
+    });
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 }
