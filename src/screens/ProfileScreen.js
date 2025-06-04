@@ -1,272 +1,276 @@
-// src/screens/ProfileScreen.js
-
-import { useEffect, useRef, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
-import { useUser } from '../components/AuthProvider';
-import MySongCard from '../components/MySongCard';
+import toast from 'react-hot-toast';
+import AddToJamStackButton from './AddToJamStackButton';
+import ReactionStatsBar from './ReactionStatsBar';
+import BoostTickles from './BoostTickles';
+import { genreFlavorMap } from '../utils/genreList';
 
+const tickleSound = new Audio('/sounds/tickle.mp3');
 
-const socialIcons = {
-  website: '🌐',
-  spotify: '🎵',
-  youtube: '📺',
-  instagram: '📸',
-  soundcloud: '🔊',
-  tiktok: '🎬',
-  bandlab: '🎹',
-};
+const MySongCard = ({ song, user, onDelete }) => {
+  const [localReactions, setLocalReactions] = useState({
+    fires: song.fires || 0,
+    loves: song.loves || 0,
+    sads: song.sads || 0,
+    bullseyes: song.bullseyes || 0,
+  });
+  const [jamsCount, setJamsCount] = useState(song.jams || 0);
+  const [hasReacted, setHasReacted] = useState({
+    fires: false,
+    loves: false,
+    sads: false,
+    bullseyes: false,
+  });
 
-const ProfileScreen = () => {
-  const { user } = useUser();
-  const fileInputRef = useRef();
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [title, setTitle] = useState(song.title);
+  const audioRef = useRef(null);
+  const cardRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
 
-  const [profile, setProfile] = useState({});
-  const [songs, setSongs] = useState([]);
-  const [jamStackSongs, setJamStackSongs] = useState([]);
-  const [tickleStats, setTickleStats] = useState({});
-  const [editing, setEditing] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [showSocial, setShowSocial] = useState(false);
+  const flavor = genreFlavorMap[song.genre_flavor] || null;
+  const ringClass = flavor ? `ring-4 ring-${flavor.color}-500` : '';
+  const glowColor = flavor ? flavor.color : 'white';
+
+  const getGlowColor = (color) => {
+    switch (color) {
+      case 'amber': return '#f59e0b';
+      case 'blue': return '#3b82f6';
+      case 'pink': return '#ec4899';
+      case 'purple': return '#a855f7';
+      case 'cyan': return '#06b6d4';
+      case 'red': return '#ef4444';
+      default: return '#ffffff';
+    }
+  };
 
   useEffect(() => {
-    if (user) {
-      fetchProfile();
-      fetchUploads();
-      fetchJamStack();
-    }
-  }, [user]);
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.5 }
+    );
+    if (cardRef.current) observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, []);
 
-  const fetchProfile = async () => {
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    if (data) setProfile(data);
+  useEffect(() => {
+    if (!audioRef.current) return;
+    if (isVisible) {
+      audioRef.current.play().catch(() => {});
+      incrementViews();
+    } else {
+      audioRef.current.pause();
+    }
+  }, [isVisible]);
+
+  useEffect(() => {
+    const fetchStatsAndReactions = async () => {
+      const [emojiStats, reactionFlags] = await Promise.all([
+        supabase.from('songs')
+          .select('fires, loves, sads, bullseyes, jams')
+          .eq('id', song.id)
+          .single(),
+        user
+          ? supabase
+              .from('reactions')
+              .select('emoji')
+              .eq('user_id', user.id)
+              .eq('song_id', song.id)
+          : { data: [] },
+      ]);
+
+      if (emojiStats.data) {
+        setLocalReactions({
+          fires: emojiStats.data.fires || 0,
+          loves: emojiStats.data.loves || 0,
+          sads: emojiStats.data.sads || 0,
+          bullseyes: emojiStats.data.bullseyes || 0,
+        });
+        setJamsCount(emojiStats.data.jams || 0);
+      }
+
+      if (reactionFlags.data) {
+        const flags = {};
+        for (const r of reactionFlags.data) {
+          const key = emojiToStatKey(emojiToSymbol(r.emoji));
+          flags[key] = true;
+        }
+        setHasReacted(flags);
+      }
+    };
+
+    fetchStatsAndReactions();
+  }, [user, song.id]);
+
+  const incrementViews = async () => {
+    await supabase.rpc('increment_song_view', { song_id_input: song.id });
   };
 
-  const fetchReactionStats = async (songIds) => {
-    if (!songIds.length) return;
+  const handleReaction = async (emoji) => {
+    if (!user) return toast.error('Please sign in to react.');
 
-    const [reactions, views, jams] = await Promise.all([
-      supabase.from('reactions').select('song_id, emoji'),
-      supabase.from('views').select('song_id'),
-      supabase.from('jamstacksongs').select('song_id'),
+    const statKey = emojiToStatKey(emoji);
+    if (hasReacted[statKey]) {
+      toast('You already reacted with this emoji.');
+      return;
+    }
+
+    const { error } = await supabase.from('reactions').insert([
+      {
+        user_id: user.id,
+        song_id: song.id,
+        emoji: emojiToDbValue(emoji),
+      },
     ]);
 
-    const stats = {};
-
-    reactions.data?.forEach(({ song_id, emoji }) => {
-      stats[song_id] = stats[song_id] || {};
-      stats[song_id][emoji] = (stats[song_id][emoji] || 0) + 1;
-    });
-
-    views.data?.forEach(({ song_id }) => {
-      stats[song_id] = stats[song_id] || {};
-      stats[song_id].views = (stats[song_id].views || 0) + 1;
-    });
-
-    jams.data?.forEach(({ song_id }) => {
-      stats[song_id] = stats[song_id] || {};
-      stats[song_id].jam_saves = (stats[song_id].jam_saves || 0) + 1;
-    });
-
-    setTickleStats(stats);
-  };
-
-  const fetchUploads = async () => {
-    const { data } = await supabase
-      .from('songs')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
-    if (data) {
-      setSongs(data);
-      fetchReactionStats(data.map((s) => s.id));
-    }
-  };
-
-  const fetchJamStack = async () => {
-    const { data } = await supabase
-      .from('jamstacksongs')
-      .select('song_id, songs ( id, title, artist_id, artist, audio, cover, is_draft, created_at )')
-      .eq('user_id', user.id);
-
-    if (data) {
-      const songsOnly = data.map(({ songs, song_id }) => ({
-        ...songs,
-        id: song_id || songs.id,
+    if (!error) {
+      toast.success(`You reacted with ${emoji}`);
+      setLocalReactions((prev) => ({
+        ...prev,
+        [statKey]: (prev[statKey] || 0) + 1,
       }));
-      setJamStackSongs(songsOnly);
-      fetchReactionStats(songsOnly.map((s) => s.id));
+      setHasReacted((prev) => ({
+        ...prev,
+        [statKey]: true,
+      }));
+    } else {
+      toast.error('Failed to react.');
     }
   };
 
-  const handleChange = (field, value) => {
-    setProfile((prev) => ({ ...prev, [field]: value }));
+  const handleTitleSave = async () => {
+    const { error } = await supabase
+      .from('songs')
+      .update({ title })
+      .eq('id', song.id);
+
+    if (error) {
+      toast.error('Failed to update title.');
+    } else {
+      toast.success('Title updated!');
+      setEditingTitle(false);
+    }
   };
 
-  const handleSave = async () => {
-    const updates = { id: user.id, ...profile, updated_at: new Date() };
-    await supabase.from('profiles').upsert(updates);
-    setEditing(null);
-  };
+  const handleDelete = async () => {
+    const confirm = window.confirm('Are you sure you want to delete this song?');
+    if (!confirm) return;
 
-  const handleAvatarChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const filePath = `${user.id}/avatar.png`;
-    setUploading(true);
-    await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
-    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-    const url = `${data.publicUrl}?t=${Date.now()}`;
-    await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id);
-    setProfile((prev) => ({ ...prev, avatar_url: url }));
-    setUploading(false);
+    const { error } = await supabase.from('songs').delete().eq('id', song.id);
+    if (!error) {
+      toast.success('Song deleted');
+      if (onDelete) onDelete(song.id);
+    } else {
+      toast.error('Error deleting song');
+    }
   };
-
-  const handleDelete = async (songId) => {
-    await supabase.from('songs').delete().eq('id', songId).eq('user_id', user.id);
-    setSongs((prev) => prev.filter((s) => s.id !== songId));
-  };
-
-  const handlePublish = async (songId) => {
-    await supabase.from('songs').update({ is_draft: false }).eq('id', songId);
-    fetchUploads();
-  };
-
-  const handleDeleteJam = async (songId) => {
-    await supabase.from('jamstacksongs').delete().eq('song_id', songId).eq('user_id', user.id);
-    setJamStackSongs((prev) => prev.filter((s) => s.id !== songId));
-  };
-
-  const avatarSrc = profile.avatar_url || user?.user_metadata?.avatar_url || '/default-avatar.png';
 
   return (
-    <div className="p-4 max-w-2xl mx-auto space-y-8">
-      {/* Avatar */}
-      <div className="text-center">
-        <img
-          src={avatarSrc}
-          alt="avatar"
-          onClick={() => fileInputRef.current?.click()}
-          className="w-24 h-24 mx-auto rounded-full object-cover cursor-pointer hover:opacity-80 border shadow"
-        />
-        <input type="file" hidden ref={fileInputRef} accept="image/*" onChange={handleAvatarChange} />
-      </div>
-
-      {/* Display Name */}
-      <div className="text-center">
-        {editing === 'name' ? (
-          <div className="flex flex-col items-center">
-            <input
-              type="text"
-              value={profile.display_name || ''}
-              onChange={(e) => handleChange('display_name', e.target.value)}
-              placeholder="Your artist name"
-              className="text-xl font-bold text-center border-b-2 border-blue-400 focus:outline-none focus:border-blue-600 pb-1 w-64"
-              autoFocus
-            />
-            <div className="flex gap-2 mt-2">
-              <button onClick={handleSave} className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600">Save</button>
-              <button onClick={() => setEditing(null)} className="px-3 py-1 bg-gray-200 rounded-full text-sm hover:bg-gray-300">Cancel</button>
-            </div>
-          </div>
-        ) : (
-          <div className="inline-flex items-center gap-2 text-xl font-bold text-gray-800 hover:text-black transition">
-            {profile.display_name || 'Unnamed Artist'}
-            <button onClick={() => setEditing('name')} className="text-gray-400 hover:text-blue-500">✏️</button>
-          </div>
-        )}
-      </div>
-
-      {/* Bio */}
-      <div className="text-center max-w-md mx-auto">
-        {editing === 'bio' ? (
-          <div className="flex flex-col items-center">
-            <textarea
-              value={profile.bio || ''}
-              onChange={(e) => handleChange('bio', e.target.value)}
-              placeholder="Tell your story..."
-              rows={3}
-              className="w-full border rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              autoFocus
-            />
-            <div className="flex gap-2 mt-2">
-              <button onClick={handleSave} className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600">Save</button>
-              <button onClick={() => setEditing(null)} className="px-3 py-1 bg-gray-200 rounded-full text-sm hover:bg-gray-300">Cancel</button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center gap-2 text-gray-600 hover:text-gray-800 transition">
-            <p>{profile.bio || 'No bio yet. Click ✏️ to add one.'}</p>
-            <button onClick={() => setEditing('bio')} className="text-gray-400 hover:text-blue-500">✏️</button>
-          </div>
-        )}
-      </div>
-
-      {/* Social Links */}
-      <div className="text-center">
-        <button
-          onClick={() => setShowSocial(!showSocial)}
-          className="px-4 py-1 rounded-full bg-blue-100 text-blue-700 text-sm hover:bg-blue-200 transition"
+    <div
+      ref={cardRef}
+      data-song-id={song.id}
+      className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${flavor ? 'hover:animate-genre-pulse' : ''}`}
+      style={flavor ? { boxShadow: `0 0 15px ${getGlowColor(flavor.color)}` } : {}}
+    >
+      <div className="relative">
+        <a
+          href={`/artist/${song.artist_id}`}
+          onClick={(e) => {
+            e.preventDefault();
+            incrementViews().finally(() => {
+              window.location.href = `/artist/${song.artist_id}`;
+            });
+          }}
         >
-          {showSocial ? 'Hide Social Links' : 'Edit Social Links'}
-        </button>
-        {showSocial && (
-          <div className="grid grid-cols-2 gap-4 mt-4 bg-gray-50 p-4 rounded-lg shadow">
-            {Object.keys(socialIcons).map((field) => (
-              <div key={field} className="flex flex-col text-sm">
-                <label htmlFor={field} className="mb-1 text-gray-700 flex items-center gap-1 capitalize">
-                  <span>{socialIcons[field]}</span> {field}
-                </label>
-                <input
-                  id={field}
-                  value={profile[field] || ''}
-                  onChange={(e) => handleChange(field, e.target.value)}
-                  placeholder={`Enter your ${field}`}
-                  className="border border-gray-300 p-2 rounded focus:ring-blue-500 focus:outline-none"
-                />
-              </div>
-            ))}
+          <img
+            src={song.cover}
+            alt={song.title}
+            className="w-full h-auto rounded-xl mb-4"
+          />
+        </a>
+        {flavor && (
+          <div className={`absolute top-2 left-2 bg-${flavor.color}-600 text-white text-xs font-bold px-2 py-1 rounded shadow`}>
+            {flavor.label}
           </div>
+        )}
+        {(user?.id === song.artist_id) && (
+          <button
+            onClick={handleDelete}
+            className="absolute top-2 right-2 text-white bg-red-600 p-1 rounded-full hover:bg-red-700"
+          >
+            🗑️
+          </button>
         )}
       </div>
 
-      {/* Uploads Section */}
-      {songs.length > 0 && (
-        <div>
-          <h3 className="text-xl font-bold text-blue-500 mb-4">📤 My Uploads</h3>
-          {songs.map((song) => (
-            <MySongCard
-              key={song.id}
-              song={{ ...song, artist: profile.display_name }}
-              editableTitle
-              stats={tickleStats[song.id] || {}}
-              onDelete={() => handleDelete(song.id)}
-              onPublish={song.is_draft ? () => handlePublish(song.id) : undefined}
-              showStripeButton={!profile.stripe_account_id && !song.is_draft}
-            />
-          ))}
+      {user?.id === song.artist_id && editingTitle ? (
+        <div className="mb-2">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full p-1 bg-zinc-800 rounded text-white"
+          />
+          <button
+            onClick={handleTitleSave}
+            className="text-sm text-green-400 mt-1"
+          >
+            Save
+          </button>
+        </div>
+      ) : (
+        <h2
+          className="text-xl font-semibold mb-1 cursor-pointer"
+          onClick={() => user?.id === song.artist_id && setEditingTitle(true)}
+        >
+          {title}
+        </h2>
+      )}
+      <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
+
+      {user && (
+        <div className="mt-3 flex justify-center">
+          <BoostTickles songId={song.id} userId={user.id} />
         </div>
       )}
 
-      {/* Jam Stack Section */}
-      {jamStackSongs.length > 0 && (
-        <div>
-          <hr className="my-6 border-t border-blue-500" />
-          <h3 className="text-2xl font-extrabold text-blue-800 mb-4 tracking-tight uppercase text-center">🎵 My Jam Stack</h3>
-          <hr className="mb-6 border-t border-blue-500" />
-          {jamStackSongs.map((song) => (
-            <MySongCard
-              key={song.id}
-              song={{ ...song, artist: song.artist || profile.display_name }}
-              stats={tickleStats[song.id] || {}}
-              onDelete={() => handleDeleteJam(song.id)}
-            />
-          ))}
-        </div>
-      )}
+      <audio ref={audioRef} src={song.audio} controls className="w-full mb-3 mt-2" />
 
+      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
     </div>
   );
 };
 
-export default ProfileScreen;
+// === Helper Functions ===
+
+const emojiToStatKey = (emoji) => {
+  switch (emoji) {
+    case '🔥': return 'fires';
+    case '💖': return 'loves';
+    case '😭': return 'sads';
+    case '🎯': return 'bullseyes';
+    default: return '';
+  }
+};
+
+const emojiToSymbol = (word) => {
+  switch (word) {
+    case 'fire': return '🔥';
+    case 'heart': return '💖';
+    case 'cry': return '😭';
+    case 'bullseye': return '🎯';
+    default: return '';
+  }
+};
+
+const emojiToDbValue = (emoji) => {
+  switch (emoji) {
+    case '🔥': return 'fire';
+    case '💖': return 'heart';
+    case '😭': return 'cry';
+    case '🎯': return 'bullseye';
+    default: return '';
+  }
+};
+
+export default MySongCard;
