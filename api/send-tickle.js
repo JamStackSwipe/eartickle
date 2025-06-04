@@ -36,8 +36,10 @@ export default async function handler(req, res) {
       });
     }
 
-    // Call RPC function with additional logging
-    console.log('Calling RPC with:', { sender_id: user.id, song_id, amount: 1 });
+    // Log input parameters for debugging
+    console.log('Calling send_gift_tickles with:', { sender_id: user.id, song_id, amount: 1 });
+
+    // Call RPC function
     const { error: rpcError } = await supabase.rpc('send_gift_tickles', {
       sender_id: user.id,
       song_id,
