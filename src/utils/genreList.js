@@ -22,6 +22,6 @@ export const genreFlavorMap = {
   
   comedy_other: {
   label: 'Comedy & Other 😂',
-  color: "Green",
+  color: "green",
   },
 };
