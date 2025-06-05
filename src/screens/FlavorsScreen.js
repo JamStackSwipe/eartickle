@@ -1,5 +1,3 @@
-// src/screens/FlavorsScreen.js
-
 import React from 'react';
 
 const flavors = [
@@ -37,15 +35,21 @@ const flavors = [
 
 const FlavorsScreen = () => {
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-8">
-      <h1 className="text-3xl font-extrabold text-center text-blue-700">🎶 EarTickle Flavors</h1>
-      <p className="text-center text-gray-600">
+    <div className="max-w-3xl mx-auto p-6 space-y-8 bg-gradient-to-b from-gray-100 to-gray-200 min-h-screen">
+      <h1 className="text-3xl font-extrabold text-center" style={{ color: '#3FD6CD' }}>
+        🎶 EarTickle Flavors
+      </h1>
+      <p className="text-center text-gray-600 text-lg">
         We group music by vibe, not just labels. These are the flavor zones of EarTickle — each one a unique sound universe.
       </p>
       <div className="space-y-6">
         {flavors.map((flavor) => (
-          <div key={flavor.tag} className="bg-white border-l-4 border-blue-500 p-4 shadow rounded">
-            <h2 className="text-xl font-bold text-blue-800">
+          <div
+            key={flavor.tag}
+            className="bg-white border-l-4 p-4 shadow-lg rounded-lg"
+            style={{ borderColor: '#3FD6CD' }}
+          >
+            <h2 className="text-xl font-bold" style={{ color: '#3FD6CD' }}>
               {flavor.emoji} {flavor.name}
             </h2>
             <p className="mt-1 text-gray-600 text-sm">
