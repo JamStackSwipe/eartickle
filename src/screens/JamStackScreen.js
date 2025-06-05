@@ -90,7 +90,7 @@ const StackerScreen = () => {
   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2CB9B0')}
   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#3FD6CD')}
 >
-  ⏭ 🎵 Next Song 🎵
+  🎵 Next Song 🎵
 </button>
       </div>
       {songs.length > 1 && (
