@@ -10,6 +10,7 @@ const genreFlavors = [
   { value: 'rock_raw', label: 'Rock & Raw 🤘' },
   { value: 'pop_shine', label: 'Pop & Shine ✨' },
   { value: 'spiritual_soul', label: 'Spiritual & Soul ✝️' },
+  { value: 'comedy_other', label: 'Comedy & Other 😂' },
 ];
 
 const SettingsScreen = () => {
