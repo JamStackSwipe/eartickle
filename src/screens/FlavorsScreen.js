@@ -31,6 +31,12 @@ const flavors = [
     styles: ['Gospel', 'Christian', 'Worship', 'Soul'],
     emoji: '✝️',
   },
+  {
+    name: 'Comedy & Other',
+    tag: 'comedy_other',
+    styles: ['Comedy', 'Parody', 'Novelty', 'Experimental'],
+    emoji: '😂',
+  },
 ];
 
 const FlavorsScreen = () => {
