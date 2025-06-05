@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 
-const genreFlavors = [
+const FLAVOR_OPTIONS = [
   { value: 'country_roots', label: 'Country & Roots 🤠' },
   { value: 'hiphop_flow', label: 'Hip-Hop & Flow 🎤' },
   { value: 'rock_raw', label: 'Rock & Raw 🤘' },
