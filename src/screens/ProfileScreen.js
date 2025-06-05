@@ -381,7 +381,7 @@ const ProfileScreen = () => {
       {/* Uploads Section */}
       {songs.length > 0 ? (
         <div>
-          <h3 className="text-xl font-bold text-blue-500 mb-4 text-center">📤 My Uploads</h3>
+          <h2 className="text-xl font-bold mb-4 text-center" style={{ color: '#3FD6CD' }}>📤 My Uploads</h2>
           {songs.map((song) => {
             console.log('My Uploads Song:', {
               id: song.id,
@@ -415,7 +415,7 @@ const ProfileScreen = () => {
       {jamStackSongs.length > 0 ? (
         <div>
           <hr className="my-6 border-t border-blue-500" />
-          <h3 className="text-2xl font-extrabold text-blue-800 mb-4 tracking-tight uppercase text-center">🎵 My Jam Stack</h3>
+          <h2 className="text-xl font-bold mb-4 text-center" style={{ color: '#3FD6CD' }}>🎵 My Jam Stack</h2>
           <hr className="mb-6 border-t border-blue-500" />
           {jamStackSongs.map((song) => {
             console.log('My Jams Song:', {
