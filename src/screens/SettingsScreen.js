@@ -4,11 +4,19 @@ import { supabase } from '../supabase';
 import ConnectStripeButton from '../components/ConnectStripeButton';
 import toast from 'react-hot-toast';
 
+const genreFlavors = [
+  { name: 'Country & Roots', tag: 'country_roots' },
+  { name: 'Hip-Hop & Flow', tag: 'hiphop_flow' },
+  { name: 'Rock & Raw', tag: 'rock_raw' },
+  { name: 'Pop & Shine', tag: 'pop_shine' },
+  { name: 'Spiritual & Soul', tag: 'spiritual_soul' },
+  { name: 'Electronic & Vibe', tag: 'electronic_vibe' }, // Placeholder for sixth flavor; replace if different
+];
+
 const SettingsScreen = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
-  const [availableGenres, setAvailableGenres] = useState([]);
   const [selectedGenres, setSelectedGenres] = useState([]);
   const [sentTickles, setSentTickles] = useState([]);
   const [songs, setSongs] = useState([]);
@@ -23,7 +31,6 @@ const SettingsScreen = () => {
           setUserId(id);
           setUserEmail(email);
           fetchPreferences(id);
-          fetchGenresFromSongs();
           fetchSentTickles(id);
           fetchSongs(id);
         }
@@ -34,21 +41,6 @@ const SettingsScreen = () => {
     };
     fetchUser();
   }, []);
-
-  const fetchGenresFromSongs = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('songs')
-        .select('genre')
-        .not('genre', 'is', null);
-      if (error) throw error;
-      const unique = [...new Set(data.map((s) => s.genre).filter(Boolean))].sort();
-      setAvailableGenres(unique);
-    } catch (error) {
-      console.error('❌ Error fetching genres:', error);
-      toast.error('Failed to load genres');
-    }
-  };
 
   const fetchPreferences = async (uid) => {
     try {
@@ -105,7 +97,7 @@ const SettingsScreen = () => {
         .update({ preferred_genres: selectedGenres })
         .eq('id', userId);
       if (error) throw error;
-      toast.success('Genres saved!');
+      toast.success('Genre Flavors saved!');
     } catch (error) {
       console.error('❌ Error saving genres:', error);
       toast.error('Failed to save genres');
@@ -199,23 +191,23 @@ const SettingsScreen = () => {
         <hr className="my-6 border-t border-[#3FD6CD]" />
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">🎵 Favorite Genres</label>
-          {availableGenres.length === 0 ? (
-            <p className="text-gray-500 text-sm">No genres found in songs yet.</p>
+          <label className="block text-sm font-medium text-gray-700 mb-2">🎵 Favorite Genre Flavors</label>
+          {genreFlavors.length === 0 ? (
+            <p className="text-gray-500 text-sm">No genre flavors available yet.</p>
           ) : (
             <>
               <div className="flex flex-wrap gap-2 mb-4">
-                {availableGenres.map((genre) => (
+                {genreFlavors.map((flavor) => (
                   <button
-                    key={genre}
-                    onClick={() => toggleGenre(genre)}
+                    key={flavor.tag}
+                    onClick={() => toggleGenre(flavor.tag)}
                     className={`px-3 py-1 rounded-full border text-sm transition ${
-                      selectedGenres.includes(genre)
+                      selectedGenres.includes(flavor.tag)
                         ? 'bg-[#3FD6CD] text-white border-[#3FD6CD]'
                         : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
                     }`}
                   >
-                    {genre}
+                    {flavor.name}
                   </button>
                 ))}
               </div>
