@@ -5,12 +5,11 @@ import ConnectStripeButton from '../components/ConnectStripeButton';
 import toast from 'react-hot-toast';
 
 const genreFlavors = [
-  { name: 'Country & Roots', tag: 'country_roots' },
-  { name: 'Hip-Hop & Flow', tag: 'hiphop_flow' },
-  { name: 'Rock & Raw', tag: 'rock_raw' },
-  { name: 'Pop & Shine', tag: 'pop_shine' },
-  { name: 'Spiritual & Soul', tag: 'spiritual_soul' },
-  { name: 'Electronic & Vibe', tag: 'electronic_vibe' }, // Placeholder for sixth flavor; replace if different
+  { value: 'country_roots', label: 'Country & Roots 🤠' },
+  { value: 'hiphop_flow', label: 'Hip-Hop & Flow 🎤' },
+  { value: 'rock_raw', label: 'Rock & Raw 🤘' },
+  { value: 'pop_shine', label: 'Pop & Shine ✨' },
+  { value: 'spiritual_soul', label: 'Spiritual & Soul ✝️' },
 ];
 
 const SettingsScreen = () => {
@@ -199,15 +198,15 @@ const SettingsScreen = () => {
               <div className="flex flex-wrap gap-2 mb-4">
                 {genreFlavors.map((flavor) => (
                   <button
-                    key={flavor.tag}
-                    onClick={() => toggleGenre(flavor.tag)}
+                    key={flavor.value}
+                    onClick={() => toggleGenre(flavor.value)}
                     className={`px-3 py-1 rounded-full border text-sm transition ${
-                      selectedGenres.includes(flavor.tag)
+                      selectedGenres.includes(flavor.value)
                         ? 'bg-[#3FD6CD] text-white border-[#3FD6CD]'
                         : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
                     }`}
                   >
-                    {flavor.name}
+                    {flavor.label}
                   </button>
                 ))}
               </div>
