@@ -19,4 +19,9 @@ export const genreFlavorMap = {
     label: 'Spiritual & Soul ✝️',
     color: 'blue',
   },
+  
+  comedy_other: {
+  label: 'Comedy & Other 😂',
+  color: "Green",
+  },
 };
