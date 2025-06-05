@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { useUser } from '../components/AuthProvider';
 
-const FLAVOR_OPTIONS = [
+const genreFlavors = [
   { value: 'country_roots', label: 'Country & Roots 🤠' },
   { value: 'hiphop_flow', label: 'Hip-Hop & Flow 🎤' },
   { value: 'rock_raw', label: 'Rock & Raw 🤘' },
   { value: 'pop_shine', label: 'Pop & Shine ✨' },
   { value: 'spiritual_soul', label: 'Spiritual & Soul ✝️' },
+  { value: 'comedy_other', label: 'Comedy & Other 😂' },
 ];
 
 const UploadScreen = () => {
