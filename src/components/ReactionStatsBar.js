@@ -1,5 +1,3 @@
-// src/components/ReactionStatsBar.js
-
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
@@ -72,6 +70,7 @@ const ReactionStatsBar = ({ song }) => {
   const handleSendTickle = async () => {
     if (!user) return toast.error('Login required');
     if ((tickleBalance ?? 0) < 1) return toast.error('Not enough Tickles');
+    if (song.user_id === user.id) return toast.error('You can’t send Tickles to yourself!');
 
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData?.session?.access_token;
@@ -124,13 +123,13 @@ const ReactionStatsBar = ({ song }) => {
       <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
         <AddToJamStackButton songId={song.id} user={user} />
 
-        <div className="text-sm font-semibold text-[#00CEC8] border border-[#00CEC8] px-3 py-1 rounded-full shadow">
+        <div className="text-sm font-semibold text-[#3FD6CD] border border-[#3FD6CD] px-3 py-1 rounded-full shadow">
           🎶 My Tickles: {loading ? '...' : tickleBalance}
         </div>
 
         <button
           onClick={handleSendTickle}
-          className="px-3 py-1 text-sm rounded-full font-semibold transition bg-[#00CEC8] text-black hover:opacity-90"
+          className="px-3 py-1 text-sm rounded-full font-semibold transition bg-[#3FD6CD] text-black hover:opacity-90"
         >
           🎁 Send Tickle
         </button>
