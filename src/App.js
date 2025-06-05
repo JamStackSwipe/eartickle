@@ -16,6 +16,7 @@ import ChartsScreen from './screens/ChartsScreen';
 import Privacy from './screens/Privacy';
 import FlavorsScreen from './screens/FlavorsScreen';
 import Terms from './screens/Terms';
+import About from './screens/AboutScreen';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/genres" element={<FlavorsScreen />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/about" element={<About />} />
         </Routes>
       </main>
       <Footer /> {/* ✅ Footer now shows on all pages */}
