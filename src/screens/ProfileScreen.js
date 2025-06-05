@@ -230,7 +230,7 @@ const ProfileScreen = () => {
     {/* Profile Header */}
     <div className="relative bg-white rounded-2xl shadow-lg overflow-hidden">
       {/* Cover Image (optional, can add later) */}
-      <div className="h-32 bg-blue-600"></div>
+     <div className="h-32" style={{ backgroundColor: '#3FD6CD' }}></div>
       
       {/* Avatar and Edit Button */}
       <div className="relative flex flex-col items-center -mt-16">
