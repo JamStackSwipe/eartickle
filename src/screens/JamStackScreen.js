@@ -83,12 +83,15 @@ const StackerScreen = () => {
       />
 
       <div className="flex justify-center mt-4">
-        <button
-          onClick={() => setCurrentIndex((prev) => (prev + 1) % songs.length)}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        >
-          ⏭️ Next Song
-        </button>
+       <button
+  onClick={() => setCurrentIndex((prev) => (prev + 1) % songs.length)}
+  className="px-4 py-2 text-white rounded hover:shadow-md transition"
+  style={{ backgroundColor: '#3FD6CD', '--tw-bg-opacity': 1 }}
+  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2CB9B0')}
+  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#3FD6CD')}
+>
+  ⏭️ Next Song
+</button>
       </div>
       {songs.length > 1 && (
   <div className="mt-8 bg-black/80 p-4 rounded-xl shadow-inner">
