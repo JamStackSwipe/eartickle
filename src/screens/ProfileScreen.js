@@ -225,29 +225,42 @@ const ProfileScreen = () => {
 
   const avatarSrc = profile.avatar_url || user?.user_metadata?.avatar_url || '/default-avatar.png';
 
-  return (
-    <div className="p-4 max-w-2xl mx-auto space-y-8 bg-gray-100 min-h-screen">
-      {/* Avatar */}
-      <div className="text-center">
-        <img
-          src={avatarSrc}
-          alt="Profile Avatar"
-          onClick={() => !uploading && fileInputRef.current?.click()}
-          className={`w-24 h-24 mx-auto rounded-full object-cover cursor-pointer hover:opacity-80 border-2 border-blue-500 shadow-lg ${uploading ? 'opacity-50' : ''}`}
-        />
-        <input
-          type="file"
-          hidden
-          ref={fileInputRef}
-          accept="image/*"
-          onChange={handleAvatarChange}
-          disabled={uploading}
-        />
-        {uploading && <p className="text-sm text-gray-500 mt-2">Uploading...</p>}
+ return (
+  <div className="p-4 max-w-3xl mx-auto space-y-8 bg-gradient-to-b from-gray-100 to-gray-200 min-h-screen">
+    {/* Profile Header */}
+    <div className="relative bg-white rounded-2xl shadow-lg overflow-hidden">
+      {/* Cover Image (optional, can add later) */}
+      <div className="h-32 bg-blue-600"></div>
+      
+      {/* Avatar and Edit Button */}
+      <div className="relative flex flex-col items-center -mt-16">
+        <div className="relative">
+          <img
+            src={avatarSrc}
+            alt="Profile Avatar"
+            onClick={() => !uploading && fileInputRef.current?.click()}
+            className={`w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl cursor-pointer hover:opacity-90 transition ${
+              uploading ? 'opacity-50' : ''
+            }`}
+          />
+          <input
+            type="file"
+            hidden
+            ref={fileInputRef}
+            accept="image/*"
+            onChange={handleAvatarChange}
+            disabled={uploading}
+          />
+          {uploading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
+              <span className="text-white text-sm">Uploading...</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Display Name */}
-      <div className="text-center">
+      <div className="text-center mt-4">
         {editing === 'name' ? (
           <div className="flex flex-col items-center">
             <input
@@ -255,30 +268,30 @@ const ProfileScreen = () => {
               value={profile.display_name || ''}
               onChange={(e) => handleChange('display_name', e.target.value)}
               placeholder="Your artist name"
-              className="text-xl font-bold text-center border-b-2 border-blue-400 focus:outline-none focus:border-blue-600 pb-1 w-64 bg-transparent"
+              className="text-2xl font-bold text-center border-b-2 border-blue-500 focus:outline-none focus:border-blue-700 bg-transparent w-64 sm:w-80"
               autoFocus
             />
-            <div className="flex gap-2 mt-2">
+            <div className="flex gap-2 mt-3">
               <button
                 onClick={handleSave}
-                className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
+                className="px-4 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
               >
                 Save
               </button>
               <button
                 onClick={() => setEditing(null)}
-                className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300 transition"
+                className="px-4 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300 transition"
               >
                 Cancel
               </button>
             </div>
           </div>
         ) : (
-          <div className="inline-flex items-center gap-2 text-xl font-bold text-gray-800 hover:text-black transition">
-            {profile.display_name || 'Unnamed Artist'}
+          <div className="flex items-center justify-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-800">{profile.display_name || 'Unnamed Artist'}</h1>
             <button
               onClick={() => setEditing('name')}
-              className="text-gray-400 hover:text-blue-500 transition"
+              className="text-gray-500 hover:text-blue-500 transition"
               aria-label="Edit display name"
             >
               ✏️
@@ -288,38 +301,38 @@ const ProfileScreen = () => {
       </div>
 
       {/* Bio */}
-      <div className="text-center max-w-md mx-auto">
+      <div className="text-center max-w-md mx-auto mt-4 px-4">
         {editing === 'bio' ? (
           <div className="flex flex-col items-center">
             <textarea
               value={profile.bio || ''}
               onChange={(e) => handleChange('bio', e.target.value)}
               placeholder="Tell your story..."
-              rows={3}
-              className="w-full border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              rows={4}
+              className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-700 resize-none"
               autoFocus
             />
-            <div className="flex gap-2 mt-2">
+            <div className="flex gap-2 mt-3">
               <button
                 onClick={handleSave}
-                className="px-3 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
+                className="px-4 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
               >
                 Save
               </button>
               <button
                 onClick={() => setEditing(null)}
-                className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300 transition"
+                className="px-4 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300 transition"
               >
                 Cancel
               </button>
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center gap-2 text-gray-600 hover:text-gray-800 transition">
-            <p>{profile.bio || 'No bio yet. Click ✏️ to add one.'}</p>
+          <div className="flex items-center justify-center gap-2 text-gray-600">
+            <p className="text-sm italic">{profile.bio || 'No bio yet. Click ✏️ to add one.'}</p>
             <button
               onClick={() => setEditing('bio')}
-              className="text-gray-400 hover:text-blue-500 transition"
+              className="text-gray-500 hover:text-blue-500 transition"
               aria-label="Edit bio"
             >
               ✏️
@@ -329,38 +342,41 @@ const ProfileScreen = () => {
       </div>
 
       {/* Social Links */}
-      <div className="text-center">
+      <div className="text-center mt-6">
         <button
           onClick={() => setShowSocial(!showSocial)}
-          className="px-4 py-1 rounded-full bg-blue-100 text-blue-700 text-sm hover:bg-blue-200 transition"
+          className="px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition"
         >
           {showSocial ? 'Hide Social Links' : 'Edit Social Links'}
         </button>
         {showSocial && (
-          <div className="grid grid-cols-2 gap-4 mt-4 bg-white p-4 rounded-lg shadow">
-            {Object.keys(socialIcons).map((field) => (
-              <div key={field} className="flex flex-col text-sm">
-                <label htmlFor={field} className="mb-1 text-gray-700 flex items-center gap-1 capitalize">
-                  <span>{socialIcons[field]}</span> {field}
-                </label>
-                <input
-                  id={field}
-                  value={profile[field] || ''}
-                  onChange={(e) => handleChange(field, e.target.value)}
-                  placeholder={`Enter your ${field}`}
-                  className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
-              </div>
-            ))}
+          <div className="mt-4 bg-white rounded-lg shadow p-4 max-w-md mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {Object.keys(socialIcons).map((field) => (
+                <div key={field} className="flex flex-col text-sm">
+                  <label htmlFor={field} className="mb-1 text-gray-700 flex items-center gap-1 capitalize">
+                    <span>{socialIcons[field]}</span> {field}
+                  </label>
+                  <input
+                    id={field}
+                    value={profile[field] || ''}
+                    onChange={(e) => handleChange(field, e.target.value)}
+                    placeholder={`Your ${field} URL`}
+                    className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
+                  />
+                </div>
+              ))}
+            </div>
             <button
               onClick={handleSave}
-              className="col-span-2 mt-2 px-4 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
             >
               Save Social Links
             </button>
           </div>
         )}
       </div>
+    </div>
 
       {/* Uploads Section */}
       {songs.length > 0 ? (
