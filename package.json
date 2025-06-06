@@ -19,9 +19,5 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   }
-  {
-  "dependencies": {
-    "react-router-dom": "^5.3.0"
-  }
-}
+ 
 }
