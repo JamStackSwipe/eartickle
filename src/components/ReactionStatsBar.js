@@ -1,6 +1,6 @@
 // src/components/ReactionStatsBar.js
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom'; // Add for navigation
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
 import { playTickle } from '../utils/tickleSound';
@@ -16,7 +16,7 @@ const ReactionStatsBar = ({ song }) => {
   const [loading, setLoading] = useState(true);
   const [isJammed, setIsJammed] = useState(false);
   const [jamLoading, setJamLoading] = useState(false);
-  const navigate = useNavigate(); // For redirect to /rewards
+  const navigate = useNavigate();
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -189,8 +189,8 @@ const ReactionStatsBar = ({ song }) => {
         <span className="text-gray-400 text-sm">📥 {stats.jams || song.jams || 0}</span>
       </div>
 
-      {/* Action Row 1: Jam Stack, Share */}
-      <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
+      {/* Action Row 1: Jam Stack, Share - Centered */}
+      <div className="flex items-center justify-center mt-3 gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <button
             onClick={(e) => handleJamToggle(e)}
@@ -205,9 +205,9 @@ const ReactionStatsBar = ({ song }) => {
           </button>
           <button
             onClick={(e) => handleShareJam(e)}
-            className="px-3 py-1 text-sm rounded-full font-semibold transition bg-gray-200 text-gray-700 hover:bg-gray-300"
+            className="text-sm font-semibold text-[#3FD6CD] border border-[#3FD6CD] px-3 py-1 rounded-full shadow flex-1 text-center"
           >
-            📤 Share Jam
+             Share Jam
           </button>
         </div>
       </div>
@@ -215,7 +215,7 @@ const ReactionStatsBar = ({ song }) => {
       {/* Action Row 2: My Tickles, Send Tickle, Buy Tickles */}
       <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
         <div className="flex items-center gap-2 w-full">
-          <div className="px-3 py-1 text-sm rounded-full font-semibold transition bg-[#3FD6CD] text-black hover:opacity-90 flex-1">
+          <div className="text-sm font-semibold text-[#3FD6CD] border border-[#3FD6CD] px-3 py-1 rounded-full shadow flex-1 text-center">
             🎶 Tickles: {loading ? '...' : tickleBalance}
           </div>
           <button
