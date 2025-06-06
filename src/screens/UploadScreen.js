@@ -18,7 +18,7 @@ const UploadScreen = () => {
   const [genreFlavor, setGenreFlavor] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
-  const [enableGifting, setEnableGifting] = useState(false);
+  const [enableGifting, setEnableGifting] = useState(true); // Default to true
   const [message, setMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
@@ -26,13 +26,11 @@ const UploadScreen = () => {
   const navigate = useNavigate();
 
   const handleUpload = async () => {
-    // Enhanced validation
     if (!title.trim() || !artist.trim() || !genreFlavor || !imageFile || !audioFile) {
       alert('All fields and files are required.');
       return;
     }
 
-    // Block suspicious "test" or repetitive inputs
     const forbiddenWords = ['test', 'demo', 'sample'];
     if (
       forbiddenWords.some(word => 
@@ -46,7 +44,6 @@ const UploadScreen = () => {
       return;
     }
 
-    // Validate file sizes
     if (imageFile.size > 10 * 1024 * 1024) {
       alert('Image too large. Max size is 10MB.');
       return;
@@ -57,12 +54,11 @@ const UploadScreen = () => {
       return;
     }
 
-    // Validate audio file duration (basic check, requires File API)
     try {
       const audio = new Audio(URL.createObjectURL(audioFile));
       await new Promise((resolve, reject) => {
         audio.onloadedmetadata = () => {
-          if (audio.duration < 10 || audio.duration > 600) { // 10s to 10min
+          if (audio.duration < 10 || audio.duration > 600) {
             reject('Audio must be between 10 seconds and 10 minutes.');
           }
           resolve();
@@ -79,7 +75,6 @@ const UploadScreen = () => {
     const imageFilename = `${timestamp}-${imageFile.name}`;
     const audioFilename = `${timestamp}-${audioFile.name}`;
 
-    // Upload files to Supabase storage
     const { error: imageError } = await supabase.storage
       .from('covers')
       .upload(imageFilename, imageFile);
@@ -97,36 +92,28 @@ const UploadScreen = () => {
     const coverUrl = supabase.storage.from('covers').getPublicUrl(imageFilename).data.publicUrl;
     const audioUrl = supabase.storage.from('audio').getPublicUrl(audioFilename).data.publicUrl;
 
-    // Handle Stripe for gifting
     let stripeAccountId = null;
     if (enableGifting) {
-      const { data: profile, error } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('stripe_account_id')
         .eq('id', user.id)
         .maybeSingle();
 
-      if (error || !profile?.stripe_account_id) {
-        alert('To enable gifting, connect your Stripe account in settings.');
-        setIsUploading(false);
-        navigate('/settings');
-        return;
-      }
-      stripeAccountId = profile.stripe_account_id;
+      stripeAccountId = profile?.stripe_account_id || null;
     }
 
-    // Insert song with both genre and genre_flavor
     const { error: dbError } = await supabase.from('songs').insert([
       {
         title,
         artist,
-        genre: genreFlavor, // Set genre to match genre_flavor
+        genre: genreFlavor,
         genre_flavor: genreFlavor,
         cover: coverUrl,
         audio: audioUrl,
         user_id: user.id,
-        stripe_account_id: stripeAccountId || null,
-        is_draft: true, // Start as draft to review
+        stripe_account_id: stripeAccountId,
+        is_draft: true,
       },
     ]);
 
@@ -139,7 +126,7 @@ const UploadScreen = () => {
       setTitle('');
       setArtist('');
       setGenreFlavor('');
-      setEnableGifting(false);
+      setEnableGifting(true);
       setImageFile(null);
       setAudioFile(null);
       setIsUploading(false);
@@ -232,7 +219,7 @@ const UploadScreen = () => {
           onChange={() => setEnableGifting(!enableGifting)}
           className="mr-2"
         />
-        Enable Gifting (Stripe)
+        Enable Gifting (Stripe optional, connect in settings)
       </label>
 
       <button
