@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
-import AddToJamStackButton from './AddToJamStackButton';
 import ReactionStatsBar from './ReactionStatsBar';
 import BoostTickles from './BoostTickles';
 import { genreFlavorMap } from '../utils/genreList';
@@ -10,9 +9,8 @@ import { genreFlavorMap } from '../utils/genreList';
 const tickleSound = new Audio('/sounds/tickle.mp3');
 
 const SongCard = ({ song, user }) => {
-  // Render-blocking check
   if (song.is_draft || !song.cover || !song.audio) {
-    return null; // Skip rendering if draft, no cover, or no audio
+    return null;
   }
 
   const [localReactions, setLocalReactions] = useState({
@@ -21,7 +19,6 @@ const SongCard = ({ song, user }) => {
     sads: song.sads || 0,
     bullseyes: song.bullseyes || 0,
   });
-  const [jamsCount, setJamsCount] = useState(song.jams || 0);
   const [hasReacted, setHasReacted] = useState({
     fires: false,
     loves: false,
@@ -91,7 +88,6 @@ const SongCard = ({ song, user }) => {
           sads: emojiStats.data.sads || 0,
           bullseyes: emojiStats.data.bullseyes || 0,
         });
-        setJamsCount(emojiStats.data.jams || 0);
       }
 
       if (reactionFlags.data) {
@@ -186,7 +182,6 @@ const SongCard = ({ song, user }) => {
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3 mt-2" />
 
       <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
-      <AddToJamStackButton song={song} user={user} setJamsCount={setJamsCount} />
     </div>
   );
 };
