@@ -1,12 +1,15 @@
 //For A Single Song Page Displays Shared Songs
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
 import MySongCard from '../components/MySongCard';
 import toast from 'react-hot-toast';
+import { useUser } from '../components/AuthProvider';
 
 const SongPage = () => {
   const { songId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useUser();
   const [song, setSong] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,10 +32,7 @@ const SongPage = () => {
             is_draft,
             views,
             jams,
-            song_reactions (
-              emoji,
-              user_id
-            )
+            song_reactions (emoji, user_id)
           `)
           .eq('id', songId)
           .maybeSingle();
@@ -40,6 +40,7 @@ const SongPage = () => {
         if (error) throw error;
         if (!data) {
           toast.error('Song not found');
+          navigate('/');
           return;
         }
 
@@ -70,7 +71,7 @@ const SongPage = () => {
     };
 
     fetchSong();
-  }, [songId]);
+  }, [songId, navigate]);
 
   if (loading) {
     return (
@@ -106,7 +107,7 @@ const SongPage = () => {
           views: song.views,
           jams: song.jams,
         }}
-        user={user}
+        user={user || null} // Pass null if user is undefined
         stats={song.stats}
       />
     </div>
