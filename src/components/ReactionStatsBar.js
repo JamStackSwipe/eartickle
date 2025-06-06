@@ -215,7 +215,7 @@ const ReactionStatsBar = ({ song }) => {
       {/* Action Row 2: My Tickles, Send Tickle, Buy Tickles */}
       <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
         <div className="flex items-center gap-2 w-full">
-          <div className="text-sm font-semibold text-[#3FD6CD] border border-[#3FD6CD] px-3 py-1 rounded-full shadow flex-1 text-center">
+          <div className="text-sm font-semibold text-white border border-[#3FD6CD] px-3 py-1 rounded-full shadow flex-1 text-center">
             🎶 Tickles: {loading ? '...' : tickleBalance}
           </div>
           <button
@@ -226,7 +226,7 @@ const ReactionStatsBar = ({ song }) => {
           </button>
           <button
             onClick={(e) => handleBuyTickles(e)}
-            className="text-sm font-semibold text-[#3FD6CD] border border-[#3FD6CD] px-3 py-1 rounded-full shadow flex-1 text-center"
+            className="text-sm font-semibold text-white border border-[#3FD6CD] px-3 py-1 rounded-full shadow flex-1 text-center"
           >
             🛒 Buy Tickles
           </button>
