@@ -1,3 +1,4 @@
+// src/screens/UploadScreen.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabase';
@@ -12,15 +13,24 @@ const FLAVOR_OPTIONS = [
   { value: 'comedy_other', label: 'Comedy & Other 😂' },
 ];
 
+const MASTERING_PRESETS = [
+  { value: 'hiphop_flow', label: 'HipHop Flow 🎤' },
+  { value: 'rock_raw', label: 'Rock Raw 🤘' },
+  { value: 'pop_shine', label: 'Pop Shine ✨' },
+  { value: 'spiritual_soul', label: 'Spiritual Soul ✝️' },
+];
+
 const UploadScreen = () => {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [genreFlavor, setGenreFlavor] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
-  const [enableGifting, setEnableGifting] = useState(true); // Default to true
+  const [enableGifting, setEnableGifting] = useState(true);
+  const [masteringPreset, setMasteringPreset] = useState(''); // New state for mastering
   const [message, setMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isMastering, setIsMastering] = useState(false); // New state for mastering status
 
   const { user } = useUser();
   const navigate = useNavigate();
@@ -90,7 +100,7 @@ const UploadScreen = () => {
     }
 
     const coverUrl = supabase.storage.from('covers').getPublicUrl(imageFilename).data.publicUrl;
-    const audioUrl = supabase.storage.from('audio').getPublicUrl(audioFilename).data.publicUrl;
+    let audioUrl = supabase.storage.from('audio').getPublicUrl(audioFilename).data.publicUrl;
 
     let stripeAccountId = null;
     if (enableGifting) {
@@ -103,7 +113,7 @@ const UploadScreen = () => {
       stripeAccountId = profile?.stripe_account_id || null;
     }
 
-    const { error: dbError } = await supabase.from('songs').insert([
+    const { data: songData, error: dbError } = await supabase.from('songs').insert([
       {
         title,
         artist,
@@ -115,23 +125,53 @@ const UploadScreen = () => {
         stripe_account_id: stripeAccountId,
         is_draft: true,
       },
-    ]);
+    ]).select().single();
 
     if (dbError) {
       alert('Song metadata upload failed: ' + dbError.message);
       setIsUploading(false);
-    } else {
-      await supabase.from('profiles').update({ is_artist: true }).eq('id', user.id);
-      setMessage('✅ Song uploaded! Awaiting review.');
-      setTitle('');
-      setArtist('');
-      setGenreFlavor('');
-      setEnableGifting(true);
-      setImageFile(null);
-      setAudioFile(null);
-      setIsUploading(false);
-      setTimeout(() => navigate('/swipe'), 1500);
+      return;
     }
+
+    // Master the audio if a preset is selected
+    if (masteringPreset) {
+      setIsMastering(true);
+      try {
+        const response = await fetch('/api/master-audio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ songId: songData.id, preset: masteringPreset, userId: user.id }),
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          audioUrl = result.masteredUrl;
+          await supabase
+            .from('songs')
+            .update({ audio: audioUrl })
+            .eq('id', songData.id);
+          setMessage('✅ Song uploaded and mastered! Awaiting review.');
+        } else {
+          setMessage('✅ Song uploaded, but mastering failed. Awaiting review.');
+        }
+      } catch (err) {
+        setMessage('✅ Song uploaded, but mastering failed. Awaiting review.');
+      }
+      setIsMastering(false);
+    } else {
+      setMessage('✅ Song uploaded! Awaiting review.');
+    }
+
+    await supabase.from('profiles').update({ is_artist: true }).eq('id', user.id);
+    setTitle('');
+    setArtist('');
+    setGenreFlavor('');
+    setMasteringPreset('');
+    setEnableGifting(true);
+    setImageFile(null);
+    setAudioFile(null);
+    setIsUploading(false);
+    setTimeout(() => navigate('/swipe'), 1500);
   };
 
   return (
@@ -165,6 +205,20 @@ const UploadScreen = () => {
       >
         <option value="">Select a flavor</option>
         {FLAVOR_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+
+      <label className="block mb-2 font-medium">Mastering Preset (Optional)</label>
+      <select
+        value={masteringPreset}
+        onChange={(e) => setMasteringPreset(e.target.value)}
+        className="w-full p-2 border rounded mb-4"
+      >
+        <option value="">None</option>
+        {MASTERING_PRESETS.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
@@ -224,12 +278,12 @@ const UploadScreen = () => {
 
       <button
         onClick={handleUpload}
-        disabled={isUploading}
+        disabled={isUploading || isMastering}
         className={`w-full text-white py-2 rounded ${
-          isUploading ? 'bg-gray-500' : 'bg-blue-600 hover:bg-blue-700'
+          isUploading || isMastering ? 'bg-gray-500' : 'bg-blue-600 hover:bg-blue-700'
         }`}
       >
-        {isUploading ? 'Uploading...' : 'Upload'}
+        {isUploading ? 'Uploading...' : isMastering ? 'Mastering...' : 'Upload'}
       </button>
 
       {message && <p className="mt-4 text-center text-green-600">{message}</p>}
