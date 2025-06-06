@@ -1,8 +1,7 @@
-// src/App.js
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
-import Footer from './components/Footer'; // ✅ Imported footer
+import Footer from './components/Footer';
 import SwipeScreen from './screens/SwipeScreen';
 import UploadScreen from './screens/UploadScreen';
 import JamStackScreen from './screens/JamStackScreen';
@@ -17,6 +16,7 @@ import Privacy from './screens/Privacy';
 import FlavorsScreen from './screens/FlavorsScreen';
 import Terms from './screens/Terms';
 import About from './screens/AboutScreen';
+import SongPage from './screens/SongPage';
 
 function App() {
   return (
@@ -38,9 +38,10 @@ function App() {
           <Route path="/genres" element={<FlavorsScreen />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/about" element={<About />} />
+          <Route path="/song/:songId" element={<SongPage />} />
         </Routes>
       </main>
-      <Footer /> {/* ✅ Footer now shows on all pages */}
+      <Footer />
     </div>
   );
 }
