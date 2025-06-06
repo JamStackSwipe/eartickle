@@ -1,4 +1,4 @@
-// src/components/AddToJamStackButton.js
+// src/components/AddToJamStackButton.js  This button has been rewritten and is now directly included in ReactsionsStatsBar.js
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
