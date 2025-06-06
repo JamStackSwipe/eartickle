@@ -198,7 +198,7 @@ const ReactionStatsBar = ({ song }) => {
             className={`px-3 py-1 text-sm font-medium rounded-full transition-colors border ${
               isJammed
                 ? 'border-[#00CEC8] text-[#00CEC8] bg-white opacity-70'
-                : 'border-[#00CEC8] text-black hover:bg-[#00CEC8] hover:text-pink'
+                : 'border-[#00CEC8] text-white hover:bg-[#00CEC8] hover:text-pink'
             }`}
           >
             {isJammed ? '🎵 In Stack' : jamLoading ? 'Adding...' : '➕ Stack This'}
