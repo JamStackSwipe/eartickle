@@ -14,10 +14,12 @@ const FLAVOR_OPTIONS = [
 ];
 
 const MASTERING_PRESETS = [
+  { value: 'country_roots', label: 'Country Roots 🤠' },
   { value: 'hiphop_flow', label: 'HipHop Flow 🎤' },
   { value: 'rock_raw', label: 'Rock Raw 🤘' },
   { value: 'pop_shine', label: 'Pop Shine ✨' },
   { value: 'spiritual_soul', label: 'Spiritual Soul ✝️' },
+  { value: 'comedy_other', label: 'Comedy Other 😂' },
 ];
 
 const UploadScreen = () => {
@@ -27,10 +29,10 @@ const UploadScreen = () => {
   const [imageFile, setImageFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
   const [enableGifting, setEnableGifting] = useState(true);
-  const [masteringPreset, setMasteringPreset] = useState(''); // New state for mastering
+  const [masteringPreset, setMasteringPreset] = useState('');
   const [message, setMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [isMastering, setIsMastering] = useState(false); // New state for mastering status
+  const [isMastering, setIsMastering] = useState(false);
 
   const { user } = useUser();
   const navigate = useNavigate();
@@ -133,7 +135,6 @@ const UploadScreen = () => {
       return;
     }
 
-    // Master the audio if a preset is selected
     if (masteringPreset) {
       setIsMastering(true);
       try {
