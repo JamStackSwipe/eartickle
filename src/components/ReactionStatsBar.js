@@ -1,9 +1,9 @@
+// src/components/ReactionStatsBar.js
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
 import { playTickle } from '../utils/tickleSound';
 import toast from 'react-hot-toast';
-import AddToJamStackButton from './AddToJamStackButton';
 
 const emojis = ['🔥', '💖', '😭', '🎯'];
 
@@ -13,9 +13,11 @@ const ReactionStatsBar = ({ song }) => {
   const [tickleBalance, setTickleBalance] = useState(null);
   const [hasReacted, setHasReacted] = useState({});
   const [loading, setLoading] = useState(true);
+  const [isJammed, setIsJammed] = useState(false); // New state for Jam Stack
+  const [jamLoading, setJamLoading] = useState(false); // New state for loading
 
   const loadStats = async () => {
-    const [{ data: reactionsData }, { data: balanceData }, { data: userReactions }] = await Promise.all([
+    const [{ data: reactionsData }, { data: balanceData }, { data: userReactions }, { data: jamData }] = await Promise.all([
       supabase.from('song_reactions').select('emoji').eq('song_id', song.id),
       user
         ? supabase.from('profiles').select('tickle_balance').eq('id', user.id).maybeSingle()
@@ -23,6 +25,14 @@ const ReactionStatsBar = ({ song }) => {
       user
         ? supabase.from('song_reactions').select('emoji').eq('song_id', song.id).eq('user_id', user.id)
         : { data: [] },
+      user
+        ? supabase
+            .from('jamstacksongs')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('song_id', song.id)
+            .maybeSingle()
+        : { data: null },
     ]);
 
     const counts = {};
@@ -38,6 +48,7 @@ const ReactionStatsBar = ({ song }) => {
     setStats(counts);
     setHasReacted(reacted);
     setTickleBalance(balanceData?.tickle_balance ?? 0);
+    setIsJammed(!!jamData); // Set if song is in Jam Stack
     setLoading(false);
   };
 
@@ -121,6 +132,39 @@ const ReactionStatsBar = ({ song }) => {
     }
   };
 
+  const handleJamToggle = async () => {
+    if (!user) return toast.error('Login to add to Jam Stack');
+    setJamLoading(true);
+
+    if (isJammed) {
+      const { error } = await supabase
+        .from('jamstacksongs')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('song_id', song.id);
+      if (!error) {
+        setStats((prev) => ({ ...prev, jams: (prev.jams || 0) - 1 }));
+        setIsJammed(false);
+        toast.success('Removed from Jam Stack!');
+      } else {
+        toast.error('Failed to remove from Jam Stack');
+      }
+    } else {
+      const { error } = await supabase.from('jamstacksongs').insert([
+        { user_id: user.id, song_id: song.id },
+      ]);
+      if (!error) {
+        setStats((prev) => ({ ...prev, jams: (prev.jams || 0) + 1 }));
+        setIsJammed(true);
+        toast.success('Added to Jam Stack!');
+      } else {
+        toast.error('Failed to add to Jam Stack');
+      }
+    }
+
+    setJamLoading(false);
+  };
+
   return (
     <div className="w-full mt-2 text-sm">
       {/* Emoji Reaction Row */}
@@ -137,13 +181,23 @@ const ReactionStatsBar = ({ song }) => {
           </button>
         ))}
         <span className="text-gray-400 text-sm">👁️ {song.views || 0}</span>
-        <span className="text-gray-400 text-sm">📥 {song.jams || 0}</span>
+        <span className="text-gray-400 text-sm">📥 {stats.jams || song.jams || 0}</span>
       </div>
 
-      {/* Action Row: Stack on Left, Share/Tickle/Balance on Right */}
+      {/* Action Row: Jam Stack, Share, Tickle, Balance */}
       <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
         <div className="flex items-center gap-2">
-          <AddToJamStackButton songId={song.id} user={user} />
+          <button
+            onClick={handleJamToggle}
+            disabled={jamLoading || !user}
+            className={`px-3 py-1 text-sm font-medium rounded-full transition-colors border ${
+              isJammed
+                ? 'border-[#00CEC8] text-[#00CEC8] bg-black opacity-70'
+                : 'border-[#00CEC8] text-white hover:bg-[#00CEC8] hover:text-black'
+            }`}
+          >
+            {isJammed ? '🎵 In Stack' : jamLoading ? 'Adding...' : '➕ Stack This'}
+          </button>
           <button
             onClick={handleShareJam}
             className="px-3 py-1 text-sm rounded-full font-semibold transition bg-gray-200 text-gray-700 hover:bg-gray-300"
