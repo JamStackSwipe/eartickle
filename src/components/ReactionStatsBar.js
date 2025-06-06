@@ -207,7 +207,7 @@ const ReactionStatsBar = ({ song }) => {
             onClick={(e) => handleShareJam(e)}
             className="text-sm font-semibold text-[#3FD6CD] border border-[#3FD6CD] px-3 py-1 rounded-full shadow flex-1 text-center"
           >
-             Share Jam
+             🔗 Share Jam
           </button>
         </div>
       </div>
@@ -215,7 +215,7 @@ const ReactionStatsBar = ({ song }) => {
       {/* Action Row 2: My Tickles, Send Tickle, Buy Tickles */}
       <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
         <div className="flex items-center gap-2 w-full">
-          <div className="text-sm font-semibold text-[#3FD6CD] border border-[#3FD6CD] px-3 py-1 rounded-full shadow flex-1 text-center">
+          <div className="px-3 py-1 text-sm rounded-full font-semibold transition bg-[#3FD6CD] text-white hover:opacity-90 flex-1">
             🎶 Tickles: {loading ? '...' : tickleBalance}
           </div>
           <button
@@ -226,7 +226,7 @@ const ReactionStatsBar = ({ song }) => {
           </button>
           <button
             onClick={(e) => handleBuyTickles(e)}
-            className="px-3 py-1 text-sm rounded-full font-semibold transition bg-[#3FD6CD] text-black hover:opacity-90 flex-1"
+            className="px-3 py-1 text-sm rounded-full font-semibold transition bg-[#3FD6CD] text-white hover:opacity-90 flex-1"
           >
             🛒 Buy Tickles
           </button>
