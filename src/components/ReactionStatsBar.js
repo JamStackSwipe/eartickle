@@ -100,6 +100,27 @@ const ReactionStatsBar = ({ song }) => {
     }
   };
 
+  const handleShareJam = async () => {
+    const shareUrl = `${window.location.origin}/song/${song.id}`;
+    const shareData = {
+      title: `${song.title} by ${song.artist}`,
+      text: `Check out this awesome song on EarTickle!`,
+      url: shareUrl,
+    };
+
+    try {
+      if (navigator.share && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Song link copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Share error:', error);
+      toast.error('Failed to share song');
+    }
+  };
+
   return (
     <div className="w-full mt-2 text-sm">
       {/* Emoji Reaction Row */}
@@ -119,20 +140,28 @@ const ReactionStatsBar = ({ song }) => {
         <span className="text-gray-400 text-sm">📥 {song.jams || 0}</span>
       </div>
 
-      {/* Jam + Tickle – color updated to match brand */}
+      {/* Action Row: Stack on Left, Share/Tickle/Balance on Right */}
       <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
-        <AddToJamStackButton songId={song.id} user={user} />
-
-        <div className="text-sm font-semibold text-[#3FD6CD] border border-[#3FD6CD] px-3 py-1 rounded-full shadow">
-          🎶 My Tickles: {loading ? '...' : tickleBalance}
+        <div className="flex items-center gap-2">
+          <AddToJamStackButton songId={song.id} user={user} />
+          <button
+            onClick={handleShareJam}
+            className="px-3 py-1 text-sm rounded-full font-semibold transition bg-gray-200 text-gray-700 hover:bg-gray-300"
+          >
+            📤 Share Jam
+          </button>
         </div>
-
-        <button
-          onClick={handleSendTickle}
-          className="px-3 py-1 text-sm rounded-full font-semibold transition bg-[#3FD6CD] text-black hover:opacity-90"
-        >
-          🎁 Send Tickle
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSendTickle}
+            className="px-3 py-1 text-sm rounded-full font-semibold transition bg-[#3FD6CD] text-black hover:opacity-90"
+          >
+            🎁 Send Tickle
+          </button>
+          <div className="text-sm font-semibold text-[#3FD6CD] border border-[#3FD6CD] px-3 py-1 rounded-full shadow">
+            🎶 My Tickles: {loading ? '...' : tickleBalance}
+          </div>
+        </div>
       </div>
     </div>
   );
