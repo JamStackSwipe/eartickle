@@ -1,3 +1,4 @@
+// src/components/MySongCard.js
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
@@ -6,6 +7,10 @@ import BoostTickles from './BoostTickles';
 import { genreFlavorMap } from '../utils/genreList';
 
 const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle, showStripeButton }) => {
+  if (song.is_draft || !song.cover || !song.audio) {
+    return null;
+  }
+
   const [localReactions, setLocalReactions] = useState({
     fires: stats.fires || song.fires || 0,
     loves: stats.loves || song.loves || 0,
@@ -271,6 +276,7 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3 mt-2" />
 
       <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
+      {/* Note on 2025-06-06: "Add to Jam Stack" functionality was moved to ReactionStatsBar.js for better mobile layout. MySongCard.js did not previously use AddToJamStackButton, but this comment is added for consistency with SongCard.js documentation. */}
     </div>
   );
 };
