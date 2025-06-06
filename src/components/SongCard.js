@@ -1,3 +1,4 @@
+// src/components/SongCard.js
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
@@ -9,6 +10,11 @@ import { genreFlavorMap } from '../utils/genreList';
 const tickleSound = new Audio('/sounds/tickle.mp3');
 
 const SongCard = ({ song, user }) => {
+  // Render-blocking check
+  if (song.is_draft || !song.cover || !song.audio) {
+    return null; // Skip rendering if draft, no cover, or no audio
+  }
+
   const [localReactions, setLocalReactions] = useState({
     fires: song.fires || 0,
     loves: song.loves || 0,
@@ -32,17 +38,16 @@ const SongCard = ({ song, user }) => {
   const glowColor = flavor ? flavor.color : 'white';
 
   const getGlowColor = (color) => {
-  switch (color) {
-    case 'amber': return '#f59e0b';
-    case 'blue': return '#3b82f6';
-    case 'pink': return '#ec4899';
-    case 'purple': return '#a855f7';
-    case 'cyan': return '#06b6d4';
-    case 'red': return '#ef4444';
-    default: return '#ffffff';
-  }
-};
-
+    switch (color) {
+      case 'amber': return '#f59e0b';
+      case 'blue': return '#3b82f6';
+      case 'pink': return '#ec4899';
+      case 'purple': return '#a855f7';
+      case 'cyan': return '#06b6d4';
+      case 'red': return '#ef4444';
+      default: return '#ffffff';
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -97,32 +102,7 @@ const SongCard = ({ song, user }) => {
         }
         setHasReacted(flags);
       }
-    };<ReactionStatsBar
-  song={{ ...song, user_id: song.artist_id }}
-  onBalanceRefresh={() => {
-    // Force reload if we pass this through
-    if (typeof loadStats === 'function') loadStats();
-  }}
-/>
-
-{user && (
-  <div className="mt-3 flex justify-center">
-    <BoostTickles
-      songId={song.id}
-      userId={user.id}
-      onBoosted={() => {
-        const tickleStatBar = document.querySelector(`[data-song-id="${song.id}"]`);
-        if (tickleStatBar) {
-          const event = new CustomEvent('boosted', { detail: { songId: song.id } });
-          tickleStatBar.dispatchEvent(event);
-        }
-      }}
-    />
-  </div>
-)}
-
-
-    
+    };
 
     fetchStatsAndReactions();
   }, [user, song.id]);
@@ -165,12 +145,11 @@ const SongCard = ({ song, user }) => {
 
   return (
     <div
-  ref={cardRef}
-  data-song-id={song.id}
-  className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${flavor ? 'hover:animate-genre-pulse' : ''}`}
-  style={flavor ? { boxShadow: `0 0 15px ${getGlowColor(flavor.color)}` } : {}}
->
-
+      ref={cardRef}
+      data-song-id={song.id}
+      className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${flavor ? 'hover:animate-genre-pulse' : ''}`}
+      style={flavor ? { boxShadow: `0 0 15px ${getGlowColor(flavor.color)}` } : {}}
+    >
       <div className="relative">
         <a
           href={`/artist/${song.artist_id}`}
@@ -207,12 +186,12 @@ const SongCard = ({ song, user }) => {
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3 mt-2" />
 
       <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
+      <AddToJamStackButton song={song} user={user} setJamsCount={setJamsCount} />
     </div>
   );
 };
 
-// === Helper Functions ===
-
+// Helper Functions
 const emojiToStatKey = (emoji) => {
   switch (emoji) {
     case '🔥': return 'fires';
