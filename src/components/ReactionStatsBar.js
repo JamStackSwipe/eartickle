@@ -13,26 +13,15 @@ const ReactionStatsBar = ({ song }) => {
   const [tickleBalance, setTickleBalance] = useState(null);
   const [hasReacted, setHasReacted] = useState({});
   const [loading, setLoading] = useState(true);
-  const [isJammed, setIsJammed] = useState(false); // New state for Jam Stack
-  const [jamLoading, setJamLoading] = useState(false); // New state for loading
+  const [isJammed, setIsJammed] = useState(false);
+  const [jamLoading, setJamLoading] = useState(false);
 
   const loadStats = async () => {
     const [{ data: reactionsData }, { data: balanceData }, { data: userReactions }, { data: jamData }] = await Promise.all([
       supabase.from('song_reactions').select('emoji').eq('song_id', song.id),
-      user
-        ? supabase.from('profiles').select('tickle_balance').eq('id', user.id).maybeSingle()
-        : { data: null },
-      user
-        ? supabase.from('song_reactions').select('emoji').eq('song_id', song.id).eq('user_id', user.id)
-        : { data: [] },
-      user
-        ? supabase
-            .from('jamstacksongs')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('song_id', song.id)
-            .maybeSingle()
-        : { data: null },
+      user ? supabase.from('profiles').select('tickle_balance').eq('id', user.id).maybeSingle() : { data: null },
+      user ? supabase.from('song_reactions').select('emoji').eq('song_id', song.id).eq('user_id', user.id) : { data: [] },
+      user ? supabase.from('jamstacksongs').select('id').eq('user_id', user.id).eq('song_id', song.id).maybeSingle() : { data: null },
     ]);
 
     const counts = {};
@@ -48,7 +37,7 @@ const ReactionStatsBar = ({ song }) => {
     setStats(counts);
     setHasReacted(reacted);
     setTickleBalance(balanceData?.tickle_balance ?? 0);
-    setIsJammed(!!jamData); // Set if song is in Jam Stack
+    setIsJammed(!!jamData);
     setLoading(false);
   };
 
@@ -59,12 +48,11 @@ const ReactionStatsBar = ({ song }) => {
   useEffect(() => {
     const handleTicklesUpdated = () => loadStats();
     window.addEventListener('ticklesUpdated', handleTicklesUpdated);
-    return () => {
-      window.removeEventListener('ticklesUpdated', handleTicklesUpdated);
-    };
+    return () => window.removeEventListener('ticklesUpdated', handleTicklesUpdated);
   }, []);
 
-  const handleEmojiClick = async (emoji) => {
+  const handleEmojiClick = async (emoji, e) => {
+    e.stopPropagation(); // Prevent click propagation
     if (!user) return toast.error('Login to react');
     if (hasReacted[emoji]) return toast('Already reacted');
 
@@ -78,40 +66,48 @@ const ReactionStatsBar = ({ song }) => {
     }
   };
 
-  const handleSendTickle = async () => {
+  const handleSendTickle = async (e) => {
+    e.stopPropagation();
     if (!user) return toast.error('Login required');
     if ((tickleBalance ?? 0) < 1) return toast.error('Not enough Tickles');
     if (song.user_id === user.id) return toast.error('You can’t send Tickles to yourself!');
 
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData?.session?.access_token;
-    if (!token) return toast.error('Not authorized');
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData?.session?.access_token) {
+      return toast.error('Authorization failed');
+    }
+    const token = sessionData.session.access_token;
 
-    const res = await fetch('/api/send-tickle', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        artist_id: song.user_id,
-        song_id: song.id,
-        emoji: '🎁',
-      }),
-    });
+    try {
+      const res = await fetch('/api/send-tickle', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          artist_id: song.user_id,
+          song_id: song.id,
+          emoji: '🎁',
+        }),
+      });
 
-    const result = await res.json();
-    if (res.ok) {
-      playTickle();
-      toast.success('1 Tickle sent!');
-      setTickleBalance((prev) => (prev || 1) - 1);
-      loadStats();
-    } else {
-      toast.error(result.error || 'Failed to send tickle');
+      const result = await res.json();
+      if (res.ok) {
+        playTickle();
+        toast.success('1 Tickle sent!');
+        setTickleBalance((prev) => (prev || 1) - 1);
+        loadStats();
+      } else {
+        toast.error(result.error || 'Failed to send tickle');
+      }
+    } catch (err) {
+      toast.error('Error sending tickle: Endpoint may be unavailable');
     }
   };
 
-  const handleShareJam = async () => {
+  const handleShareJam = async (e) => {
+    e.stopPropagation();
     const shareUrl = `${window.location.origin}/song/${song.id}`;
     const shareData = {
       title: `${song.title} by ${song.artist}`,
@@ -132,7 +128,8 @@ const ReactionStatsBar = ({ song }) => {
     }
   };
 
-  const handleJamToggle = async () => {
+  const handleJamToggle = async (e) => {
+    e.stopPropagation();
     if (!user) return toast.error('Login to add to Jam Stack');
     setJamLoading(true);
 
@@ -172,7 +169,7 @@ const ReactionStatsBar = ({ song }) => {
         {emojis.map((emoji) => (
           <button
             key={emoji}
-            onClick={() => handleEmojiClick(emoji)}
+            onClick={(e) => handleEmojiClick(emoji, e)}
             disabled={hasReacted[emoji]}
             className={`flex items-center gap-1 ${hasReacted[emoji] ? 'opacity-50' : 'hover:scale-110'} transition-transform`}
           >
@@ -188,7 +185,7 @@ const ReactionStatsBar = ({ song }) => {
       <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <button
-            onClick={handleJamToggle}
+            onClick={(e) => handleJamToggle(e)}
             disabled={jamLoading || !user}
             className={`px-3 py-1 text-sm font-medium rounded-full transition-colors border ${
               isJammed
@@ -199,7 +196,7 @@ const ReactionStatsBar = ({ song }) => {
             {isJammed ? '🎵 In Stack' : jamLoading ? 'Adding...' : '➕ Stack This'}
           </button>
           <button
-            onClick={handleShareJam}
+            onClick={(e) => handleShareJam(e)}
             className="px-3 py-1 text-sm rounded-full font-semibold transition bg-gray-200 text-gray-700 hover:bg-gray-300"
           >
             📤 Share Jam
@@ -207,12 +204,12 @@ const ReactionStatsBar = ({ song }) => {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={handleSendTickle}
+            onClick={(e) => handleSendTickle(e)}
             className="px-3 py-1 text-sm rounded-full font-semibold transition bg-[#3FD6CD] text-black hover:opacity-90"
           >
             🎁 Send Tickle
           </button>
-          <div className="text-sm font-semibold text-[#3FD6CD] border border-[#3FD6CD] px-3 py-1 rounded-full shadow">
+          <div className="text-sm font-semibold text-[#3FD6CD] border border-[#3FD6CD] px-3 py-1 rounded-full shadow md:block hidden">
             🎶 My Tickles: {loading ? '...' : tickleBalance}
           </div>
         </div>
