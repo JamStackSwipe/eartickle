@@ -26,11 +26,27 @@ const UploadScreen = () => {
   const navigate = useNavigate();
 
   const handleUpload = async () => {
-    if (!title || !artist || !genreFlavor || !imageFile || !audioFile) {
-      alert('Please fill out all fields and select both files.');
+    // Enhanced validation
+    if (!title.trim() || !artist.trim() || !genreFlavor || !imageFile || !audioFile) {
+      alert('All fields and files are required.');
       return;
     }
 
+    // Block suspicious "test" or repetitive inputs
+    const forbiddenWords = ['test', 'demo', 'sample'];
+    if (
+      forbiddenWords.some(word => 
+        title.toLowerCase().includes(word) || 
+        artist.toLowerCase().includes(word)
+      ) ||
+      title.length < 3 || 
+      artist.length < 3
+    ) {
+      alert('Title and artist must be at least 3 characters and cannot contain "test", "demo", or "sample".');
+      return;
+    }
+
+    // Validate file sizes
     if (imageFile.size > 10 * 1024 * 1024) {
       alert('Image too large. Max size is 10MB.');
       return;
@@ -41,11 +57,29 @@ const UploadScreen = () => {
       return;
     }
 
+    // Validate audio file duration (basic check, requires File API)
+    try {
+      const audio = new Audio(URL.createObjectURL(audioFile));
+      await new Promise((resolve, reject) => {
+        audio.onloadedmetadata = () => {
+          if (audio.duration < 10 || audio.duration > 600) { // 10s to 10min
+            reject('Audio must be between 10 seconds and 10 minutes.');
+          }
+          resolve();
+        };
+        audio.onerror = () => reject('Invalid audio file.');
+      });
+    } catch (err) {
+      alert(err);
+      return;
+    }
+
     setIsUploading(true);
     const timestamp = Date.now();
     const imageFilename = `${timestamp}-${imageFile.name}`;
     const audioFilename = `${timestamp}-${audioFile.name}`;
 
+    // Upload files to Supabase storage
     const { error: imageError } = await supabase.storage
       .from('covers')
       .upload(imageFilename, imageFile);
@@ -63,8 +97,8 @@ const UploadScreen = () => {
     const coverUrl = supabase.storage.from('covers').getPublicUrl(imageFilename).data.publicUrl;
     const audioUrl = supabase.storage.from('audio').getPublicUrl(audioFilename).data.publicUrl;
 
+    // Handle Stripe for gifting
     let stripeAccountId = null;
-
     if (enableGifting) {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -73,39 +107,42 @@ const UploadScreen = () => {
         .maybeSingle();
 
       if (error || !profile?.stripe_account_id) {
-        alert('To enable gifting, please connect your Stripe account in settings first.');
+        alert('To enable gifting, connect your Stripe account in settings.');
         setIsUploading(false);
         navigate('/settings');
         return;
       }
-
       stripeAccountId = profile.stripe_account_id;
     }
 
+    // Insert song with both genre and genre_flavor
     const { error: dbError } = await supabase.from('songs').insert([
       {
         title,
         artist,
+        genre: genreFlavor, // Set genre to match genre_flavor
         genre_flavor: genreFlavor,
         cover: coverUrl,
         audio: audioUrl,
         user_id: user.id,
         stripe_account_id: stripeAccountId || null,
+        is_draft: true, // Start as draft to review
       },
     ]);
 
     if (dbError) {
-      alert('Song metadata upload failed.');
+      alert('Song metadata upload failed: ' + dbError.message);
       setIsUploading(false);
     } else {
       await supabase.from('profiles').update({ is_artist: true }).eq('id', user.id);
-      setMessage('✅ Song uploaded!');
+      setMessage('✅ Song uploaded! Awaiting review.');
       setTitle('');
       setArtist('');
       setGenreFlavor('');
       setEnableGifting(false);
       setImageFile(null);
       setAudioFile(null);
+      setIsUploading(false);
       setTimeout(() => navigate('/swipe'), 1500);
     }
   };
@@ -120,6 +157,7 @@ const UploadScreen = () => {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         className="w-full p-2 border rounded mb-4"
+        required
       />
 
       <label className="block mb-2 font-medium">Artist Name</label>
@@ -128,6 +166,7 @@ const UploadScreen = () => {
         value={artist}
         onChange={(e) => setArtist(e.target.value)}
         className="w-full p-2 border rounded mb-4"
+        required
       />
 
       <label className="block mb-2 font-medium">Genre Flavor</label>
@@ -135,6 +174,7 @@ const UploadScreen = () => {
         value={genreFlavor}
         onChange={(e) => setGenreFlavor(e.target.value)}
         className="w-full p-2 border rounded mb-4"
+        required
       >
         <option value="">Select a flavor</option>
         {FLAVOR_OPTIONS.map((option) => (
@@ -150,6 +190,7 @@ const UploadScreen = () => {
         accept="image/png, image/jpeg"
         onChange={(e) => setImageFile(e.target.files[0])}
         className="w-full p-2 border rounded mb-4"
+        required
       />
 
       <label className="block mb-2 font-medium">
@@ -171,26 +212,37 @@ const UploadScreen = () => {
           ];
 
           if (!validAudioTypes.includes(file.type)) {
-            alert('❌ Unsupported file format. Please upload an MP3, M4A, or audio-only MP4.');
+            alert('❌ Unsupported file format. Use MP3, M4A, or audio-only MP4.');
             return;
           }
 
           setAudioFile(file);
         }}
         className="w-full p-2 border rounded mb-1"
+        required
       />
       <p className="text-xs text-gray-400 mb-4">
-        Supported formats: MP3, M4A, or audio-only MP4. Make sure your MP4 does not contain video.
+        Supported formats: MP3, M4A, or audio-only MP4. Must be 10s–60s.
       </p>
+
+      <label className="block mb-2">
+        <input
+          type="checkbox"
+          checked={enableGifting}
+          onChange={() => setEnableGifting(!enableGifting)}
+          className="mr-2"
+        />
+        Enable Gifting (Stripe)
+      </label>
 
       <button
         onClick={handleUpload}
         disabled={isUploading}
         className={`w-full text-white py-2 rounded ${
-          isUploading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
+          isUploading ? 'bg-gray-500' : 'bg-blue-600 hover:bg-blue-700'
         }`}
       >
-        {isUploading ? 'Uploading…' : 'Upload'}
+        {isUploading ? 'Uploading...' : 'Upload'}
       </button>
 
       {message && <p className="mt-4 text-center text-green-600">{message}</p>}
