@@ -1,5 +1,6 @@
 // src/components/ReactionStatsBar.js
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom'; // Add for navigation
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
 import { playTickle } from '../utils/tickleSound';
@@ -15,8 +16,10 @@ const ReactionStatsBar = ({ song }) => {
   const [loading, setLoading] = useState(true);
   const [isJammed, setIsJammed] = useState(false);
   const [jamLoading, setJamLoading] = useState(false);
+  const navigate = useNavigate(); // For redirect to /rewards
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
+    setLoading(true);
     const [{ data: reactionsData }, { data: balanceData }, { data: userReactions }, { data: jamData }] = await Promise.all([
       supabase.from('song_reactions').select('emoji').eq('song_id', song.id),
       user ? supabase.from('profiles').select('tickle_balance').eq('id', user.id).maybeSingle() : { data: null },
@@ -39,20 +42,20 @@ const ReactionStatsBar = ({ song }) => {
     setTickleBalance(balanceData?.tickle_balance ?? 0);
     setIsJammed(!!jamData);
     setLoading(false);
-  };
+  }, [song.id, user]);
 
   useEffect(() => {
     loadStats();
-  }, [song.id, user]);
+  }, [loadStats]);
 
   useEffect(() => {
     const handleTicklesUpdated = () => loadStats();
     window.addEventListener('ticklesUpdated', handleTicklesUpdated);
     return () => window.removeEventListener('ticklesUpdated', handleTicklesUpdated);
-  }, []);
+  }, [loadStats]);
 
   const handleEmojiClick = async (emoji, e) => {
-    e.stopPropagation(); // Prevent click propagation
+    e.stopPropagation();
     if (!user) return toast.error('Login to react');
     if (hasReacted[emoji]) return toast('Already reacted');
 
@@ -162,6 +165,11 @@ const ReactionStatsBar = ({ song }) => {
     setJamLoading(false);
   };
 
+  const handleBuyTickles = (e) => {
+    e.stopPropagation();
+    navigate('/rewards');
+  };
+
   return (
     <div className="w-full mt-2 text-sm">
       {/* Emoji Reaction Row */}
@@ -181,7 +189,7 @@ const ReactionStatsBar = ({ song }) => {
         <span className="text-gray-400 text-sm">📥 {stats.jams || song.jams || 0}</span>
       </div>
 
-      {/* Action Row: Jam Stack, Share, Tickle, Balance */}
+      {/* Action Row 1: Jam Stack, Share */}
       <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <button
@@ -202,16 +210,26 @@ const ReactionStatsBar = ({ song }) => {
             📤 Share Jam
           </button>
         </div>
-        <div className="flex items-center gap-2">
+      </div>
+
+      {/* Action Row 2: My Tickles, Send Tickle, Buy Tickles */}
+      <div className="flex items-center justify-between mt-3 gap-2 flex-wrap">
+        <div className="flex items-center gap-2 w-full">
+          <div className="text-sm font-semibold text-[#3FD6CD] border border-[#3FD6CD] px-3 py-1 rounded-full shadow flex-1 text-center">
+            🎶 My Tickles: {loading ? '...' : tickleBalance}
+          </div>
           <button
             onClick={(e) => handleSendTickle(e)}
-            className="px-3 py-1 text-sm rounded-full font-semibold transition bg-[#3FD6CD] text-black hover:opacity-90"
+            className="px-3 py-1 text-sm rounded-full font-semibold transition bg-[#3FD6CD] text-black hover:opacity-90 flex-1"
           >
             🎁 Send Tickle
           </button>
-          <div className="text-sm font-semibold text-[#3FD6CD] border border-[#3FD6CD] px-3 py-1 rounded-full shadow md:block hidden">
-            🎶 My Tickles: {loading ? '...' : tickleBalance}
-          </div>
+          <button
+            onClick={(e) => handleBuyTickles(e)}
+            className="px-3 py-1 text-sm rounded-full font-semibold transition bg-[#FFD700] text-black hover:opacity-90 flex-1"
+          >
+            🛒 Buy Tickles
+          </button>
         </div>
       </div>
     </div>
