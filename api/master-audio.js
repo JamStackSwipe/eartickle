@@ -1,10 +1,26 @@
 // api/master-audio.js
+import fetch from 'node-fetch';
+import path from 'path';
+import os from 'os';
+import fs from 'fs/promises';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase with environment variables (same as client-side)
+const supabase = createClient(
+  process.env.SUPABASE_URL || 'https://your-supabase-url.supabase.co',
+  process.env.SUPABASE_KEY || 'your-supabase-anon-key'
+);
+
 export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   const { songId, preset, userId } = req.body;
 
-  // Authenticate user
-  const { data: session } = await supabase.auth.getSession();
-  if (!session || session.user.id !== userId) {
+  // Authenticate user (similar to send-tickle)
+  const { data: session, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session || session.user.id !== userId) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -30,20 +46,51 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to create mastering job' });
   }
 
-  // Mock AI mastering (in reality, use ffmpeg or a library like sox)
-  // Example: Apply EQ, compression, limiting based on preset
-  const masteredFileName = `${songId}-${preset}-${Date.now()}.mp3`;
-  // Pseudo-code: processAudio(song.audio, preset, masteredFileName);
+  try {
+    // Download the original audio
+    const response = await fetch(song.audio);
+    if (!response.ok) {
+      throw new Error('Failed to download original audio');
+    }
+    const buffer = await response.buffer();
+    const tempInput = path.join(os.tmpdir(), `${songId}-input.mp3`);
+    const masteredFileName = `${songId}-${preset}-${Date.now()}.mp3`;
+    const tempOutput = path.join(os.tmpdir(), masteredFileName);
+    await fs.writeFile(tempInput, buffer);
 
-  // Upload mastered file to Supabase Storage
-  // Pseudo-code: uploadToStorage(masteredFileName, masteredAudioBuffer);
-  const masteredUrl = `https://your-supabase-url/storage/v1/object/public/mastered_audio/${masteredFileName}`;
+    // Mock processing (replace with actual mastering logic if ffmpeg is intended)
+    console.log('Processing audio with preset:', preset);
+    await fs.copyFile(tempInput, tempOutput); // Placeholder for mastering
 
-  // Update mastering job
-  await supabase
-    .from('mastering_jobs')
-    .update({ status: 'completed', mastered_audio_url: masteredUrl })
-    .eq('id', job.id);
+    // Upload mastered audio to Supabase Storage
+    const masteredBuffer = await fs.readFile(tempOutput);
+    const { error: uploadError } = await supabase.storage
+      .from('mastered-audio')
+      .upload(masteredFileName, masteredBuffer, { upsert: true });
 
-  return res.status(200).json({ masteredUrl });
+    if (uploadError) {
+      throw new Error('Failed to upload mastered audio: ' + uploadError.message);
+    }
+
+    const masteredUrl = supabase.storage.from('mastered-audio').getPublicUrl(masteredFileName).data.publicUrl;
+
+    // Clean up temp files
+    await fs.unlink(tempInput);
+    await fs.unlink(tempOutput);
+
+    // Update mastering job
+    await supabase
+      .from('mastering_jobs')
+      .update({ status: 'completed', mastered_audio_url: masteredUrl })
+      .eq('id', job.id);
+
+    return res.status(200).json({ masteredUrl, jobId: job.id });
+  } catch (err) {
+    console.error('Mastering error:', err.message);
+    await supabase
+      .from('mastering_jobs')
+      .update({ status: 'failed', error_message: err.message })
+      .eq('id', job.id);
+    return res.status(500).json({ error: 'Mastering failed: ' + err.message });
+  }
 };
