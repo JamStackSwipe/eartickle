@@ -4,8 +4,8 @@
   ],
   "functions": {
     "api/**/*.js": {
-      "runtime": "nodejs18.x",
-      "includeFiles": "node_modules/**" 
+      "runtime": "nodejs18.x@1.0.0", 
+      "includeFiles": "node_modules/**"
     }
   }
 }
