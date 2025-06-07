@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useUser } from '../components/AuthProvider';
 import { getRecommendedSongs } from '../utils/recommendationEngine';
 import MySongCard from '../components/MySongCard';
-import { genreFlavorMap } from '../utils/genreList'; // Import genreFlavorMap
+import { genreFlavorMap } from '../utils/genreList';
 
 const SwipeScreen = () => {
   const { user } = useUser();
@@ -57,7 +57,7 @@ const SwipeScreen = () => {
   );
 };
 
-// Helper function to get glow color (mirrors SongCard.js)
+// Helper function to get glow color (updated for lime)
 const getGlowColor = (color) => {
   switch (color) {
     case 'amber': return '#f59e0b';
@@ -66,6 +66,7 @@ const getGlowColor = (color) => {
     case 'purple': return '#a855f7';
     case 'cyan': return '#06b6d4';
     case 'red': return '#ef4444';
+    case 'lime': return '#a3e635'; // Glow color for comedy_other
     default: return '#ffffff';
   }
 };
