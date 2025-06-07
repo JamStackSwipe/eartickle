@@ -24,7 +24,7 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
   const audioRef = useRef(null);
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
-  const [artistAvatar, setArtistAvatar] = useState(null);
+  const [artistAvatar, setArtistAvatar] = useState(null); // Added for avatar
 
   const flavor = genreFlavorMap[song.genre_flavor] || null;
   const ringClass = flavor ? `ring-4 ring-${flavor.color}-500` : '';
@@ -63,38 +63,42 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
 
   useEffect(() => {
     const fetchStatsAndReactions = async () => {
-      const [emojiStats, reactionFlags] = await Promise.all([
-        supabase
-          .from('songs')
-          .select('fires, loves, sads, bullseyes, jams')
-          .eq('id', song.id)
-          .single(),
-        user
-          ? supabase
-              .from('reactions')
-              .select('emoji')
-              .eq('user_id', user.id)
-              .eq('song_id', song.id)
-          : { data: [] },
-      ]);
+      try {
+        const [emojiStats, reactionFlags] = await Promise.all([
+          supabase
+            .from('songs')
+            .select('fires, loves, sads, bullseyes, jams')
+            .eq('id', song.id)
+            .single(),
+          user
+            ? supabase
+                .from('reactions')
+                .select('emoji')
+                .eq('user_id', user.id)
+                .eq('song_id', song.id)
+            : { data: [] },
+        ]);
 
-      if (emojiStats.data) {
-        setLocalReactions({
-          fires: stats.fires || emojiStats.data.fires || 0,
-          loves: stats.loves || emojiStats.data.loves || 0,
-          sads: stats.sads || emojiStats.data.sads || 0,
-          bullseyes: stats.bullseyes || emojiStats.data.bullseyes || 0,
-        });
-        setJamsCount(stats.jam_saves || emojiStats.data.jams || 0);
-      }
-
-      if (reactionFlags.data) {
-        const flags = {};
-        for (const r of reactionFlags.data) {
-          const key = emojiToStatKey(emojiToSymbol(r.emoji));
-          flags[key] = true;
+        if (emojiStats.data) {
+          setLocalReactions({
+            fires: stats.fires || emojiStats.data.fires || 0,
+            loves: stats.loves || emojiStats.data.loves || 0,
+            sads: stats.sads || emojiStats.data.sads || 0,
+            bullseyes: stats.bullseyes || emojiStats.data.bullseyes || 0,
+          });
+          setJamsCount(stats.jam_saves || emojiStats.data.jams || 0);
         }
-        setHasReacted(flags);
+
+        if (reactionFlags.data) {
+          const flags = {};
+          for (const r of reactionFlags.data) {
+            const key = emojiToStatKey(emojiToSymbol(r.emoji));
+            flags[key] = true;
+          }
+          setHasReacted(flags);
+        }
+      } catch (error) {
+        console.error('Fetch stats and reactions error:', error);
       }
     };
 
@@ -208,7 +212,7 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
       ref={cardRef}
       data-song-id={song.id}
       className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${flavor ? 'hover:animate-genre-pulse' : ''}`}
-      style={flavor ? { boxShadow: `0 0 15px ${getGlowColor(flavor.color)}` } : {}}
+      style={flavor ? { boxShadow: `0 0 15px ${getGlowColor(flavor.color)}`, transition: 'box-shadow 0.3s' } : {}}
     >
       <div className="relative">
         <a
