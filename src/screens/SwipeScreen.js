@@ -1,65 +1,54 @@
 // src/screens/SwipeScreen.js
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../supabase';
+import { useEffect, useState } from 'react';
 import { useUser } from '../components/AuthProvider';
-import SongCard from '../components/SongCard';
+import { getRecommendedSongs } from '../utils/recommendationEngine';
+import MySongCard from '../components/MySongCard';
+
+const genreFlavors = [
+  'country_roots', 'hiphop_flow', 'rock_raw', 'pop_shine', 'spiritual_soul', 'comedy_other',
+];
 
 const SwipeScreen = () => {
   const { user } = useUser();
   const [songs, setSongs] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const FILTER_OPTIONS = [
-    { key: 'views', label: '🔥 Top' },
-    { key: 'loves', label: '❤️ Loved' },
-    { key: 'fires', label: '🔥 Fire' },
-    { key: 'bullseyes', label: '🎯 Bullseye' },
-    { key: 'sads', label: '😢 Sad' },
-    { key: 'jams', label: '📥 Jammed' },
-    { key: 'tickles', label: '🎁 Tickled' },
-  ];
-
-  const emojiMap = {
-    views: '🔥',
-    loves: '❤️',
-    fires: '🔥',
-    bullseyes: '🎯',
-    sads: '😢',
-    jams: '📥',
-    tickles: '🎁',
-  };
+  const [selectedGenre, setSelectedGenre] = useState(null);
 
   useEffect(() => {
-    const fetchSongs = async () => {
-      const { data, error } = await supabase
-        .from('songs')
-        .select('id, title, cover, audio, artist, genre, genre_flavor, artist_id, fires, loves, sads, bullseyes, views, jams')
-        .eq('is_draft', false) // Exclude drafts
-        .not('cover', 'is', null) // Exclude no cover
-        .not('audio', 'is', null) // Exclude no audio
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (error) {
-        console.error('Error loading songs:', error.message);
-      } else {
-        setSongs(data);
-      }
-      setLoading(false);
-    };
-
-    fetchSongs();
-  }, []);
-
-  if (loading) {
-    return <div className="text-center mt-10 text-white">Loading songs...</div>;
-  }
+    if (user) {
+      getRecommendedSongs(user.id).then((allSongs) => {
+        const filteredSongs = selectedGenre
+          ? allSongs.filter(song => song.genre_flavor === selectedGenre)
+          : allSongs;
+        setSongs(filteredSongs);
+      }).catch(console.error);
+    }
+  }, [user, selectedGenre]);
 
   return (
-    <div className="p-4 max-w-xl mx-auto space-y-10">
-      {songs.map((song) => (
-        <SongCard key={song.id} song={song} user={user} />
-      ))}
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">Discover Songs</h1>
+      <div className="mb-4 flex flex-wrap gap-2">
+        <button
+          onClick={() => setSelectedGenre(null)}
+          className={`px-3 py-1 rounded-full ${!selectedGenre ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'} hover:bg-blue-700`}
+        >
+          All
+        </button>
+        {genreFlavors.map((genre) => (
+          <button
+            key={genre}
+            onClick={() => setSelectedGenre(genre)}
+            className={`px-3 py-1 rounded-full ${selectedGenre === genre ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'} hover:bg-blue-700`}
+          >
+            {genre.replace('_', ' ').charAt(0).toUpperCase() + genre.slice(1)}
+          </button>
+        ))}
+      </div>
+      {songs.length > 0 ? (
+        songs.map((song) => <MySongCard key={song.id} song={song} user={user} stats={song} />)
+      ) : (
+        <p className="text-center text-gray-500">No songs to discover in this genre yet.</p>
+      )}
     </div>
   );
 };
