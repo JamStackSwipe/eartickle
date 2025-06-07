@@ -1,4 +1,3 @@
-// src/components/MySongCard.js
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
@@ -22,14 +21,14 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
   });
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState(song.title);
-
   const audioRef = useRef(null);
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [artistAvatar, setArtistAvatar] = useState(null);
 
   const flavor = genreFlavorMap[song.genre_flavor] || null;
   const ringClass = flavor ? `ring-4 ring-${flavor.color}-500` : '';
-  const glowColor = flavor ? flavor.color : 'white';
+  const glowColor = flavor ? getGlowColor(flavor.color) : 'white';
 
   const getGlowColor = (color) => {
     switch (color) {
@@ -101,6 +100,21 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
 
     fetchStatsAndReactions();
   }, [user, song.id, stats]);
+
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      if (song.artist_id) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', song.artist_id)
+          .single();
+        if (error) console.error('Avatar fetch error:', error);
+        else setArtistAvatar(data?.avatar_url || '/default-avatar.png');
+      }
+    };
+    fetchAvatar();
+  }, [song.artist_id]);
 
   const incrementViews = async () => {
     await supabase.rpc('increment_song_view', { song_id_input: song.id });
@@ -241,41 +255,56 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
         )}
       </div>
 
-      {editableTitle && user?.id === song.artist_id && editingTitle ? (
-        <div className="mb-2">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-1 bg-zinc-800 rounded text-white"
-            aria-label="Edit song title"
-          />
-          <button
-            onClick={handleTitleSave}
-            className="text-sm text-green-400 mt-1"
-            aria-label="Save title"
-          >
-            Save
-          </button>
-          <button
-            onClick={() => {
-              setEditingTitle(false);
-              setTitle(song.title);
-            }}
-            className="text-sm text-gray-400 mt-1 ml-2"
-            aria-label="Cancel edit"
-          >
-            Cancel
-          </button>
+      <div className="flex items-center mb-2">
+        {artistAvatar && (
+          <a href={`/artist/${song.artist_id}`}>
+            <img
+              src={artistAvatar}
+              alt={`${song.artist} avatar`}
+              className="w-8 h-8 rounded-full mr-2 cursor-pointer"
+            />
+          </a>
+        )}
+        <div>
+          {editableTitle && user?.id === song.artist_id && editingTitle ? (
+            <div className="mb-2">
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full p-1 bg-zinc-800 rounded text-white"
+                aria-label="Edit song title"
+              />
+              <button
+                onClick={handleTitleSave}
+                className="text-sm text-green-400 mt-1"
+                aria-label="Save title"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setEditingTitle(false);
+                  setTitle(song.title);
+                }}
+                className="text-sm text-gray-400 mt-1 ml-2"
+                aria-label="Cancel edit"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <h2
+              className="text-xl font-semibold mb-1 cursor-pointer"
+              onClick={() => editableTitle && user?.id === song.artist_id && setEditingTitle(true)}
+            >
+              {title}
+            </h2>
+          )}
+          <a href={`/artist/${song.artist_id}`} className="text-sm text-gray-400 hover:underline">
+            by {song.artist}
+          </a>
         </div>
-      ) : (
-        <h2
-          className="text-xl font-semibold mb-1 cursor-pointer"
-          onClick={() => editableTitle && user?.id === song.artist_id && setEditingTitle(true)}
-        >
-          {title}
-        </h2>
-      )}
-      <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
+      </div>
 
       {user && (
         <div className="mt-3 flex justify-center">
@@ -285,8 +314,7 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
 
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3 mt-2" />
 
-      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
-      {/* Note on 2025-06-06: "Add to Jam Stack" functionality was moved to ReactionStatsBar.js for better mobile layout. MySongCard.js did not previously use AddToJamStackButton, but this comment is added for consistency with SongCard.js documentation. */}
+      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} stats={localReactions} onReaction={handleReaction} />
     </div>
   );
 };
