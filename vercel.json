@@ -1,11 +1,5 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/", "has": [{ "type": "host", "value": "www.eartickle.com" }] }
-  ],
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "nodejs18.x@1.0.0", 
-      "includeFiles": "node_modules/**"
-    }
-  }
+    { "source": "/(.*)", "destination": "/" }
+  ]
 }
