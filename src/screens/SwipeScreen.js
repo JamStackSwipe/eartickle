@@ -12,9 +12,11 @@ const SwipeScreen = () => {
   useEffect(() => {
     if (user) {
       getRecommendedSongs(user.id).then((allSongs) => {
+        console.log('All Songs from Engine:', allSongs.map(s => ({ id: s.id, genre_flavor: s.genre_flavor })));
         const filteredSongs = selectedGenre
           ? allSongs.filter(song => song.genre_flavor === selectedGenre)
           : allSongs;
+        console.log('Filtered Songs for', selectedGenre || 'All:', filteredSongs.map(s => ({ id: s.id, genre_flavor: s.genre_flavor })));
         setSongs(filteredSongs);
       }).catch(console.error);
     }
@@ -57,7 +59,7 @@ const SwipeScreen = () => {
   );
 };
 
-// Helper function to get glow color (updated for lime)
+// Helper function to get glow color
 const getGlowColor = (color) => {
   switch (color) {
     case 'amber': return '#f59e0b';
@@ -66,7 +68,7 @@ const getGlowColor = (color) => {
     case 'purple': return '#a855f7';
     case 'cyan': return '#06b6d4';
     case 'red': return '#ef4444';
-    case 'lime': return '#a3e635'; // Glow color for comedy_other
+    case 'lime': return '#a3e635';
     default: return '#ffffff';
   }
 };
