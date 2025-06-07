@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useUser } from '../components/AuthProvider';
 import { getRecommendedSongs } from '../utils/recommendationEngine';
-import MySongCard from '../components/MySongCard';
+import SongCard from '../components/SongCard'; // Changed from MySongCard
 import { genreFlavorMap } from '../utils/genreList';
 
 const SwipeScreen = () => {
@@ -14,7 +14,7 @@ const SwipeScreen = () => {
       getRecommendedSongs(user.id).then((allSongs) => {
         console.log('All Songs from Engine:', allSongs.map(s => ({ id: s.id, genre_flavor: s.genre_flavor, score: s.score })));
         const filteredSongs = selectedGenre
-          ? allSongs.filter(song => song.genre_flavor === selectedGenre)
+          ? allSongs.filter(song => song.genre_flavor.toLowerCase() === selectedGenre.toLowerCase()) // Case-insensitive
           : allSongs;
         console.log('Filtered Songs for', selectedGenre || 'All:', filteredSongs.map(s => ({ id: s.id, genre_flavor: s.genre_flavor, score: s.score })));
         setSongs(filteredSongs);
@@ -51,7 +51,7 @@ const SwipeScreen = () => {
         </div>
       </div>
       {songs.length > 0 ? (
-        songs.map((song) => <MySongCard key={song.id} song={song} user={user} stats={song} />)
+        songs.map((song) => <SongCard key={song.id} song={song} user={user} />) // Changed to SongCard
       ) : (
         <p className="text-center text-gray-500">No songs to discover in this genre yet.</p>
       )}
