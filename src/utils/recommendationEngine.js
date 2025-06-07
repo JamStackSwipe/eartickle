@@ -54,7 +54,7 @@ export async function getRecommendedSongs(userId) {
     const { data, error } = await supabase
       .from('tickles')
       .select('song_id')
-      .eq('sender_id', userId);
+      .eq('user_id', userId); // Changed from sender_id to user_id
     if (error) {
       console.warn('Tickles fetch failed, using empty data:', error);
       tickles = [];
@@ -111,7 +111,6 @@ export async function getRecommendedSongs(userId) {
       }
 
       let boostCount = 0; // Skip boosts since table doesn't exist
-      // Removed boosts query to avoid 404
 
       score +=
         emojiCounts['❤️'] * 2 +
@@ -130,7 +129,7 @@ export async function getRecommendedSongs(userId) {
         if (updateError) throw updateError;
 
         const { error: snapshotError } = await supabase.from('song_score_snapshots').insert([
-          { song_id: song.id, score, snapshot_type: 'daily', created_at: new Date().toISOString() },
+          { song_id: song.id, score, snapshot_type: 'daily', taken_at: new Date().toISOString() }, // Changed to taken_at
         ]);
         if (snapshotError) throw snapshotError;
       } catch (error) {
@@ -153,7 +152,7 @@ export async function getRecommendedSongs(userId) {
 
   for (let i = enriched.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [enriched[i], enriched[j]] = [enriched[j], enriched[i]];
+    [enriched[i], enriched[j] = [enriched[j], enriched[i]];
   }
   return enriched.sort((a, b) => b.score - a.score);
 }
