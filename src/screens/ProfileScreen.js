@@ -23,7 +23,7 @@ const ProfileScreen = () => {
   const [songs, setSongs] = useState([]);
   const [jamStackSongs, setJamStackSongs] = useState([]);
   const [tickleStats, setTickleStats] = useState({});
-  const [editingSongId, setEditingSongId] = useState(null); // Track which song is being edited
+  const [editing, setEditing] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [showSocial, setShowSocial] = useState(false);
 
@@ -61,6 +61,7 @@ const ProfileScreen = () => {
       console.log('No song IDs for reaction stats');
       return;
     }
+
     try {
       const [reactions, views, jams] = await Promise.all([
         supabase.from('reactions').select('song_id, emoji').in('song_id', songIds),
@@ -98,7 +99,7 @@ const ProfileScreen = () => {
       const { data, error } = await supabase
         .from('songs')
         .select('id, title, artist, cover, audio, genre_flavor, is_draft, user_id, artist_id, created_at')
-        .eq('artist_id', user.id)
+        .eq('artist_id', user.id) // Changed from user_id to artist_id to match your schema
         .order('created_at', { ascending: false });
       if (error) throw error;
       setSongs(data || []);
@@ -220,48 +221,6 @@ const ProfileScreen = () => {
       toast.error('Failed to remove Jam Stack song');
       console.error('Delete Jam Error:', error);
     }
-  };
-
-  const handleEdit = (songId) => setEditingSongId(songId);
-  const handleSaveEdit = async (songId, newCover, newGenre) => {
-    const song = songs.find(s => s.id === songId);
-    let coverUrl = song.cover;
-
-    if (newCover) {
-      setUploading(true);
-      try {
-        const fileName = `${Date.now()}-${newCover.name}`;
-        const { error: uploadError } = await supabase.storage
-          .from('covers')
-          .upload(`public/covers/${fileName}`, newCover);
-        if (uploadError) throw uploadError;
-        coverUrl = `https://auth.eartickle.com/storage/v1/object/public/covers/${fileName}`;
-      } catch (error) {
-        toast.error('Failed to upload cover');
-        console.error('Cover Upload Error:', error);
-        setUploading(false);
-        return;
-      }
-      setUploading(false);
-    }
-
-    try {
-      const { error } = await supabase
-        .from('songs')
-        .update({ cover: coverUrl, genre_flavor: newGenre })
-        .eq('id', songId);
-      if (error) throw error;
-      toast.success('Song updated!');
-      setEditingSongId(null);
-      fetchUploads(); // Refresh the list
-    } catch (error) {
-      toast.error('Failed to update song');
-      console.error('Update Song Error:', error);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingSongId(null);
   };
 
   const avatarSrc = profile.avatar_url || user?.user_metadata?.avatar_url || '/default-avatar.png';
@@ -418,22 +377,30 @@ const ProfileScreen = () => {
       {songs.length > 0 ? (
         <div>
           <h2 className="text-xl font-bold mb-4 text-center" style={{ color: '#3FD6CD' }}>📤 My Uploads</h2>
-          {songs.map((song) => (
-            <MySongCard
-              key={song.id}
-              song={{ ...song, artist: profile.display_name }}
-              user={user}
-              stats={tickleStats[song.id] || {}}
-              onDelete={() => handleDelete(song.id)}
-              onPublish={song.is_draft ? () => handlePublish(song.id) : undefined}
-              editableTitle
-              showStripeButton={!profile.stripe_account_id && !song.is_draft}
-              isEditing={editingSongId === song.id}
-              onEdit={() => handleEdit(song.id)}
-              onSaveEdit={(newCover, newGenre) => handleSaveEdit(song.id, newCover, newGenre)}
-              onCancelEdit={handleCancelEdit}
-            />
-          ))}
+          {songs.map((song) => {
+            console.log('My Uploads Song:', {
+              id: song.id,
+              title: song.title,
+              artist: profile.display_name,
+              user_id: user?.id,
+              stats: tickleStats[song.id] || {},
+              editableTitle: true,
+              showStripeButton: !profile.stripe_account_id && !song.is_draft,
+              is_draft: song.is_draft,
+            });
+            return (
+              <MySongCard
+                key={song.id}
+                song={{ ...song, artist: profile.display_name }}
+                user={user}
+                stats={tickleStats[song.id] || {}}
+                onDelete={() => handleDelete(song.id)}
+                onPublish={song.is_draft ? () => handlePublish(song.id) : undefined}
+                editableTitle
+                showStripeButton={!profile.stripe_account_id && !song.is_draft}
+              />
+            );
+          })}
         </div>
       ) : (
         <p className="text-center text-gray-500">No uploads yet.</p>
@@ -445,15 +412,24 @@ const ProfileScreen = () => {
           <hr className="my-6 border-t border-blue-500" />
           <h2 className="text-xl font-bold mb-4 text-center" style={{ color: '#3FD6CD' }}>🎵 My Jam Stack</h2>
           <hr className="mb-6 border-t border-blue-500" />
-          {jamStackSongs.map((song) => (
-            <MySongCard
-              key={song.id}
-              song={{ ...song, artist: song.artist || profile.display_name }}
-              user={user}
-              stats={tickleStats[song.id] || {}}
-              onDelete={() => handleDeleteJam(song.id)}
-            />
-          ))}
+          {jamStackSongs.map((song) => {
+            console.log('My Jams Song:', {
+              id: song.id,
+              title: song.title,
+              artist: song.artist || profile.display_name,
+              user_id: user?.id,
+              stats: tickleStats[song.id] || {},
+            });
+            return (
+              <MySongCard
+                key={song.id}
+                song={{ ...song, artist: song.artist || profile.display_name }}
+                user={user}
+                stats={tickleStats[song.id] || {}}
+                onDelete={() => handleDeleteJam(song.id)}
+              />
+            );
+          })}
         </div>
       ) : (
         <p className="text-center text-gray-500">No songs in your Jam Stack yet.</p>
