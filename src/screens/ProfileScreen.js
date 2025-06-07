@@ -266,202 +266,201 @@ const ProfileScreen = () => {
 
   const avatarSrc = profile.avatar_url || user?.user_metadata?.avatar_url || '/default-avatar.png';
 
-  return (
-    <div className="p-4 max-w-3xl mx-auto space-y-8 bg-gradient-to-b from-gray-100 to-gray-200 min-h-screen">
-      {/* Profile Header */}
-      <div className="relative bg-white rounded-2xl shadow-lg overflow-hidden">
-        <div className="h-32" style={{ backgroundColor: '#3FD6CD' }}></div>
+ // ... (previous imports and state setup remain unchanged)
+
+return (
+  <div className="p-4 max-w-3xl mx-auto space-y-8 bg-gradient-to-b from-gray-100 to-gray-200 min-h-screen">
+    {/* Profile Header */}
+    <div className="relative bg-white rounded-2xl shadow-lg overflow-hidden">
+      <div className="h-32" style={{ backgroundColor: '#3FD6CD' }}></div>
       
-        <div className="relative flex flex-col items-center -mt-16">
-          <div className="relative">
-            <img
-              src={avatarSrc}
-              alt="Profile Avatar"
-              onClick={() => !uploading && fileInputRef.current?.click()}
-              className={`w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl cursor-pointer hover:opacity-90 transition ${
-                uploading ? 'opacity-50' : ''
-              }`}
-            />
-            <input
-              type="file"
-              hidden
-              ref={fileInputRef}
-              accept="image/*"
-              onChange={handleAvatarChange}
-              disabled={uploading}
-            />
-            {uploading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
-                <span className="text-white text-sm">Uploading...</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="text-center mt-4">
-          {editing === 'name' ? (
-            <div className="flex flex-col items-center">
-              <input
-                type="text"
-                value={profile.display_name || ''}
-                onChange={(e) => handleChange('display_name', e.target.value)}
-                placeholder="Your artist name"
-                className="text-2xl font-bold text-center border-b-2 border-blue-500 focus:outline-none focus:border-blue-700 bg-transparent w-64 sm:w-80"
-                autoFocus
-              />
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => setEditing(null)}
-                  className="px-4 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300 transition"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-800">{profile.display_name || 'Unnamed Artist'}</h1>
-              <button
-                onClick={() => setEditing('name')}
-                className="text-gray-500 hover:text-blue-500 transition"
-                aria-label="Edit display name"
-              >
-                ✏️
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="text-center max-w-md mx-auto mt-4 px-4">
-          {editing === 'bio' ? (
-            <div className="flex flex-col items-center">
-              <textarea
-                value={profile.bio || ''}
-                onChange={(e) => handleChange('bio', e.target.value)}
-                placeholder="Tell your story..."
-                rows={4}
-                className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-700 resize-none"
-                autoFocus
-              />
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => setEditing(null)}
-                  className="px-4 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300 transition"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2 text-gray-600">
-              <p className="text-sm italic">{profile.bio || 'No bio yet. Click ✏️ to add one.'}</p>
-              <button
-                onClick={() => setEditing('bio')}
-                className="text-gray-500 hover:text-blue-500 transition"
-                aria-label="Edit bio"
-              >
-                ✏️
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="text-center mt-6">
-          <button
-            onClick={() => setShowSocial(!showSocial)}
-            className="px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition"
-          >
-            {showSocial ? 'Hide Social Links' : 'Edit Social Links'}
-          </button>
-          {showSocial && (
-            <div className="mt-4 bg-white rounded-lg shadow p-4 max-w-md mx-auto">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {Object.keys(socialIcons).map((field) => (
-                  <div key={field} className="flex flex-col text-sm">
-                    <label htmlFor={field} className="mb-1 text-gray-700 flex items-center gap-1 capitalize">
-                      <span>{socialIcons[field]}</span> {field}
-                    </label>
-                    <input
-                      id={field}
-                      value={profile[field] || ''}
-                      onChange={(e) => handleChange(field, e.target.value)}
-                      placeholder={`Your ${field} URL`}
-                      className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
-                    />
-                  </div>
-                ))}
-              </div>
-              <button
-                onClick={handleSave}
-                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
-              >
-                Save Social Links
-              </button>
+      <div className="relative flex flex-col items-center -mt-16">
+        <div className="relative">
+          <img
+            src={avatarSrc}
+            alt="Profile Avatar"
+            onClick={() => !uploading && fileInputRef.current?.click()}
+            className={`w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl cursor-pointer hover:opacity-90 transition ${
+              uploading ? 'opacity-50' : ''
+            }`}
+          />
+          <input
+            type="file"
+            hidden
+            ref={fileInputRef}
+            accept="image/*"
+            onChange={handleAvatarChange}
+            disabled={uploading}
+          />
+          {uploading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
+              <span className="text-white text-sm">Uploading...</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Uploads Section */}
-      {songs.length > 0 ? (
-        <div>
-          <h2 className="text-xl font-bold mb-4 text-center" style={{ color: '#3FD6CD' }}>📤 My Uploads</h2>
-          {songs.map((song) => (
-            <MySongCard
-              key={song.id}
-              song={{ ...song, artist: profile.display_name }}
-              user={user}
-              stats={tickleStats[song.id] || {}}
-              onDelete={() => handleDelete(song.id)}
-              onPublish={song.is_draft ? () => handlePublish(song.id) : undefined}
-              editableTitle
-              showStripeButton={!profile.stripe_account_id && !song.is_draft}
-              isEditing={editingSongId === song.id}
-              onEdit={() => handleEdit(song.id)}
-              onSaveEdit={(newCover, newGenre) => handleSaveEdit(song.id, newCover, newGenre)}
-              onCancelEdit={handleCancelEdit}
+      <div className="text-center mt-4">
+        {editing === 'name' ? ( // This should use editingSongId for song editing, but keep as is for profile name
+          <div className="flex flex-col items-center">
+            <input
+              type="text"
+              value={profile.display_name || ''}
+              onChange={(e) => handleChange('display_name', e.target.value)}
+              placeholder="Your artist name"
+              className="text-2xl font-bold text-center border-b-2 border-blue-500 focus:outline-none focus:border-blue-700 bg-transparent w-64 sm:w-80"
+              autoFocus
             />
-          ))}
-        </div>
-      ) : (
-        <p className="text-center text-gray-500">No uploads yet.</p>
-      )}
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={handleSave}
+                className="px-4 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setEditing(null)}
+                className="px-4 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-800">{profile.display_name || 'Unnamed Artist'}</h1>
+            <button
+              onClick={() => setEditing('name')}
+              className="text-gray-500 hover:text-blue-500 transition"
+              aria-label="Edit display name"
+            >
+              ✏️
+            </button>
+          </div>
+        )}
+      </div>
 
-      {/* Jam Stack Section */}
-      {jamStackSongs.length > 0 ? (
-        <div>
-          <hr className="my-6 border-t border-blue-500" />
-          <h2 className="text-xl font-bold mb-4 text-center" style={{ color: '#3FD6CD' }}>🎵 My Jam Stack</h2>
-          <hr className="mb-6 border-t border-blue-500" />
-          {jamStackSongs.map((song) => (
-            <MySongCard
-              key={song.id}
-              song={{ ...song, artist: song.artist || profile.display_name }}
-              user={user}
-              stats={tickleStats[song.id] || {}}
-              onDelete={() => handleDeleteJam(song.id)}
+      <div className="text-center max-w-md mx-auto mt-4 px-4">
+        {editing === 'bio' ? (
+          <div className="flex flex-col items-center">
+            <textarea
+              value={profile.bio || ''}
+              onChange={(e) => handleChange('bio', e.target.value)}
+              placeholder="Tell your story..."
+              rows={4}
+              className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-700 resize-none"
+              autoFocus
             />
-          ))}
-        </div>
-      ) : (
-        <p className="text-center text-gray-500">No songs in your Jam Stack yet.</p>
-      )}
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={handleSave}
+                className="px-4 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setEditing(null)}
+                className="px-4 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center gap-2 text-gray-600">
+            <p className="text-sm italic">{profile.bio || 'No bio yet. Click ✏️ to add one.'}</p>
+            <button
+              onClick={() => setEditing('bio')}
+              className="text-gray-500 hover:text-blue-500 transition"
+              aria-label="Edit bio"
+            >
+              ✏️
+            </button>
+          </div>
+        )}
+      </div>
 
-      <Footer />
+      <div className="text-center mt-6">
+        <button
+          onClick={() => setShowSocial(!showSocial)}
+          className="px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition"
+        >
+          {showSocial ? 'Hide Social Links' : 'Edit Social Links'}
+        </button>
+        {showSocial && (
+          <div className="mt-4 bg-white rounded-lg shadow p-4 max-w-md mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {Object.keys(socialIcons).map((field) => (
+                <div key={field} className="flex flex-col text-sm">
+                  <label htmlFor={field} className="mb-1 text-gray-700 flex items-center gap-1 capitalize">
+                    <span>{socialIcons[field]}</span> {field}
+                  </label>
+                  <input
+                    id={field}
+                    value={profile[field] || ''}
+                    onChange={(e) => handleChange(field, e.target.value)}
+                    placeholder={`Your ${field} URL`}
+                    className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
+                  />
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={handleSave}
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
+            >
+              Save Social Links
+            </button>
+          </div>
+        )}
+      </div>
     </div>
-  );
-};
 
-export default ProfileScreen;
+    {/* Uploads Section */}
+    {songs.length > 0 ? (
+      <div>
+        <h2 className="text-xl font-bold mb-4 text-center" style={{ color: '#3FD6CD' }}>📤 My Uploads</h2>
+        {songs.map((song) => (
+          <MySongCard
+            key={song.id}
+            song={{ ...song, artist: profile.display_name }}
+            user={user}
+            stats={tickleStats[song.id] || {}}
+            onDelete={() => handleDelete(song.id)}
+            onPublish={song.is_draft ? () => handlePublish(song.id) : undefined}
+            editableTitle
+            showStripeButton={!profile.stripe_account_id && !song.is_draft}
+            isEditing={editingSongId === song.id} // Changed from editing to editingSongId
+            onEdit={() => handleEdit(song.id)}
+            onSaveEdit={(newCover, newGenre) => handleSaveEdit(song.id, newCover, newGenre)}
+            onCancelEdit={handleCancelEdit}
+          />
+        ))}
+      </div>
+    ) : (
+      <p className="text-center text-gray-500">No uploads yet.</p>
+    )}
+
+    {/* Jam Stack Section */}
+    {jamStackSongs.length > 0 ? (
+      <div>
+        <hr className="my-6 border-t border-blue-500" />
+        <h2 className="text-xl font-bold mb-4 text-center" style={{ color: '#3FD6CD' }}>🎵 My Jam Stack</h2>
+        <hr className="mb-6 border-t border-blue-500" />
+        {jamStackSongs.map((song) => (
+          <MySongCard
+            key={song.id}
+            song={{ ...song, artist: song.artist || profile.display_name }}
+            user={user}
+            stats={tickleStats[song.id] || {}}
+            onDelete={() => handleDeleteJam(song.id)}
+          />
+        ))}
+      </div>
+    ) : (
+      <p className="text-center text-gray-500">No songs in your Jam Stack yet.</p>
+    )}
+
+    <Footer />
+  </div>
+);
