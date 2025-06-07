@@ -3,3 +3,12 @@
     { "source": "/(.*)", "destination": "/" }
   ]
 }
+
+{
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x",
+      "includeFiles": ["node_modules/**"]
+    }
+  }
+}
