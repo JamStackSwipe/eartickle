@@ -13,15 +13,6 @@ const FLAVOR_OPTIONS = [
   { value: 'comedy_other', label: 'Comedy & Other 😂' },
 ];
 
-const MASTERING_PRESETS = [
-  { value: 'country_roots', label: 'Country Roots 🤠' },
-  { value: 'hiphop_flow', label: 'HipHop Flow 🎤' },
-  { value: 'rock_raw', label: 'Rock Raw 🤘' },
-  { value: 'pop_shine', label: 'Pop Shine ✨' },
-  { value: 'spiritual_soul', label: 'Spiritual Soul ✝️' },
-  { value: 'comedy_other', label: 'Comedy Other 😂' },
-];
-
 const UploadScreen = () => {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
@@ -29,10 +20,8 @@ const UploadScreen = () => {
   const [imageFile, setImageFile] = useState(null);
   const [audioFile, setAudioFile] = useState(null);
   const [enableGifting, setEnableGifting] = useState(true);
-  const [masteringPreset, setMasteringPreset] = useState('');
   const [message, setMessage] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [isMastering, setIsMastering] = useState(false);
 
   const { user } = useUser();
   const navigate = useNavigate();
@@ -102,8 +91,7 @@ const UploadScreen = () => {
     }
 
     const coverUrl = supabase.storage.from('covers').getPublicUrl(imageFilename).data.publicUrl;
-    const originalAudioUrl = supabase.storage.from('audio').getPublicUrl(audioFilename).data.publicUrl;
-    let audioUrl = originalAudioUrl;
+    const audioUrl = supabase.storage.from('audio').getPublicUrl(audioFilename).data.publicUrl;
 
     let stripeAccountId = null;
     if (enableGifting) {
@@ -124,7 +112,7 @@ const UploadScreen = () => {
         genre_flavor: genreFlavor,
         cover: coverUrl,
         audio: audioUrl,
-        original_audio: originalAudioUrl,
+        original_audio: audioUrl,
         user_id: user.id,
         stripe_account_id: stripeAccountId,
         is_draft: true,
@@ -137,78 +125,15 @@ const UploadScreen = () => {
       return;
     }
 
-    if (masteringPreset) {
-      setIsMastering(true);
-      try {
-        const response = await fetch('/api/master-audio', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ songId: songData.id, preset: masteringPreset, userId: user.id }),
-        });
-
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.error || 'Mastering failed');
-        }
-
-        const jobId = result.jobId;
-        let masteredUrl = null;
-        let attempts = 0;
-        const maxAttempts = 30;
-
-        while (attempts < maxAttempts) {
-          const { data: job, error: jobError } = await supabase
-            .from('mastering_jobs')
-            .select('status, mastered_audio_url')
-            .eq('id', jobId)
-            .single();
-
-          if (jobError) {
-            throw new Error('Failed to check mastering status');
-          }
-
-          console.log('Mastering job status:', job.status);
-          if (job.status === 'completed') {
-            masteredUrl = job.mastered_audio_url;
-            break;
-          } else if (job.status === 'failed') {
-            throw new Error('Mastering failed');
-          }
-
-          attempts++;
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-
-        if (!masteredUrl) {
-          throw new Error('Mastering timed out');
-        }
-
-        audioUrl = masteredUrl;
-        await supabase
-          .from('songs')
-          .update({ audio: audioUrl })
-          .eq('id', songData.id);
-        setMessage('✅ Song uploaded and mastered successfully! Check your profile to review and publish your draft.');
-      } catch (err) {
-        console.error('Mastering error:', err.message);
-        setMessage(`✅ Song uploaded, but mastering failed: ${err.message}. Check your profile to review and publish your draft.`);
-      }
-      setIsMastering(false);
-    } else {
-      setMessage('✅ Song uploaded successfully! Check your profile to review and publish your draft.');
-    }
-
+    setMessage('✅ Song uploaded successfully! Check your profile to review and publish your draft.');
     await supabase.from('profiles').update({ is_artist: true }).eq('id', user.id);
     setTitle('');
     setArtist('');
     setGenreFlavor('');
-    setMasteringPreset('');
     setEnableGifting(true);
     setImageFile(null);
     setAudioFile(null);
     setIsUploading(false);
-    // Remove auto-redirect for now to keep message visible
-    // setTimeout(() => navigate('/profile'), 10000);
   };
 
   return (
@@ -248,7 +173,8 @@ const UploadScreen = () => {
         ))}
       </select>
 
-      <label className="block mb-2 font-medium">Mastering Preset (Optional)</label>
+      {/* Removed mastering preset selection */}
+      {/* <label className="block mb-2 font-medium">Mastering Preset (Optional)</label>
       <select
         value={masteringPreset}
         onChange={(e) => setMasteringPreset(e.target.value)}
@@ -260,7 +186,7 @@ const UploadScreen = () => {
             {option.label}
           </option>
         ))}
-      </select>
+      </select> */}
 
       <label className="block mb-2 font-medium">Cover Image (PNG/JPG, Max 10MB)</label>
       <input
@@ -315,16 +241,13 @@ const UploadScreen = () => {
 
       <button
         onClick={handleUpload}
-        disabled={isUploading || isMastering}
-        className={`w-full text-white py-2 rounded ${
-          isUploading || isMastering ? 'bg-gray-500' : 'bg-blue-600 hover:bg-blue-700'
-        }`}
+        disabled={isUploading}
+        className={`w-full text-white py-2 rounded ${isUploading ? 'bg-gray-500' : 'bg-blue-600 hover:bg-blue-700'}`}
       >
-        {isUploading ? 'Uploading...' : isMastering ? 'Mastering...' : 'Upload'}
+        {isUploading ? 'Uploading...' : 'Upload'}
       </button>
 
       {message && <p className="mt-4 text-center text-green-600">{message}</p>}
-      {/* Add a manual navigate button for now */}
       {message && (
         <button
           onClick={() => navigate('/profile')}
