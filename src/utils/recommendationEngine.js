@@ -1,12 +1,12 @@
 // src/utils/recommendationEngine.js
-
 import { supabase } from '../supabase';
 
 export async function getRecommendedSongs(userId) {
   const { data: songs, error: songError } = await supabase
     .from('songs')
     .select('*')
-    .neq('audio', null);
+    .neq('audio', null)
+    .order('created_at', { ascending: false }); // Prioritize newer songs
 
   if (songError || !songs) return [];
 
@@ -29,10 +29,15 @@ export async function getRecommendedSongs(userId) {
   const enriched = await Promise.all(
     songs.map(async (song) => {
       let score = 0;
+      const now = new Date();
+      const createdAt = new Date(song.created_at);
+      const daysSinceCreation = (now - createdAt) / (1000 * 60 * 60 * 24); // Days since upload
+      const recencyBonus = daysSinceCreation < 7 ? 50 / (daysSinceCreation + 1) : 0; // Boost new songs (first week)
 
       if (jams?.some((j) => j.song_id === song.id)) score += 10;
       if (tickles?.some((t) => t.song_id === song.id)) score += 25;
       if (profile?.preferred_genres?.includes(song.genre)) score += 5;
+      score += recencyBonus; // Add recency bonus
 
       const { data: allTickles } = await supabase
         .from('tickles')
@@ -51,7 +56,7 @@ export async function getRecommendedSongs(userId) {
         .select('*', { count: 'exact', head: true })
         .eq('song_id', song.id);
 
-      // Combine everything into a final score
+      // Combine into final score
       score +=
         emojiCounts['❤️'] * 2 +
         emojiCounts['🔥'] * 3 +
@@ -59,19 +64,18 @@ export async function getRecommendedSongs(userId) {
         emojiCounts['🎯'] * 4 +
         (jamCount || 0);
 
-      // 🧠 Update the song’s score in the DB
+      // Update the song’s score in the DB
       await supabase
         .from('songs')
         .update({ score })
         .eq('id', song.id);
       await supabase.from('song_score_snapshots').insert([
-  {
-    song_id: song.id,
-    score,
-    snapshot_type: 'daily',
-  },
-]);
-
+        {
+          song_id: song.id,
+          score,
+          snapshot_type: 'daily',
+        },
+      ]);
 
       return {
         ...song,
@@ -86,5 +90,10 @@ export async function getRecommendedSongs(userId) {
     })
   );
 
-  return enriched.sort((a, b) => b.score - a.score);
+  // Shuffle to avoid always showing the same top song, then sort by score
+  for (let i = enriched.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [enriched[i], enriched[j]] = [enriched[j], enriched[i]];
+  }
+  return enriched.sort((a, b) => b.score - a.score).slice(0, 10); // Top 10 after shuffle
 }
