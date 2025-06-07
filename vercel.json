@@ -5,7 +5,7 @@
   "functions": {
     "api/**/*.js": {
       "runtime": "nodejs18.x",
-      "includeFiles": "node_modules/**" // Corrected to string
+      "includeFiles": "node_modules/**" 
     }
   }
 }
