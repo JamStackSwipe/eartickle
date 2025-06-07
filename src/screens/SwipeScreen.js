@@ -12,11 +12,11 @@ const SwipeScreen = () => {
   useEffect(() => {
     if (user) {
       getRecommendedSongs(user.id).then((allSongs) => {
-        console.log('All Songs from Engine:', allSongs.map(s => ({ id: s.id, genre_flavor: s.genre_flavor })));
+        console.log('All Songs from Engine:', allSongs.map(s => ({ id: s.id, genre_flavor: s.genre_flavor, score: s.score })));
         const filteredSongs = selectedGenre
           ? allSongs.filter(song => song.genre_flavor === selectedGenre)
           : allSongs;
-        console.log('Filtered Songs for', selectedGenre || 'All:', filteredSongs.map(s => ({ id: s.id, genre_flavor: s.genre_flavor })));
+        console.log('Filtered Songs for', selectedGenre || 'All:', filteredSongs.map(s => ({ id: s.id, genre_flavor: s.genre_flavor, score: s.score })));
         setSongs(filteredSongs);
       }).catch(console.error);
     }
