@@ -1,4 +1,3 @@
-// src/components/MySongCard.js
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
@@ -22,10 +21,10 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
   });
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState(song.title);
-
   const audioRef = useRef(null);
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
+  const [artistAvatar, setArtistAvatar] = useState(null); // Added for avatar
 
   const flavor = genreFlavorMap[song.genre_flavor] || null;
   const ringClass = flavor ? `ring-4 ring-${flavor.color}-500` : '';
@@ -64,43 +63,62 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
 
   useEffect(() => {
     const fetchStatsAndReactions = async () => {
-      const [emojiStats, reactionFlags] = await Promise.all([
-        supabase
-          .from('songs')
-          .select('fires, loves, sads, bullseyes, jams')
-          .eq('id', song.id)
-          .single(),
-        user
-          ? supabase
-              .from('reactions')
-              .select('emoji')
-              .eq('user_id', user.id)
-              .eq('song_id', song.id)
-          : { data: [] },
-      ]);
+      try {
+        const [emojiStats, reactionFlags] = await Promise.all([
+          supabase
+            .from('songs')
+            .select('fires, loves, sads, bullseyes, jams')
+            .eq('id', song.id)
+            .single(),
+          user
+            ? supabase
+                .from('reactions')
+                .select('emoji')
+                .eq('user_id', user.id)
+                .eq('song_id', song.id)
+            : { data: [] },
+        ]);
 
-      if (emojiStats.data) {
-        setLocalReactions({
-          fires: stats.fires || emojiStats.data.fires || 0,
-          loves: stats.loves || emojiStats.data.loves || 0,
-          sads: stats.sads || emojiStats.data.sads || 0,
-          bullseyes: stats.bullseyes || emojiStats.data.bullseyes || 0,
-        });
-        setJamsCount(stats.jam_saves || emojiStats.data.jams || 0);
-      }
-
-      if (reactionFlags.data) {
-        const flags = {};
-        for (const r of reactionFlags.data) {
-          const key = emojiToStatKey(emojiToSymbol(r.emoji));
-          flags[key] = true;
+        if (emojiStats.data) {
+          setLocalReactions({
+            fires: stats.fires || emojiStats.data.fires || 0,
+            loves: stats.loves || emojiStats.data.loves || 0,
+            sads: stats.sads || emojiStats.data.sads || 0,
+            bullseyes: stats.bullseyes || emojiStats.data.bullseyes || 0,
+          });
+          setJamsCount(stats.jam_saves || emojiStats.data.jams || 0);
         }
-        setHasReacted(flags);
+
+        if (reactionFlags.data) {
+          const flags = {};
+          for (const r of reactionFlags.data) {
+            const key = emojiToStatKey(emojiToSymbol(r.emoji));
+            flags[key] = true;
+          }
+          setHasReacted(flags);
+        }
+      } catch (error) {
+        console.error('Fetch stats and reactions error:', error);
       }
     };
 
     fetchStatsAndReactions();
   }, [user, song.id, stats]);
+
+  useEffect(() => {
+    const fetchAvatar = async () => {
+      if (song.artist_id) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('id', song.artist_id)
+          .single();
+        if (error) console.error('Avatar fetch error:', error);
+        else setArtistAvatar(data?.avatar_url || '/default-avatar.png');
+      }
+    };
+    fetchAvatar();
+  }, [song.artist_id]);
 
   const incrementViews = async () => {
     await supabase.rpc('increment_song_view', { song_id_input: song.id });
@@ -185,7 +203,7 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
       toast.error(`Failed to ${newDraftStatus ? 'set as draft' : 'publish'}`);
     } else {
       toast.success(`Song ${newDraftStatus ? 'set as draft' : 'published'}!`);
-      if (onPublish && !newDraftStatus) onPublish(song.id);
+      if (onPublish && !newDraftStatus) onPublish(song.id); // Trigger publish callback
     }
   };
 
@@ -241,41 +259,56 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
         )}
       </div>
 
-      {editableTitle && user?.id === song.artist_id && editingTitle ? (
-        <div className="mb-2">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-1 bg-zinc-800 rounded text-white"
-            aria-label="Edit song title"
-          />
-          <button
-            onClick={handleTitleSave}
-            className="text-sm text-green-400 mt-1"
-            aria-label="Save title"
-          >
-            Save
-          </button>
-          <button
-            onClick={() => {
-              setEditingTitle(false);
-              setTitle(song.title);
-            }}
-            className="text-sm text-gray-400 mt-1 ml-2"
-            aria-label="Cancel edit"
-          >
-            Cancel
-          </button>
+      <div className="flex items-center mb-2">
+        {artistAvatar && (
+          <a href={`/artist/${song.artist_id}`}>
+            <img
+              src={artistAvatar}
+              alt={`${song.artist} avatar`}
+              className="w-8 h-8 rounded-full mr-2 cursor-pointer"
+            />
+          </a>
+        )}
+        <div>
+          {editableTitle && user?.id === song.artist_id && editingTitle ? (
+            <div className="mb-2">
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full p-1 bg-zinc-800 rounded text-white"
+                aria-label="Edit song title"
+              />
+              <button
+                onClick={handleTitleSave}
+                className="text-sm text-green-400 mt-1"
+                aria-label="Save title"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setEditingTitle(false);
+                  setTitle(song.title);
+                }}
+                className="text-sm text-gray-400 mt-1 ml-2"
+                aria-label="Cancel edit"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <h2
+              className="text-xl font-semibold mb-1 cursor-pointer"
+              onClick={() => editableTitle && user?.id === song.artist_id && setEditingTitle(true)}
+            >
+              {title}
+            </h2>
+          )}
+          <a href={`/artist/${song.artist_id}`} className="text-sm text-gray-400 hover:underline">
+            by {song.artist}
+          </a>
         </div>
-      ) : (
-        <h2
-          className="text-xl font-semibold mb-1 cursor-pointer"
-          onClick={() => editableTitle && user?.id === song.artist_id && setEditingTitle(true)}
-        >
-          {title}
-        </h2>
-      )}
-      <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
+      </div>
 
       {user && (
         <div className="mt-3 flex justify-center">
