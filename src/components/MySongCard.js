@@ -7,10 +7,6 @@ import BoostTickles from './BoostTickles';
 import { genreFlavorMap } from '../utils/genreList';
 
 const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle, showStripeButton }) => {
-  if (song.is_draft || !song.cover || !song.audio) {
-    return null;
-  }
-
   const [localReactions, setLocalReactions] = useState({
     fires: stats.fires || song.fires || 0,
     loves: stats.loves || song.loves || 0,
@@ -176,11 +172,21 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
     }
   };
 
-  const handlePublish = async () => {
-    if (!onPublish) return;
-    await supabase.from('songs').update({ is_draft: false }).eq('id', song.id);
-    toast.success('Song published!');
-    onPublish(song.id);
+  const toggleDraftPublish = async () => {
+    if (!user || user.id !== song.artist_id) return;
+    const newDraftStatus = !song.is_draft;
+    const { error } = await supabase
+      .from('songs')
+      .update({ is_draft: newDraftStatus })
+      .eq('id', song.id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      toast.error(`Failed to ${newDraftStatus ? 'set as draft' : 'publish'}`);
+    } else {
+      toast.success(`Song ${newDraftStatus ? 'set as draft' : 'published'}!`);
+      if (onPublish && !newDraftStatus) onPublish(song.id); // Trigger publish callback
+    }
   };
 
   return (
@@ -220,13 +226,17 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
             🗑️
           </button>
         )}
-        {user && user.id === song.artist_id && song.is_draft && onPublish && (
+        {user && user.id === song.artist_id && (
           <button
-            onClick={handlePublish}
-            className="absolute top-2 right-12 text-white bg-green-600 p-1 rounded-full hover:bg-green-700"
-            aria-label="Publish song"
+            onClick={toggleDraftPublish}
+            className={`absolute top-2 right-12 text-white p-1 rounded-full ${
+              song.is_draft
+                ? 'bg-green-600 hover:bg-green-700'
+                : 'bg-yellow-600 hover:bg-yellow-700'
+            }`}
+            aria-label={song.is_draft ? 'Publish song' : 'Set as draft'}
           >
-            📢
+            {song.is_draft ? '📢 Publish' : '⏸️ Draft'}
           </button>
         )}
       </div>
