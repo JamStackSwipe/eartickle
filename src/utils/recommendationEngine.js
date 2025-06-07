@@ -2,7 +2,6 @@
 import { supabase } from '../supabase';
 
 export async function getRecommendedSongs(userId) {
-  // Fetch all songs without limit
   let songs;
   try {
     const { data, error } = await supabase
@@ -20,8 +19,8 @@ export async function getRecommendedSongs(userId) {
     return [];
   }
 
-  console.log('Raw songs fetched:', songs.length); // Debug total songs
-  console.log('Raw songs genres:', songs.map(s => s.genre_flavor)); // Debug genre distribution
+  console.log('Raw songs fetched:', songs.length);
+  console.log('Raw songs genres:', songs.map(s => s.genre_flavor));
 
   let profile;
   try {
@@ -56,8 +55,12 @@ export async function getRecommendedSongs(userId) {
       .from('tickles')
       .select('song_id')
       .eq('sender_id', userId);
-    if (error) console.warn('Tickles fetch failed, using empty data:', error);
-    tickles = data || [];
+    if (error) {
+      console.warn('Tickles fetch failed, using empty data:', error);
+      tickles = [];
+    } else {
+      tickles = data || [];
+    }
   } catch (error) {
     console.warn('Tickles fetch failed, using empty data:', error);
     tickles = [];
@@ -107,18 +110,8 @@ export async function getRecommendedSongs(userId) {
         jamCount = 0;
       }
 
-      let boostCount;
-      try {
-        const { count, error } = await supabase
-          .from('boosts')
-          .select('*', { count: 'exact', head: true })
-          .eq('song_id', song.id);
-        if (error) console.warn('Boosts table not found, skipping boosts:', error);
-        boostCount = count || 0;
-      } catch (error) {
-        console.warn('Boosts fetch failed, skipping boosts:', error);
-        boostCount = 0;
-      }
+      let boostCount = 0; // Skip boosts since table doesn't exist
+      // Removed boosts query to avoid 404
 
       score +=
         emojiCounts['❤️'] * 2 +
@@ -126,7 +119,7 @@ export async function getRecommendedSongs(userId) {
         emojiCounts['😢'] +
         emojiCounts['🎯'] * 4 +
         (jamCount || 0) * 2 +
-        (boostCount || 0) * 10;
+        boostCount * 10;
 
       try {
         const { error: updateError } = await supabase
