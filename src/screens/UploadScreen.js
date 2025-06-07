@@ -85,7 +85,7 @@ const UploadScreen = () => {
     setIsUploading(true);
     const timestamp = Date.now();
     const imageFilename = `${timestamp}-${imageFile.name}`;
-    const audioFilename = `${timestamp}-${audioFile.name}`;
+    const audioFilename = `${timestamp}-${title.replace(/\s+/g, '-')}.mp3`; // Use title in filename
 
     const { error: imageError } = await supabase.storage
       .from('covers')
@@ -102,7 +102,8 @@ const UploadScreen = () => {
     }
 
     const coverUrl = supabase.storage.from('covers').getPublicUrl(imageFilename).data.publicUrl;
-    let audioUrl = supabase.storage.from('audio').getPublicUrl(audioFilename).data.publicUrl;
+    const originalAudioUrl = supabase.storage.from('audio').getPublicUrl(audioFilename).data.publicUrl;
+    let audioUrl = originalAudioUrl;
 
     let stripeAccountId = null;
     if (enableGifting) {
@@ -123,6 +124,7 @@ const UploadScreen = () => {
         genre_flavor: genreFlavor,
         cover: coverUrl,
         audio: audioUrl,
+        original_audio: originalAudioUrl, // Preserve original audio
         user_id: user.id,
         stripe_account_id: stripeAccountId,
         is_draft: true,
@@ -145,22 +147,55 @@ const UploadScreen = () => {
         });
 
         const result = await response.json();
-        if (response.ok) {
-          audioUrl = result.masteredUrl;
-          await supabase
-            .from('songs')
-            .update({ audio: audioUrl })
-            .eq('id', songData.id);
-          setMessage('✅ Song uploaded and mastered! Awaiting review.');
-        } else {
-          setMessage('✅ Song uploaded, but mastering failed. Awaiting review.');
+        if (!response.ok) {
+          throw new Error(result.error || 'Mastering failed');
         }
+
+        const jobId = result.jobId;
+        let masteredUrl = null;
+        let attempts = 0;
+        const maxAttempts = 30;
+
+        while (attempts < maxAttempts) {
+          const { data: job, error: jobError } = await supabase
+            .from('mastering_jobs')
+            .select('status, mastered_audio_url')
+            .eq('id', jobId)
+            .single();
+
+          if (jobError) {
+            throw new Error('Failed to check mastering status');
+          }
+
+          console.log('Mastering job status:', job.status);
+          if (job.status === 'completed') {
+            masteredUrl = job.mastered_audio_url;
+            break;
+          } else if (job.status === 'failed') {
+            throw new Error('Mastering failed');
+          }
+
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        if (!masteredUrl) {
+          throw new Error('Mastering timed out');
+        }
+
+        audioUrl = masteredUrl;
+        await supabase
+          .from('songs')
+          .update({ audio: audioUrl })
+          .eq('id', songData.id);
+        setMessage('✅ Song uploaded and mastered successfully! Go to your profile to review and publish your draft.');
       } catch (err) {
-        setMessage('✅ Song uploaded, but mastering failed. Awaiting review.');
+        console.error('Mastering error:', err.message);
+        setMessage(`✅ Song uploaded, but mastering failed: ${err.message}. Go to your profile to review and publish your draft.`);
       }
       setIsMastering(false);
     } else {
-      setMessage('✅ Song uploaded! Awaiting review.');
+      setMessage('✅ Song uploaded successfully! Go to your profile to review and publish your draft.');
     }
 
     await supabase.from('profiles').update({ is_artist: true }).eq('id', user.id);
@@ -172,7 +207,7 @@ const UploadScreen = () => {
     setImageFile(null);
     setAudioFile(null);
     setIsUploading(false);
-    setTimeout(() => navigate('/swipe'), 1500);
+    setTimeout(() => navigate('/profile'), 3000);
   };
 
   return (
