@@ -2,15 +2,7 @@ import { useEffect, useState } from 'react';
 import { useUser } from '../components/AuthProvider';
 import { getRecommendedSongs } from '../utils/recommendationEngine';
 import MySongCard from '../components/MySongCard';
-
-const genreFlavors = [
-  'country_roots',
-  'hiphop_flow',
-  'rock_raw',
-  'pop_shine',
-  'spiritual_soul',
-  'comedy_other',
-];
+import { genreFlavorMap } from '../utils/genreList'; // Import genreFlavorMap
 
 const SwipeScreen = () => {
   const { user } = useUser();
@@ -32,27 +24,28 @@ const SwipeScreen = () => {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4" style={{ color: '#3FD6CD' }}>Discover Songs</h1>
       <div className="space-y-4 mb-6">
-        <div
-          className="bg-white border-l-4 p-4 shadow-lg rounded-lg"
-          style={{ borderColor: '#3FD6CD' }}
-        >
-          <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-4">
+          <button
+            onClick={() => setSelectedGenre(null)}
+            className="bg-white border-l-4 p-2 rounded-lg shadow-md hover:shadow-lg transition-all"
+            style={{ borderColor: '#3FD6CD', color: '#3FD6CD' }}
+          >
+            All
+          </button>
+          {Object.keys(genreFlavorMap).map((genre) => (
             <button
-              onClick={() => setSelectedGenre(null)}
-              className={`px-3 py-1 rounded-full ${!selectedGenre ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'} hover:bg-blue-700`}
+              key={genre}
+              onClick={() => setSelectedGenre(genre)}
+              className={`bg-white border-l-4 p-2 rounded-lg shadow-md hover:shadow-lg transition-all ${selectedGenre === genre ? 'ring-2' : ''}`}
+              style={{
+                borderColor: genreFlavorMap[genre].color + '-600',
+                color: genreFlavorMap[genre].color + '-800',
+                boxShadow: selectedGenre === genre ? `0 0 10px ${getGlowColor(genreFlavorMap[genre].color)}` : 'none',
+              }}
             >
-              All
+              {genreFlavorMap[genre].emoji} {genreFlavorMap[genre].label}
             </button>
-            {genreFlavors.map((genre) => (
-              <button
-                key={genre}
-                onClick={() => setSelectedGenre(genre)}
-                className={`px-3 py-1 rounded-full ${selectedGenre === genre ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'} hover:bg-blue-700`}
-              >
-                {genre.replace('_', ' ').charAt(0).toUpperCase() + genre.slice(1)}
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
       </div>
       {songs.length > 0 ? (
@@ -62,6 +55,19 @@ const SwipeScreen = () => {
       )}
     </div>
   );
+};
+
+// Helper function to get glow color (mirrors SongCard.js)
+const getGlowColor = (color) => {
+  switch (color) {
+    case 'amber': return '#f59e0b';
+    case 'blue': return '#3b82f6';
+    case 'pink': return '#ec4899';
+    case 'purple': return '#a855f7';
+    case 'cyan': return '#06b6d4';
+    case 'red': return '#ef4444';
+    default: return '#ffffff';
+  }
 };
 
 export default SwipeScreen;
