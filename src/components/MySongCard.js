@@ -1,24 +1,47 @@
 // src/components/MySongCard.js
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
+import toast from 'react-hot-toast';
 import ReactionStatsBar from './ReactionStatsBar';
 import BoostTickles from './BoostTickles';
 import { genreFlavorMap } from '../utils/genreList';
 
-const tickleSound = new Audio('/sounds/tickle.mp3');
+const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle, showStripeButton }) => {
+  const [localReactions, setLocalReactions] = useState({
+    fires: stats.fires || song.fires || 0,
+    loves: stats.loves || song.loves || 0,
+    sads: stats.sads || song.sads || 0,
+    bullseyes: stats.bullseyes || song.bullseyes || 0,
+  });
+  const [jamsCount, setJamsCount] = useState(stats.jam_saves || song.jams || 0);
+  const [hasReacted, setHasReacted] = useState({
+    fires: false,
+    loves: false,
+    sads: false,
+    bullseyes: false,
+  });
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [title, setTitle] = useState(song.title);
 
-const MySongCard = ({ song, user, stats, onDelete, onPublish, editableTitle, showStripeButton, isEditing, onEdit, onSaveEdit, onCancelEdit }) => {
-  const [localSong, setLocalSong] = useState(song);
-  const [newCover, setNewCover] = useState(null);
-  const [newGenre, setNewGenre] = useState(song.genre_flavor || '');
   const audioRef = useRef(null);
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
 
-  useEffect(() => {
-    setLocalSong(song);
-    setNewGenre(song.genre_flavor || '');
-  }, [song]);
+  const flavor = genreFlavorMap[song.genre_flavor] || null;
+  const ringClass = flavor ? `ring-4 ring-${flavor.color}-500` : '';
+  const glowColor = flavor ? flavor.color : 'white';
+
+  const getGlowColor = (color) => {
+    switch (color) {
+      case 'amber': return '#f59e0b';
+      case 'blue': return '#3b82f6';
+      case 'pink': return '#ec4899';
+      case 'purple': return '#a855f7';
+      case 'cyan': return '#06b6d4';
+      case 'red': return '#ef4444';
+      default: return '#ffffff';
+    }
+  };
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -33,106 +56,159 @@ const MySongCard = ({ song, user, stats, onDelete, onPublish, editableTitle, sho
     if (!audioRef.current) return;
     if (isVisible) {
       audioRef.current.play().catch(() => {});
+      incrementViews();
     } else {
       audioRef.current.pause();
     }
   }, [isVisible]);
 
-  const flavor = genreFlavorMap[localSong.genre_flavor] || null;
-  const ringClass = flavor ? `ring-4 ring-${flavor.color}-500` : '';
-  const glowColor = flavor ? getGlowColor(flavor.color) : 'white';
+  useEffect(() => {
+    const fetchStatsAndReactions = async () => {
+      const [emojiStats, reactionFlags] = await Promise.all([
+        supabase
+          .from('songs')
+          .select('fires, loves, sads, bullseyes, jams')
+          .eq('id', song.id)
+          .single(),
+        user
+          ? supabase
+              .from('reactions')
+              .select('emoji')
+              .eq('user_id', user.id)
+              .eq('song_id', song.id)
+          : { data: [] },
+      ]);
 
-  const getGlowColor = (color) => {
-    switch (color) {
-      case 'amber': return '#f59e0b';
-      case 'blue': return '#3b82f6';
-      case 'pink': return '#ec4899';
-      case 'purple': return '#a855f7';
-      case 'cyan': return '#06b6d4';
-      case 'red': return '#ef4444';
-      case 'lime': return '#a3e635';
-      default: return '#ffffff';
-    }
+      if (emojiStats.data) {
+        setLocalReactions({
+          fires: stats.fires || emojiStats.data.fires || 0,
+          loves: stats.loves || emojiStats.data.loves || 0,
+          sads: stats.sads || emojiStats.data.sads || 0,
+          bullseyes: stats.bullseyes || emojiStats.data.bullseyes || 0,
+        });
+        setJamsCount(stats.jam_saves || emojiStats.data.jams || 0);
+      }
+
+      if (reactionFlags.data) {
+        const flags = {};
+        for (const r of reactionFlags.data) {
+          const key = emojiToStatKey(emojiToSymbol(r.emoji));
+          flags[key] = true;
+        }
+        setHasReacted(flags);
+      }
+    };
+
+    fetchStatsAndReactions();
+  }, [user, song.id, stats]);
+
+  const incrementViews = async () => {
+    await supabase.rpc('increment_song_view', { song_id_input: song.id });
   };
 
   const handleReaction = async (emoji) => {
-    if (!user) return;
-    try {
-      const { error } = await supabase.from('reactions').insert({
-        song_id: localSong.id,
+    if (!user) return toast.error('Please sign in to react.');
+
+    const statKey = emojiToStatKey(emoji);
+    if (hasReacted[statKey]) {
+      toast('You already reacted with this emoji.');
+      return;
+    }
+
+    const { error } = await supabase.from('reactions').insert([
+      {
         user_id: user.id,
-        emoji: emoji === 'fire' ? '🔥' : emoji === 'heart' ? '❤️' : emoji === 'cry' ? '😢' : '🎯',
-      });
-      if (error) throw error;
-      tickleSound.play().catch(() => {});
-      // Update stats locally (optimistic update)
-      setLocalSong((prev) => ({
+        song_id: song.id,
+        emoji: emojiToDbValue(emoji),
+      },
+    ]);
+
+    if (!error) {
+      toast.success(`You reacted with ${emoji}`);
+      setLocalReactions((prev) => ({
         ...prev,
-        [emoji === 'fire' ? 'fires' : emoji === 'heart' ? 'loves' : emoji === 'cry' ? 'sads' : 'bullseyes']:
-          (prev[emoji === 'fire' ? 'fires' : emoji === 'heart' ? 'loves' : emoji === 'cry' ? 'sads' : 'bullseyes'] || 0) + 1,
+        [statKey]: (prev[statKey] || 0) + 1,
       }));
-    } catch (error) {
-      console.error('Reaction Error:', error);
+      setHasReacted((prev) => ({
+        ...prev,
+        [statKey]: true,
+      }));
+    } else {
+      toast.error('Failed to react.');
     }
   };
 
-  if (isEditing) {
-    return (
-      <div
-        ref={cardRef}
-        className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md`}
-      >
-        <div className="relative">
-          <img
-            src={localSong.cover}
-            alt={localSong.title}
-            className="w-full h-auto rounded-xl mb-4"
-          />
-          <input
-            type="file"
-            onChange={(e) => setNewCover(e.target.files[0])}
-            className="mb-2"
-          />
-          <select
-            value={newGenre}
-            onChange={(e) => setNewGenre(e.target.value)}
-            className="p-2 border rounded w-full"
-          >
-            {Object.keys(genreFlavorMap).map((genre) => (
-              <option key={genre} value={genre}>
-                {genreFlavorMap[genre].label}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={() => onSaveEdit(newCover, newGenre)}
-            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Save
-          </button>
-          <button
-            onClick={onCancelEdit}
-            className="mt-2 ml-2 px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const handleTitleSave = async () => {
+    if (!editableTitle || user?.id !== song.artist_id) return;
+    const { error } = await supabase
+      .from('songs')
+      .update({ title })
+      .eq('id', song.id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      toast.error('Failed to update title.');
+    } else {
+      toast.success('Title updated!');
+      setEditingTitle(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    const confirm = window.confirm('Are you sure you want to delete this song?');
+    if (!confirm) return;
+
+    const { error } = await supabase
+      .from('songs')
+      .delete()
+      .eq('id', song.id)
+      .eq('user_id', user.id);
+
+    if (!error) {
+      toast.success('Song deleted');
+      if (onDelete) onDelete(song.id);
+    } else {
+      toast.error('Error deleting song');
+    }
+  };
+
+  const toggleDraftPublish = async () => {
+    if (!user || user.id !== song.artist_id) return;
+    const newDraftStatus = !song.is_draft;
+    const { error } = await supabase
+      .from('songs')
+      .update({ is_draft: newDraftStatus })
+      .eq('id', song.id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      toast.error(`Failed to ${newDraftStatus ? 'set as draft' : 'publish'}`);
+    } else {
+      toast.success(`Song ${newDraftStatus ? 'set as draft' : 'published'}!`);
+      if (onPublish && !newDraftStatus) onPublish(song.id); // Trigger publish callback
+    }
+  };
 
   return (
     <div
       ref={cardRef}
-      data-song-id={localSong.id}
+      data-song-id={song.id}
       className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${flavor ? 'hover:animate-genre-pulse' : ''}`}
-      style={flavor ? { boxShadow: `0 0 15px ${glowColor}` } : {}}
+      style={flavor ? { boxShadow: `0 0 15px ${getGlowColor(flavor.color)}` } : {}}
     >
       <div className="relative">
-        <a href={`/artist/${localSong.artist_id}`}>
+        <a
+          href={`/artist/${song.artist_id}`}
+          onClick={(e) => {
+            e.preventDefault();
+            incrementViews().finally(() => {
+              window.location.href = `/artist/${song.artist_id}`;
+            });
+          }}
+        >
           <img
-            src={localSong.cover}
-            alt={localSong.title}
+            src={song.cover}
+            alt={song.title}
             className="w-full h-auto rounded-xl mb-4"
           />
         </a>
@@ -141,44 +217,109 @@ const MySongCard = ({ song, user, stats, onDelete, onPublish, editableTitle, sho
             {flavor.label}
           </div>
         )}
+        {user && (user.id === song.artist_id || song.is_jam) && (
+          <button
+            onClick={handleDelete}
+            className="absolute top-2 right-2 text-white bg-red-600 p-1 rounded-full hover:bg-red-700"
+            aria-label="Delete song"
+          >
+            🗑️
+          </button>
+        )}
+        {user && user.id === song.artist_id && (
+          <button
+            onClick={toggleDraftPublish}
+            className={`absolute top-2 right-12 text-white p-1 rounded-full ${
+              song.is_draft
+                ? 'bg-green-600 hover:bg-green-700'
+                : 'bg-yellow-600 hover:bg-yellow-700'
+            }`}
+            aria-label={song.is_draft ? 'Publish song' : 'Set as draft'}
+          >
+            {song.is_draft ? '📢 Publish' : '⏸️ Draft'}
+          </button>
+        )}
       </div>
-      <h2 className="text-xl font-semibold mb-1">{localSong.title}</h2>
-      <p className="text-sm text-gray-400 mb-2">by {localSong.artist}</p>
+
+      {editableTitle && user?.id === song.artist_id && editingTitle ? (
+        <div className="mb-2">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full p-1 bg-zinc-800 rounded text-white"
+            aria-label="Edit song title"
+          />
+          <button
+            onClick={handleTitleSave}
+            className="text-sm text-green-400 mt-1"
+            aria-label="Save title"
+          >
+            Save
+          </button>
+          <button
+            onClick={() => {
+              setEditingTitle(false);
+              setTitle(song.title);
+            }}
+            className="text-sm text-gray-400 mt-1 ml-2"
+            aria-label="Cancel edit"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <h2
+          className="text-xl font-semibold mb-1 cursor-pointer"
+          onClick={() => editableTitle && user?.id === song.artist_id && setEditingTitle(true)}
+        >
+          {title}
+        </h2>
+      )}
+      <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
+
       {user && (
         <div className="mt-3 flex justify-center">
-          <BoostTickles songId={localSong.id} userId={user.id} />
+          <BoostTickles songId={song.id} userId={user.id} artistId={song.artist_id} />
         </div>
       )}
-      {editableTitle && user && user.id === localSong.user_id && (
-        <button
-          onClick={onDelete}
-          className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-        >
-          Delete
-        </button>
-      )}
-      {onPublish && (
-        <button
-          onClick={onPublish}
-          className="mt-2 ml-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-        >
-          Publish
-        </button>
-      )}
-      {showStripeButton && (
-        <a
-          href="https://connect.stripe.com/express/oauth/authorize?client_id=ca_N4z8G7vXvGq9o9z5dQvQ7z3zQvQvQvQv&state=xyz123&stripe_user[email]=user@example.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-2 ml-2 px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 inline-block"
-        >
-          Connect Stripe
-        </a>
-      )}
-      <audio ref={audioRef} src={localSong.audio} controls className="w-full mb-3 mt-2" />
-      <ReactionStatsBar song={localSong} stats={stats} onReaction={handleReaction} />
+
+      <audio ref={audioRef} src={song.audio} controls className="w-full mb-3 mt-2" />
+
+      <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
+      {/* Note on 2025-06-06: "Add to Jam Stack" functionality was moved to ReactionStatsBar.js for better mobile layout. MySongCard.js did not previously use AddToJamStackButton, but this comment is added for consistency with SongCard.js documentation. */}
     </div>
   );
+};
+
+// Helper Functions
+const emojiToStatKey = (emoji) => {
+  switch (emoji) {
+    case '🔥': return 'fires';
+    case '💖': return 'loves';
+    case '😭': return 'sads';
+    case '🎯': return 'bullseyes';
+    default: return '';
+  }
+};
+
+const emojiToSymbol = (word) => {
+  switch (word) {
+    case 'fire': return '🔥';
+    case 'heart': return '💖';
+    case 'cry': return '😭';
+    case 'bullseye': return '🎯';
+    default: return '';
+  }
+};
+
+const emojiToDbValue = (emoji) => {
+  switch (emoji) {
+    case '🔥': return 'fire';
+    case '💖': return 'heart';
+    case '😭': return 'cry';
+    case '🎯': return 'bullseye';
+    default: return '';
+  }
 };
 
 export default MySongCard;
