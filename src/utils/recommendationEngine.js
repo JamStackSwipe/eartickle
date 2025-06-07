@@ -54,7 +54,7 @@ export async function getRecommendedSongs(userId) {
     const { data, error } = await supabase
       .from('tickles')
       .select('song_id')
-      .eq('user_id', userId); // Changed from sender_id to user_id
+      .eq('user_id', userId);
     if (error) {
       console.warn('Tickles fetch failed, using empty data:', error);
       tickles = [];
@@ -110,7 +110,7 @@ export async function getRecommendedSongs(userId) {
         jamCount = 0;
       }
 
-      let boostCount = 0; // Skip boosts since table doesn't exist
+      let boostCount = 0; // Skip boosts table
 
       score +=
         emojiCounts['❤️'] * 2 +
@@ -125,13 +125,17 @@ export async function getRecommendedSongs(userId) {
           .from('songs')
           .update({ score })
           .eq('id', song.id)
+          .eq('user_id', userId)
           .select();
         if (updateError) throw updateError;
 
+        // Commented out to avoid 400s
+        /*
         const { error: snapshotError } = await supabase.from('song_score_snapshots').insert([
-          { song_id: song.id, score, snapshot_type: 'daily', taken_at: new Date().toISOString() }, // Changed to taken_at
+          { song_id: song.id, score, snapshot_type: 'daily', taken_at: new Date().toISOString() },
         ]);
         if (snapshotError) throw snapshotError;
+        */
       } catch (error) {
         console.error(`Score update error for song ${song.id}:`, error);
       }
@@ -152,7 +156,7 @@ export async function getRecommendedSongs(userId) {
 
   for (let i = enriched.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [enriched[i], enriched[j] = [enriched[j], enriched[i]];
+    [enriched[i], enriched[j]] = [enriched[j], enriched[i]];
   }
   return enriched.sort((a, b) => b.score - a.score);
 }
