@@ -85,7 +85,7 @@ const UploadScreen = () => {
     setIsUploading(true);
     const timestamp = Date.now();
     const imageFilename = `${timestamp}-${imageFile.name}`;
-    const audioFilename = `${timestamp}-${title.replace(/\s+/g, '-')}.mp3`; // Use title in filename
+    const audioFilename = `${timestamp}-${title.replace(/\s+/g, '-')}.mp3`;
 
     const { error: imageError } = await supabase.storage
       .from('covers')
@@ -124,7 +124,7 @@ const UploadScreen = () => {
         genre_flavor: genreFlavor,
         cover: coverUrl,
         audio: audioUrl,
-        original_audio: originalAudioUrl, // Preserve original audio
+        original_audio: originalAudioUrl,
         user_id: user.id,
         stripe_account_id: stripeAccountId,
         is_draft: true,
@@ -188,14 +188,14 @@ const UploadScreen = () => {
           .from('songs')
           .update({ audio: audioUrl })
           .eq('id', songData.id);
-        setMessage('✅ Song uploaded and mastered successfully! Go to your profile to review and publish your draft.');
+        setMessage('✅ Song uploaded and mastered successfully! Check your profile to review and publish your draft.');
       } catch (err) {
         console.error('Mastering error:', err.message);
-        setMessage(`✅ Song uploaded, but mastering failed: ${err.message}. Go to your profile to review and publish your draft.`);
+        setMessage(`✅ Song uploaded, but mastering failed: ${err.message}. Check your profile to review and publish your draft.`);
       }
       setIsMastering(false);
     } else {
-      setMessage('✅ Song uploaded successfully! Go to your profile to review and publish your draft.');
+      setMessage('✅ Song uploaded successfully! Check your profile to review and publish your draft.');
     }
 
     await supabase.from('profiles').update({ is_artist: true }).eq('id', user.id);
@@ -207,7 +207,8 @@ const UploadScreen = () => {
     setImageFile(null);
     setAudioFile(null);
     setIsUploading(false);
-    setTimeout(() => navigate('/profile'), 3000);
+    // Remove auto-redirect for now to keep message visible
+    // setTimeout(() => navigate('/profile'), 10000);
   };
 
   return (
@@ -323,6 +324,15 @@ const UploadScreen = () => {
       </button>
 
       {message && <p className="mt-4 text-center text-green-600">{message}</p>}
+      {/* Add a manual navigate button for now */}
+      {message && (
+        <button
+          onClick={() => navigate('/profile')}
+          className="mt-2 w-full text-white py-2 rounded bg-blue-600 hover:bg-blue-700"
+        >
+          Go to Profile
+        </button>
+      )}
     </div>
   );
 };
