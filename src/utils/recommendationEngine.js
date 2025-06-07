@@ -6,7 +6,7 @@ export async function getRecommendedSongs(userId) {
     .from('songs')
     .select('*')
     .neq('audio', null)
-    .order('created_at', { ascending: false }); // Prioritize newer songs
+    .order('created_at', { ascending: false }); // Newest first
 
   if (songError || !songs) return [];
 
@@ -31,13 +31,13 @@ export async function getRecommendedSongs(userId) {
       let score = 0;
       const now = new Date();
       const createdAt = new Date(song.created_at);
-      const daysSinceCreation = (now - createdAt) / (1000 * 60 * 60 * 24); // Days since upload
-      const recencyBonus = daysSinceCreation < 7 ? 50 / (daysSinceCreation + 1) : 0; // Boost new songs (first week)
+      const daysSinceCreation = (now - createdAt) / (1000 * 60 * 60 * 24);
+      const recencyBonus = daysSinceCreation < 7 ? 50 / (daysSinceCreation + 1) : 0; // Fade over 7 days
 
-      if (jams?.some((j) => j.song_id === song.id)) score += 10;
-      if (tickles?.some((t) => t.song_id === song.id)) score += 25;
-      if (profile?.preferred_genres?.includes(song.genre)) score += 5;
-      score += recencyBonus; // Add recency bonus
+      if (jams?.some((j) => j.song_id === song.id)) score += 10; // Jam bonus
+      if (tickles?.some((t) => t.song_id === song.id)) score += 25; // Tickle bonus
+      if (profile?.preferred_genres?.includes(song.genre)) score += 5; // Genre preference
+      score += recencyBonus;
 
       const { data: allTickles } = await supabase
         .from('tickles')
@@ -46,9 +46,7 @@ export async function getRecommendedSongs(userId) {
 
       const emojiCounts = { '❤️': 0, '🔥': 0, '😢': 0, '🎯': 0 };
       allTickles?.forEach((t) => {
-        if (emojiCounts[t.emoji] !== undefined) {
-          emojiCounts[t.emoji]++;
-        }
+        if (emojiCounts[t.emoji] !== undefined) emojiCounts[t.emoji]++;
       });
 
       const { count: jamCount } = await supabase
@@ -56,25 +54,27 @@ export async function getRecommendedSongs(userId) {
         .select('*', { count: 'exact', head: true })
         .eq('song_id', song.id);
 
-      // Combine into final score
-      score +=
-        emojiCounts['❤️'] * 2 +
-        emojiCounts['🔥'] * 3 +
-        emojiCounts['😢'] +
-        emojiCounts['🎯'] * 4 +
-        (jamCount || 0);
+      const { count: boostCount } = await supabase
+        .from('boosts')
+        .select('*', { count: 'exact', head: true })
+        .eq('song_id', song.id); // Assuming a boosts table
 
-      // Update the song’s score in the DB
+      // Score based on engagement
+      score +=
+        emojiCounts['❤️'] * 2 + // Likes
+        emojiCounts['🔥'] * 3 +  // Fires
+        emojiCounts['😢'] +      // Sads
+        emojiCounts['🎯'] * 4 +  // Bullseyes
+        (jamCount || 0) * 2 +   // Jam count bonus
+        (boostCount || 0) * 10; // Boost multiplier
+
+      // Update song score in DB
       await supabase
         .from('songs')
         .update({ score })
         .eq('id', song.id);
       await supabase.from('song_score_snapshots').insert([
-        {
-          song_id: song.id,
-          score,
-          snapshot_type: 'daily',
-        },
+        { song_id: song.id, score, snapshot_type: 'daily' },
       ]);
 
       return {
@@ -85,12 +85,13 @@ export async function getRecommendedSongs(userId) {
         sads: emojiCounts['😢'],
         bullseyes: emojiCounts['🎯'],
         jams: jamCount || 0,
+        boosts: boostCount || 0,
         views: song.views || 0,
       };
     })
   );
 
-  // Shuffle to avoid always showing the same top song, then sort by score
+  // Shuffle to mix up the order, then sort by score
   for (let i = enriched.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [enriched[i], enriched[j]] = [enriched[j], enriched[i]];
