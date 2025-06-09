@@ -284,7 +284,7 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
           {title}
         </h2>
       )}
-      <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
+      <p className="bg-gray-800 text-white">by {song.artist}</p>
 
       {user?.id === song.artist_id && (
         <div className="mb-2">
