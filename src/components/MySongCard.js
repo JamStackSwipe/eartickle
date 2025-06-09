@@ -1,4 +1,3 @@
-// src/components/MySongCard.js
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
@@ -22,6 +21,8 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
   });
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState(song.title);
+  const [editingGenre, setEditingGenre] = useState(false);
+  const [newGenre, setNewGenre] = useState(song.genre_flavor || '');
 
   const audioRef = useRef(null);
   const cardRef = useRef(null);
@@ -189,6 +190,14 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
     }
   };
 
+  const handleSaveGenre = async () => {
+    if (newGenre !== song.genre_flavor && user?.id === song.artist_id) {
+      const { error } = await supabase.from('songs').update({ genre_flavor: newGenre }).eq('id', song.id);
+      if (error) toast.error('Failed to update genre.');
+      else { toast.success('Genre updated!'); setEditingGenre(false); }
+    }
+  };
+
   return (
     <div
       ref={cardRef}
@@ -277,6 +286,24 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
       )}
       <p className="text-sm text-gray-400 mb-2">by {song.artist}</p>
 
+      {user?.id === song.artist_id && (
+        <div className="mb-2">
+          {editingGenre ? (
+            <div>
+              <select value={newGenre} onChange={(e) => setNewGenre(e.target.value)} className="p-1 border rounded">
+                {Object.keys(genreFlavorMap).map(genre => (
+                  <option key={genre} value={genre}>{genreFlavorMap[genre].label}</option>
+                ))}
+              </select>
+              <button onClick={handleSaveGenre} className="ml-2 p-1 bg-blue-500 text-white rounded">Save</button>
+              <button onClick={() => setEditingGenre(false)} className="ml-1 p-1 bg-gray-500 text-white rounded">Cancel</button>
+            </div>
+          ) : (
+            <button onClick={() => setEditingGenre(true)} className="p-1 bg-green-500 text-white rounded">Edit Genre</button>
+          )}
+        </div>
+      )}
+
       {user && (
         <div className="mt-3 flex justify-center">
           <BoostTickles songId={song.id} userId={user.id} artistId={song.artist_id} />
@@ -286,7 +313,7 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3 mt-2" />
 
       <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
-      {/* Note on 2025-06-06: "Add to Jam Stack" functionality was moved to ReactionStatsBar.js for better mobile layout. MySongCard.js did not previously use AddToJamStackButton, but this comment is added for consistency with SongCard.js documentation. */}
+      {/* Note on 2025-06-06: "Add to Jam Stack" functionality was moved to ReactionStatsBar.js for better mobile layout. */}
     </div>
   );
 };
