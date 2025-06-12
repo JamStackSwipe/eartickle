@@ -1,4 +1,9 @@
 {
+  "version": 2,
+  "env": {
+    "REACT_APP_SUPABASE_URL": "@react_app_supabase_url",
+    "REACT_APP_SUPABASE_KEY": "@react_app_supabase_key"
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
   ]
