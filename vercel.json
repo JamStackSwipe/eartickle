@@ -1,9 +1,15 @@
 {
+  "version": 2,
+  "builds": [
+    { "src": "package.json", "use": "@vercel/static-build" },
+    { "src": "api/**/*.js", "use": "@vercel/node" }
+  ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/static/js/(.*)", "dest": "/build/static/js/$1" },
-    { "src": "/static/css/(.*)", "dest": "/build/static/css/$1" },
-    { "src": "/debug-js", "dest": "/build/static/js/main.34907665.js" },
-    { "src": "/(.*)", "dest": "/build/index.html" }
-  ]
+    { "src": "/(.*)", "dest": "/index.html" }
+  ],
+  "env": {
+    "REACT_APP_SUPABASE_URL": "@react_app_supabase_url",
+    "REACT_APP_SUPABASE_KEY": "@react_app_supabase_key"
+  }
 }
