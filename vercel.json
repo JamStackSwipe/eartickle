@@ -3,6 +3,7 @@
     { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/static/js/(.*)", "dest": "/build/static/js/$1" },
     { "src": "/static/css/(.*)", "dest": "/build/static/css/$1" },
+    { "src": "/debug-js", "dest": "/build/static/js/main.0b5a36fa.js" },
     { "src": "/(.*)", "dest": "/build/index.html" }
   ]
 }
