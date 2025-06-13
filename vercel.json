@@ -1,10 +1,20 @@
 {
   "version": 2,
   "builds": [
-    { "src": "package.json", "use": "@vercel/static-build" }
+    { "src": "package.json", "use": "@vercel/static-build" },
+    { "src": "api/**/*.js", "use": "@vercel/node" }
   ],
   "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/static/(.*)", "dest": "/build/static/$1" },
+    { "src": "/favicon.ico", "dest": "/build/favicon.ico" },
+    { "src": "/manifest.json", "dest": "/build/manifest.json" },
+    { "src": "/logo192.png", "dest": "/build/logo192.png" },
+    { "src": "/logo512.png", "dest": "/build/logo512.png" },
     { "src": "/(.*)", "dest": "/build/index.html" }
-  ]
+  ],
+  "env": {
+    "REACT_APP_SUPABASE_URL": "@react_app_supabase_url",
+    "REACT_APP_SUPABASE_KEY": "@react_app_supabase_key"
+  }
 }
