@@ -156,20 +156,44 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
   };
 
   const handleDelete = async () => {
+    if (!user || !user.id) {
+      toast.error('Please sign in to delete.');
+      return;
+    }
+
     const confirm = window.confirm('Are you sure you want to delete this song?');
     if (!confirm) return;
 
-    const { error } = await supabase
-      .from('songs')
-      .delete()
-      .eq('id', song.id)
-      .eq('user_id', user.id);
+    try {
+      // Delete related reactions first
+      const { error: reactionsError } = await supabase
+        .from('reactions')
+        .delete()
+        .eq('song_id', song.id);
+      if (reactionsError) {
+        console.error('Reactions delete error:', reactionsError);
+        toast.error(`Failed to delete reactions: ${reactionsError.message}`);
+        return;
+      }
 
-    if (!error) {
+      // Delete the song
+      const { error } = await supabase
+        .from('songs')
+        .delete()
+        .eq('id', song.id)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Song delete error:', error);
+        toast.error(`Failed to delete song: ${error.message} (Code: ${error.code})`);
+        return;
+      }
+
       toast.success('Song deleted');
       if (onDelete) onDelete(song.id);
-    } else {
-      toast.error('Error deleting song');
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      toast.error(`An unexpected error occurred: ${err.message}`);
     }
   };
 
