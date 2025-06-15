@@ -23,8 +23,6 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
   const [title, setTitle] = useState(song.title);
   const [editingGenre, setEditingGenre] = useState(false);
   const [newGenre, setNewGenre] = useState(song.genre_flavor || '');
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isTogglingDraft, setIsTogglingDraft] = useState(false);
 
   const audioRef = useRef(null);
   const cardRef = useRef(null);
@@ -158,132 +156,37 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
   };
 
   const handleDelete = async () => {
-    if (!user || !user.id) {
-      toast.error('Please sign in to delete.');
-      return;
-    }
-    if (isDeleting) {
-      toast.error('Deletion in progress...');
-      return;
-    }
-
     const confirm = window.confirm('Are you sure you want to delete this song?');
     if (!confirm) return;
 
-    setIsDeleting(true);
-    try {
-      console.log(`Deleting song ${song.id} for user ${user.id}`);
-      // Delete related reactions
-      const { error: reactionsError } = await supabase
-        .from('reactions')
-        .delete()
-        .eq('song_id', song.id);
-      if (reactionsError) {
-        console.error('Reactions delete error:', {
-          message: reactionsError.message,
-          code: reactionsError.code,
-          details: reactionsError.details,
-          hint: reactionsError.hint,
-        });
-        toast.error(`Failed to delete reactions: ${reactionsError.message} (Code: ${reactionsError.code})`);
-        return;
-      }
-      console.log(`Reactions deleted for song ${song.id}`);
+    const { error } = await supabase
+      .from('songs')
+      .delete()
+      .eq('id', song.id)
+      .eq('user_id', user.id);
 
-      // Delete related boosts (if table exists)
-      const { error: boostsError } = await supabase
-        .from('boosts')
-        .delete()
-        .eq('song_id', song.id);
-      if (boostsError) {
-        console.error('Boosts delete error:', {
-          message: boostsError.message,
-          code: boostsError.code,
-          details: boostsError.details,
-          hint: boostsError.hint,
-        });
-        toast.error(`Failed to delete boosts: ${boostsError.message} (Code: ${boostsError.code})`);
-        return;
-      }
-      console.log(`Boosts deleted for song ${song.id}`);
-
-      // Delete the song
-      const { error: songError } = await supabase
-        .from('songs')
-        .delete()
-        .eq('id', song.id)
-        .eq('user_id', user.id);
-
-      if (songError) {
-        console.error('Song delete error:', {
-          message: songError.message,
-          code: songError.code,
-          details: songError.details,
-          hint: songError.hint,
-        });
-        toast.error(`Failed to delete song: ${songError.message} (Code: ${songError.code})`);
-        return;
-      }
-
-      console.log(`Song ${song.id} deleted successfully`);
+    if (!error) {
       toast.success('Song deleted');
       if (onDelete) onDelete(song.id);
-    } catch (err) {
-      console.error('Unexpected error during deletion:', {
-        message: err.message,
-        stack: err.stack,
-      });
-      toast.error(`Unexpected error: ${err.message}`);
-    } finally {
-      setIsDeleting(false);
+    } else {
+      toast.error('Error deleting song');
     }
   };
 
   const toggleDraftPublish = async () => {
-    if (!user || user.id !== song.artist_id) {
-      toast.error('Unauthorized action');
-      return;
-    }
-    if (isTogglingDraft) {
-      toast.error('Toggling in progress...');
-      return;
-    }
-
+    if (!user || user.id !== song.artist_id) return;
     const newDraftStatus = !song.is_draft;
-    setIsTogglingDraft(true);
-    try {
-      console.log(`Toggling draft status for song ${song.id} to ${newDraftStatus}`);
-      const { error, data } = await supabase
-        .from('songs')
-        .update({ is_draft: newDraftStatus })
-        .eq('id', song.id)
-        .eq('user_id', user.id)
-        .select()
-        .single();
+    const { error } = await supabase
+      .from('songs')
+      .update({ is_draft: newDraftStatus })
+      .eq('id', song.id)
+      .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Draft/Publish error:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-        });
-        toast.error(`Failed to ${newDraftStatus ? 'set as draft' : 'publish'}: ${error.message} (Code: ${error.code})`);
-        return;
-      }
-
-      console.log(`Song ${song.id} draft status updated to ${newDraftStatus}`);
+    if (error) {
+      toast.error(`Failed to ${newDraftStatus ? 'set as draft' : 'publish'}`);
+    } else {
       toast.success(`Song ${newDraftStatus ? 'set as draft' : 'published'}!`);
-      if (onPublish && !newDraftStatus) onPublish(song.id);
-      song.is_draft = newDraftStatus;
-    } catch (err) {
-      console.error('Unexpected error during draft/publish:', {
-        message: err.message,
-        stack: err.stack,
-      });
-      toast.error(`Unexpected error: ${err.message}`);
-    } finally {
-      setIsTogglingDraft(false);
+      if (onPublish && !newDraftStatus) onPublish(song.id); // Trigger publish callback
     }
   };
 
@@ -328,7 +231,6 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
             onClick={handleDelete}
             className="absolute top-2 right-2 text-white bg-red-600 p-1 rounded-full hover:bg-red-700"
             aria-label="Delete song"
-            disabled={isDeleting}
           >
             🗑️
           </button>
@@ -342,7 +244,6 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
                 : 'bg-yellow-600 hover:bg-yellow-700'
             }`}
             aria-label={song.is_draft ? 'Publish song' : 'Set as draft'}
-            disabled={isTogglingDraft}
           >
             {song.is_draft ? '📢 Publish' : '⏸️ Draft'}
           </button>
