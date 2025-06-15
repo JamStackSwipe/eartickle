@@ -190,23 +190,6 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
       }
       console.log(`Reactions deleted for song ${song.id}`);
 
-      // Delete related jams
-      const { error: jamsError } = await supabase
-        .from('jams')
-        .delete()
-        .eq('song_id', song.id);
-      if (jamsError) {
-        console.error('Jams delete error:', {
-          message: jamsError.message,
-          code: jamsError.code,
-          details: jamsError.details,
-          hint: jamsError.hint,
-        });
-        toast.error(`Failed to delete jams: ${jamsError.message} (Code: ${jamsError.code})`);
-        return;
-      }
-      console.log(`Jams deleted for song ${song.id}`);
-
       // Delete related boosts (if table exists)
       const { error: boostsError } = await supabase
         .from('boosts')
