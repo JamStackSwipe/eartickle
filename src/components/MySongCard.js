@@ -23,8 +23,8 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
   const [title, setTitle] = useState(song.title);
   const [editingGenre, setEditingGenre] = useState(false);
   const [newGenre, setNewGenre] = useState(song.genre_flavor || '');
-  const [isDeleting, setIsDeleting] = useState(false); // Added for loading state
-  const [isTogglingDraft, setIsTogglingDraft] = useState(false); // Added for Draft/Publish
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isTogglingDraft, setIsTogglingDraft] = useState(false);
 
   const audioRef = useRef(null);
   const cardRef = useRef(null);
@@ -292,7 +292,6 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
       console.log(`Song ${song.id} draft status updated to ${newDraftStatus}`);
       toast.success(`Song ${newDraftStatus ? 'set as draft' : 'published'}!`);
       if (onPublish && !newDraftStatus) onPublish(song.id);
-      // Update local state
       song.is_draft = newDraftStatus;
     } catch (err) {
       console.error('Unexpected error during draft/publish:', {
