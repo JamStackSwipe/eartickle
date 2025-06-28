@@ -1,79 +1,108 @@
-import React, { useEffect, useState } from 'react';
+// src/pages/LoginScreen.js
+import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../components/AuthProvider';
 
+const SITE_KEY = '0x4AAAAAABfXtuzGtZVDEqPR'; // EarTickle Turnstile key
+
 const LoginScreen = () => {
   const navigate = useNavigate();
   const { user } = useUser();
+
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [covers, setCovers] = useState([]);
-  const staticEmojis = ['🎵', '🎶', '🎤', '🎸', '🥁'];
+  const tokenRef = useRef(null);          // holds Turnstile token
 
+  /* ─────────────────── auth short-circuit ─────────────────── */
   useEffect(() => {
-    if (user) {
-      navigate('/swipe');
-    }
-  }, [user]);
+    if (user) navigate('/swipe');
+  }, [user, navigate]);
 
+  /* ─────────────────── load backgrounds ─────────────────── */
   useEffect(() => {
-    const fetchCovers = async () => {
+    (async () => {
       const { data, error } = await supabase
         .from('songs')
         .select('cover')
         .order('created_at', { ascending: false })
         .limit(10);
-
-      if (error) {
-        console.error('❌ Error fetching song covers:', error.message);
-        return;
-      }
-
-      const urls = data.map((s) => s.cover).filter(Boolean);
-      setCovers(urls);
-    };
-
-    fetchCovers();
+      if (error) console.error('❌ Error fetching covers:', error.message);
+      else setCovers(data.map((s) => s.cover).filter(Boolean));
+    })();
   }, []);
 
+  /* ─────────────────── Turnstile embed ─────────────────── */
+  useEffect(() => {
+    // Inject script once
+    if (!window.turnstile) {
+      const s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      s.async = true;
+      s.defer = true;
+      document.body.appendChild(s);
+    }
+    // Render widget when API ready
+    const interval = setInterval(() => {
+      if (window.turnstile && document.getElementById('ts-container')) {
+        clearInterval(interval);
+        window.turnstile.render('#ts-container', {
+          sitekey: SITE_KEY,
+          callback: (token) => (tokenRef.current = token),
+          expiration: () => (tokenRef.current = null),
+        });
+      }
+    }, 200);
+    return () => clearInterval(interval);
+  }, []);
+
+  /* ─────────────────── handlers ─────────────────── */
+  const requireToken = () => {
+    if (!tokenRef.current) {
+      setMessage('Please complete the bot verification first.');
+      return false;
+    }
+    return true;
+  };
+
   const handleOAuthLogin = async (provider) => {
+    if (!requireToken()) return;
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: 'https://eartickle.com/swipe' },
     });
-
     if (error) {
-      console.error(`OAuth login error with ${provider}:`, error.message);
+      console.error(`OAuth error (${provider}):`, error.message);
       setMessage(`Login with ${provider} failed.`);
     }
   };
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
+    if (!requireToken()) return;
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        emailRedirectTo: 'https://eartickle.com/swipe',
-      },
+      options: { emailRedirectTo: 'https://eartickle.com/swipe' },
     });
-
-    if (error) {
-      console.error('Email login error:', error.message);
-      setMessage('Could not send magic link.');
-    } else {
-      setMessage('Magic login link sent! Check your email.');
-    }
+    setMessage(
+      error ? 'Could not send magic link.' : 'Magic link sent! Check your email.'
+    );
+    if (error) console.error('Email login error:', error.message);
   };
+
+  /* ─────────────────── presentation ─────────────────── */
+  const staticEmojis = ['🎵', '🎶', '🎤', '🎸', '🥁'];
 
   return (
     <div className="relative min-h-screen bg-white overflow-hidden">
-      {/* 🎨 Background: scattered covers and emojis */}
+      {/* background collage */}
       {[...covers, ...staticEmojis].map((item, i) => {
         const size = Math.random() * 40 + 40;
         const top = Math.random() * 100;
         const left = Math.random() * 100;
-
         return item.startsWith('http') ? (
           <img
             key={i}
@@ -102,7 +131,7 @@ const LoginScreen = () => {
         );
       })}
 
-      {/* 🧾 Login Card */}
+      {/* login card */}
       <div className="relative z-10 flex flex-col items-center justify-center px-4 py-20 text-center">
         <div className="mb-10 select-none">
           <a href="/" className="inline-block transition-transform hover:scale-105">
@@ -137,12 +166,12 @@ const LoginScreen = () => {
           </button>
         </div>
 
-        {/* Dev-only Magic Link */}
+        {/* Turnstile widget */}
+        <div id="ts-container" className="my-4" />
+
+        {/* Magic link (dev only) */}
         {process.env.NODE_ENV !== 'production' && (
-          <form
-            onSubmit={handleEmailLogin}
-            className="space-y-3 pt-6 w-full max-w-xs"
-          >
+          <form onSubmit={handleEmailLogin} className="space-y-3 pt-4 w-full max-w-xs">
             <input
               type="email"
               placeholder="Email for magic link"
@@ -166,3 +195,4 @@ const LoginScreen = () => {
 };
 
 export default LoginScreen;
+
