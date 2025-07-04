@@ -2,7 +2,7 @@
   "name": "eartickle",
   "version": "1.0.0",
   "private": true,
-  "homepage": "https://www.eartickle.com"
+  "homepage": "https://www.eartickle.com",
   "dependencies": {
     "@supabase/supabase-js": "^2.39.6",
     "micro": "^9.3.4",                  
