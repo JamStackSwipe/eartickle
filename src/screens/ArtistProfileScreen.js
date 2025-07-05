@@ -5,7 +5,7 @@ import { useUser } from '../components/AuthProvider';
 import SongCard from '../components/SongCard';
 
 const ArtistProfileScreen = () => {
-  const { id } = useParams();
+  const { id } = useParams();  // Get the artist ID from the URL
   const { user } = useUser();
   const [artist, setArtist] = useState(null);
   const [songs, setSongs] = useState([]);
@@ -16,30 +16,29 @@ const ArtistProfileScreen = () => {
     const fetchArtist = async () => {
       if (!id) return;
 
-      try {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', id)
-          .maybeSingle();
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
 
-        if (profileError) throw new Error(profileError.message);
-
-        const { data: uploads, error: songError } = await supabase
-          .from('songs')
-          .select('*')
-          .eq('user_id', id)
-          .order('created_at', { ascending: false });
-
-        if (songError) throw new Error(songError.message);
-
-        setArtist(profile);
-        setSongs(uploads);
-      } catch (error) {
-        console.error('Error fetching artist data:', error.message);
-      } finally {
-        setLoading(false);
+      if (profileError) {
+        console.error('❌ Error fetching artist profile:', profileError.message);
       }
+
+      const { data: uploads, error: songError } = await supabase
+        .from('songs')
+        .select('*')
+        .eq('user_id', id)
+        .order('created_at', { ascending: false });
+
+      if (songError) {
+        console.error('❌ Error fetching artist songs:', songError.message);
+      }
+
+      if (profile) setArtist(profile);
+      if (uploads) setSongs(uploads);
+      setLoading(false);
     };
 
     fetchArtist();
@@ -80,7 +79,7 @@ const ArtistProfileScreen = () => {
             onError={(e) => {
               console.warn('🖼️ Avatar failed to load:', avatarSrc);
               e.target.onerror = null;
-              e.target.src = '/default-avatar.png';  // Fallback
+              e.target.src = '/default-avatar.png';
             }}
           />
         </div>
@@ -88,7 +87,6 @@ const ArtistProfileScreen = () => {
           <h1 className="text-3xl font-bold">{artist.display_name || 'Unnamed Artist'}</h1>
           <p className="text-gray-600">{artist.bio || 'No bio available.'}</p>
 
-          {/* Social links */}
           {(artist.website || artist.spotify || artist.youtube || artist.instagram ||
             artist.soundcloud || artist.tiktok || artist.bandlab) && (
             <div className="mt-4">
