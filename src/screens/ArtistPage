@@ -1,0 +1,94 @@
+// src/screens/ArtistPage.js
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { supabase } from '../supabase';
+import SongCard from '../components/SongCard';
+
+const ArtistPage = () => {
+  const { id } = useParams();  // Get user ID from the URL
+  const [artist, setArtist] = useState(null);
+  const [songs, setSongs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchArtistData = async () => {
+      if (!id) return;
+
+      // Fetch artist profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (profileError) {
+        console.error('Error fetching artist profile:', profileError.message);
+      }
+
+      // Fetch artist songs
+      const { data: uploads, error: songError } = await supabase
+        .from('songs')
+        .select('*')
+        .eq('user_id', id)
+        .order('created_at', { ascending: false });
+
+      if (songError) {
+        console.error('Error fetching artist songs:', songError.message);
+      }
+
+      setArtist(profile);
+      setSongs(uploads);
+      setLoading(false);
+    };
+
+    fetchArtistData();
+  }, [id]);
+
+  if (loading) return <div className="p-6">Loading artist page...</div>;
+  if (!artist) return <div className="p-6 text-center text-gray-500">Artist not found.</div>;
+
+  const avatarSrc = artist.avatar_url?.trim()
+    ? artist.avatar_url
+    : '/default-avatar.png';
+
+  return (
+    <div className="min-h-screen bg-white text-black p-6">
+      <div className="flex items-center space-x-6 mb-6">
+        <div className="flex-shrink-0">
+          <img
+            src={avatarSrc}
+            alt="artist avatar"
+            className="w-32 h-32 rounded-full object-cover border-4 border-white shadow"
+            onError={(e) => {
+              console.warn('Avatar failed to load:', avatarSrc);
+              e.target.onerror = null;
+              e.target.src = '/default-avatar.png';
+            }}
+          />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold">{artist.display_name || 'Unnamed Artist'}</h1>
+          <p className="text-gray-600">{artist.bio || 'No bio available.'}</p>
+          {/* Display artist social links if available */}
+          {artist.website && <p><a href={artist.website} target="_blank" rel="noreferrer">Website</a></p>}
+          {/* Add more external links here */}
+        </div>
+      </div>
+
+      <h2 className="text-xl font-semibold mb-3">🎵 Songs by this artist</h2>
+      {songs.length === 0 ? (
+        <p className="text-gray-500">This artist hasn’t uploaded any songs yet.</p>
+      ) : (
+        <ul className="space-y-4">
+          {songs.map((song) => (
+            <li key={song.id}>
+              <SongCard song={song} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
+
+export default ArtistPage;
