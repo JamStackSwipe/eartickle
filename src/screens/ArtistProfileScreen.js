@@ -1,4 +1,3 @@
-
 // src/screens/ArtistProfilePage.js
 import React from 'react';
 import ArtistPage from './ArtistPage'; // Import the newly created ArtistPage component
