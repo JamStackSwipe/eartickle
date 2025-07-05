@@ -148,11 +148,11 @@ const SongCard = ({ song, user }) => {
     >
       <div className="relative">
         <a
-          href={`/artist/${song.artist_id}`}
+          href={`/artist-${song.artist_id}`}
           onClick={(e) => {
             e.preventDefault();
             incrementViews().finally(() => {
-              window.location.href = `/artist/${song.artist_id}`;
+              window.location.href = `/artist-${song.artist_id}`;
             });
           }}
         >
