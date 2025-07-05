@@ -1,59 +1,54 @@
-// src/screens/ArtistPage.js
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
 import { supabase } from '../supabase';
-import SongCard from '../components/SongCard'; // Assuming you have a SongCard component
+import SongCard from './SongCard';
 
-const ArtistPage = () => {
-  const { id } = useParams(); // Get the user ID from the URL parameters
+const ArtistPage = ({ id }) => {
   const [artist, setArtist] = useState(null);
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Fetch artist data when the component mounts or when `id` changes
   useEffect(() => {
     const fetchArtistData = async () => {
-      // Fetch the artist profile
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .single(); // Single because we expect only one profile
+      try {
+        console.log('ArtistPage: Fetching artist with ID:', id);
+        // Fetch the artist profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-      // Fetch the artist's songs
-      const { data: songData, error: songError } = await supabase
-        .from('songs')
-        .select('*')
-        .eq('user_id', id)
-        .order('created_at', { ascending: false });
+        // Fetch the artist's songs
+        const { data: songData, error: songError } = await supabase
+          .from('songs')
+          .select('*')
+          .eq('user_id', id)
+          .order('created_at', { ascending: false });
 
-      if (profileError) {
-        console.error('Error fetching artist profile:', profileError);
+        console.log('ArtistPage: Profile Response:', { profile, profileError });
+        console.log('ArtistPage: Songs Response:', { songData, songError });
+
+        if (profileError) throw new Error(`Profile error: ${profileError.message}`);
+        if (songError) throw new Error(`Songs error: ${songError.message}`);
+
+        setArtist(profile);
+        setSongs(songData || []);
+      } catch (err) {
+        console.error('ArtistPage: Error fetching data:', err.message);
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
-      if (songError) {
-        console.error('Error fetching songs:', songError);
-      }
-
-      // Set artist data and songs
-      setArtist(profile);
-      setSongs(songData || []);
-      setLoading(false);
     };
 
     fetchArtistData();
   }, [id]);
 
-  // If the artist data is still loading, show a loading message
-  if (loading) {
-    return <div>Loading artist profile...</div>;
-  }
+  if (loading) return <div>Loading artist profile...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!artist) return <div>Artist not found</div>;
 
-  // If no artist data is found, display a not found message
-  if (!artist) {
-    return <div>Artist not found</div>;
-  }
-
-  // Render the artist's profile page
   return (
     <div className="artist-profile">
       <div className="artist-header">
@@ -65,7 +60,6 @@ const ArtistPage = () => {
         <h1 className="artist-name">{artist.display_name}</h1>
         <p className="artist-bio">{artist.bio || 'No bio available.'}</p>
 
-        {/* Social links */}
         {artist.website || artist.spotify || artist.youtube || artist.instagram || artist.soundcloud || artist.tiktok || artist.bandlab ? (
           <div className="artist-links">
             {artist.website && <a href={artist.website} target="_blank" rel="noopener noreferrer">Website</a>}
@@ -78,7 +72,6 @@ const ArtistPage = () => {
           </div>
         ) : null}
 
-        {/* Booking info */}
         {artist.booking_email && (
           <a href={`mailto:${artist.booking_email}`} className="booking-link">
             Book this artist
@@ -86,7 +79,6 @@ const ArtistPage = () => {
         )}
       </div>
 
-      {/* Display songs by the artist */}
       <div className="artist-songs">
         <h2>Songs by {artist.display_name}</h2>
         {songs.length === 0 ? (
