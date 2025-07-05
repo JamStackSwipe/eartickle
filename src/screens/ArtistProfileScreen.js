@@ -1,6 +1,6 @@
 // src/screens/ArtistProfilePage.js
 import React from 'react';
-import ArtistPage from './ArtistPage'; // Import the newly created ArtistPage component
+import ArtistPage from '../components/ArtistPage'; // Correct the import path to components
 
 const ArtistProfilePage = () => {
   return (
