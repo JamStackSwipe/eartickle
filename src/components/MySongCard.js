@@ -211,7 +211,7 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
           onClick={(e) => {
             e.preventDefault();
             incrementViews().finally(() => {
-              window.location.href = `/artist/${song.artist_id}`;
+              window.location.href = `/artist-${song.artist_id}`;
             });
           }}
         >
