@@ -2,8 +2,9 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
+// Use REACT_APP_* for CRA environment variables
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.REACT_APP_SUPABASE_URL,  // Updated to REACT_APP_SUPABASE_URL
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
