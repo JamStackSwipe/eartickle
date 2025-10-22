@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
-import { playTickleSent } from './utils/tickleSound'; // Fixed path
+import { playTickleSent } from '../utils/tickleSound'; // Fixed path
 
 const boostOptions = [
   { amount: 5, label: '⚡ Boost 5', color: 'bg-yellow-400 text-black hover:bg-yellow-500' },
