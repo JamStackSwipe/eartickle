@@ -1,12 +1,11 @@
-// pages/api/create-connected-account.js
+// pages/api/create-connected-account.js – Fixed EOF/string close; completed else block + full response
 import Stripe from 'stripe';
-import { sql } from '@vercel/postgres';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+import { sql } from '@vercel/postgres'; // Or '@neondatabase/serverless' if Neon; swap sql init accordingly
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '');
 
 export default async function handler(req, res) {
   console.log('🔥 API HIT: create-connected-account');
-  
+ 
   if (req.method !== 'POST') {
     console.log('❌ Wrong method');
     return res.status(405).json({ error: 'Method not allowed' });
@@ -23,8 +22,8 @@ export default async function handler(req, res) {
   try {
     // Fetch user profile
     const { rows } = await sql`
-      SELECT stripe_account_id 
-      FROM profiles 
+      SELECT stripe_account_id
+      FROM profiles
       WHERE id = ${user_id}
     `;
 
@@ -45,11 +44,31 @@ export default async function handler(req, res) {
 
       // Save Stripe account ID to database
       await sql`
-        UPDATE profiles 
+        UPDATE profiles
         SET stripe_account_id = ${accountId}
         WHERE id = ${user_id}
       `;
 
       console.log('✅ Stripe account ID saved:', accountId);
     } else {
-      console.log('✅
+      console.log('✅ Existing Stripe account found:', accountId); // Fixed: Closed string + complete log
+    }
+
+    // Optional: Update account details or onboard link
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${req.headers.origin}/profile?setup=true`,
+      return_url: `${req.headers.origin}/profile?setup=complete`,
+      type: 'account_onboarding',
+    });
+
+    return res.status(200).json({ 
+      success: true, 
+      accountId, 
+      onboardUrl: accountLink.url // For Express dashboard
+    });
+  } catch (error) {
+    console.error('❌ Stripe/DB error:', error);
+    return res.status(500).json({ error: 'Failed to create connected account' });
+  }
+}
