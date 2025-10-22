@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
-import { supabase } from '../supabase';
+// components/BoostTickles.js – Neon migration (NextAuth session)
+'use client';
+
+import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
-import { playTickleSent } from '../utils/tickleSound';
+import { playTickleSent } from './utils/tickleSound'; // Fixed path
 
 const boostOptions = [
   { amount: 5, label: '⚡ Boost 5', color: 'bg-yellow-400 text-black hover:bg-yellow-500' },
@@ -11,20 +14,17 @@ const boostOptions = [
 
 const BoostTickles = ({ songId, userId, artistId }) => {
   const [loading, setLoading] = useState(false);
+  const { data: session } = useSession();
 
   const handleBoost = async (amount, reason) => {
     setLoading(true);
-
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-
-      if (!token) {
+      if (!session) {
         toast.error('Not logged in');
         setLoading(false);
         return;
       }
-
+      const token = session.accessToken || session.user.token; // NextAuth token
       const res = await fetch('/api/boost-tickles', {
         method: 'POST',
         headers: {
@@ -39,21 +39,15 @@ const BoostTickles = ({ songId, userId, artistId }) => {
           reason,
         }),
       });
-
       const result = await res.json();
-
       if (res.ok) {
         toast.success(`${amount} Tickles used!`);
         playTickleSent();
-
-        // Animate the boost
         const card = document.querySelector(`[data-song-id="${songId}"]`);
         if (card) {
           card.classList.add('animate-boost');
           setTimeout(() => card.classList.remove('animate-boost'), 1000);
         }
-
-        // Notify app to reload balance and stats
         window.dispatchEvent(new CustomEvent('ticklesUpdated'));
       } else {
         toast.error(result.error || 'Boost failed');
@@ -62,7 +56,6 @@ const BoostTickles = ({ songId, userId, artistId }) => {
       toast.error('Unexpected error');
       console.error('❌ BoostTickles error:', err);
     }
-
     setLoading(false);
   };
 
