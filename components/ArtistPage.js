@@ -1,55 +1,11 @@
+// pages/artist/[id].js – Neon migration (SSR fetch); fixed for Next.js
 import { useState, useEffect } from 'react';
-import { supabase } from '../supabase';
-import SongCard from './SongCard';
+import SongCard from '../components/SongCard'; // Adjust path if needed
 
-const ArtistPage = ({ id }) => {
-  const [artist, setArtist] = useState(null);
-  const [songs, setSongs] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function ArtistPage({ artist, songs, id }) {
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchArtistData = async () => {
-      if (!id) return; // Wait for ID to be available
-      
-      try {
-        console.log('ArtistPage: Fetching artist with ID:', id);
-        
-        // Fetch the artist profile
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        // Fetch the artist's songs
-        const { data: songData, error: songError } = await supabase
-          .from('songs')
-          .select('*')
-          .eq('user_id', id)
-          .order('created_at', { ascending: false });
-
-        console.log('ArtistPage: Profile Response:', { profile, profileError });
-        console.log('ArtistPage: Songs Response:', { songData, songError });
-
-        if (profileError) throw new Error(`Profile error: ${profileError.message}`);
-        if (songError) throw new Error(`Songs error: ${songError.message}`);
-
-        setArtist(profile);
-        setSongs(songData || []);
-      } catch (err) {
-        console.error('ArtistPage: Error fetching data:', err.message);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchArtistData();
-  }, [id]);
-
-  if (loading) return <div>Loading artist profile...</div>;
-  if (error) return <div>Error: {error}</div>;
   if (!artist) return <div>Artist not found</div>;
 
   return (
@@ -95,6 +51,25 @@ const ArtistPage = ({ id }) => {
       </div>
     </div>
   );
-};
+}
 
-export default ArtistPage;
+// SSR: Fetch artist + songs server-side (Neon)
+export async function getServerSideProps({ params }) {
+  const { id } = params;
+
+  try {
+    const { neon } = await import('@neondatabase/serverless');
+    const sql = neon(process.env.DATABASE_URL);
+
+    const { rows: profileRows } = await sql`SELECT * FROM profiles WHERE id = ${id};`;
+    const artist = profileRows[0] || null;
+
+    const { rows: songRows } = await sql`SELECT * FROM songs WHERE user_id = ${id} ORDER BY created_at DESC;`;
+    const songs = songRows || [];
+
+    return { props: { artist, songs, id } };
+  } catch (error) {
+    console.error('Artist fetch error:', error);
+    return { props: { artist: null, songs: [], id } };
+  }
+}
