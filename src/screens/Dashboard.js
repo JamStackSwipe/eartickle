@@ -1,39 +1,57 @@
 import React, { useEffect, useState } from 'react';
+import { useUser } from '../components/AuthProvider';
 
 const Dashboard = () => {
-  const [user, setUser] = useState(null);
+  const { user } = useUser();
   const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const userData = { name: 'John Doe', email: 'john@example.com' };
-      setUser(userData);
-    };
-
     const fetchStats = async () => {
-      const statsData = { totalUsers: 150, activeSessions: 37 };
-      setStats(statsData);
+      if (!user) return;
+
+      try {
+        const response = await fetch('/api/dashboard/stats');
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    fetchUser();
     fetchStats();
-  }, []);
+  }, [user]);
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-black text-white px-6 py-10 text-center">
+        <p>Please log in to view dashboard</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white px-6 py-10">
       <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-      {user && (
-        <div className="mb-4">
-          <p className="text-lg">Welcome, {user.name}</p>
-          <p className="text-sm text-gray-400">{user.email}</p>
-        </div>
-      )}
-      {stats && (
+      
+      <div className="mb-4">
+        <p className="text-lg">Welcome, {user.user_metadata?.name || user.email}</p>
+        <p className="text-sm text-gray-400">{user.email}</p>
+      </div>
+
+      {loading ? (
+        <p>Loading stats...</p>
+      ) : stats ? (
         <div className="mt-6">
-          <p>Total Users: {stats.totalUsers}</p>
-          <p>Active Sessions: {stats.activeSessions}</p>
+          <p>Total Songs: {stats.totalSongs}</p>
+          <p>Your Tickle Balance: {stats.tickleBalance}</p>
+          <p>Songs in JamStack: {stats.jamCount}</p>
         </div>
-      )}
+      ) : null}
     </div>
   );
 };
