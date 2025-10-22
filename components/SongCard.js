@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation'; // SPA nav
-import { supabase } from '../supabase'; // Temp; swap to fetch('/api/songs/[id]/stats')
+
 import toast from 'react-hot-toast';
 import ReactionStatsBar from './ReactionStatsBar';
 import BoostTickles from './BoostTickles';
