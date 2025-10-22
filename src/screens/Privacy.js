@@ -6,8 +6,8 @@ const Privacy = () => (
     <p className="mb-4">
       EarTickle™ respects your privacy. We only collect the minimum data needed
       to make the platform work, including your email, display name, and
-      avatar—provided through GitHub or Magic Link login. Your data is securely
-      stored using Supabase and is never sold or shared with third parties.
+      avatar—provided through GitHub or Google login. Your data is securely
+      stored in our database and is never sold or shared with third parties.
     </p>
     <p className="mb-4">
       Songs you upload are publicly viewable by others. Your profile, reactions,
