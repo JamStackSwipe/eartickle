@@ -1,7 +1,7 @@
 // pages/api/auth/reset-password.js (POST)
 import { neon } from '@neondatabase/serverless';
 import { getServerSession } from 'next-auth';
-import { authOptions } from './auth/[...nextauth]';
+import { authOptions } from './[...nextauth]';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
