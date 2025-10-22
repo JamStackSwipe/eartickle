@@ -1,6 +1,6 @@
-import Header from '../src/components/Header'
-import Footer from '../src/components/Footer'
-import ChartsScreen from '../src/screens/ChartsScreen'
+import Header from '../components/Header'
+import Footer from '../components/Footer'
+import ChartsScreen from '../screens/ChartsScreen'
 
 export default function Charts() {
   return (
