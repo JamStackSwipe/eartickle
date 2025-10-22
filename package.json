@@ -5,7 +5,6 @@
   "homepage": ".",
   "dependencies": {
     "@neondatabase/serverless": "^0.9.2",
-    "@supabase/supabase-js": "^2.39.6",
     "@vercel/postgres": "^0.5.1",
     "@vercel/blob": "^0.15.1",
     "next": "^14.0.4",
