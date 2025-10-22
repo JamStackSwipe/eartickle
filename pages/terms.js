@@ -1,6 +1,6 @@
-import Header from '../src/components/Header'
-import Footer from '../src/components/Footer'
-import Terms from '../src/screens/Terms'
+import Header from '../components/Header'
+import Footer from '../components/Footer'
+import Terms from '../screens/Terms'
 
 export default function TermsPage() {
   return (
