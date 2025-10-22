@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useRouter } from 'next/router';
 import ArtistPage from '../components/ArtistPage';
 
 const ArtistProfileScreen = () => {
-  const { id } = useParams();
+  const router = useRouter();
+  const { id } = router.query;
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('ArtistProfileScreen: ID from URL:', id);
-    setLoading(false);
+    if (id) {
+      console.log('ArtistProfileScreen: ID from URL:', id);
+      setLoading(false);
+    }
   }, [id]);
 
-  if (loading) return <div>Loading...</div>;
+  if (!id || loading) return <div>Loading...</div>;
 
   return (
     <div className="artist-profile-screen">
