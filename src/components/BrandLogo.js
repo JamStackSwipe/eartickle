@@ -1,11 +1,11 @@
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/router';
 
 const BrandLogo = ({ to = '/swipe', className = '' }) => {
-  const navigate = useNavigate();
-
+  const router = useRouter();
+  
   return (
     <div
-      onClick={() => navigate(to)}
+      onClick={() => router.push(to)}
       className={`flex items-center gap-3 cursor-pointer select-none ${className}`}
     >
       <img
