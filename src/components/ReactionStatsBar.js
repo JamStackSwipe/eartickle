@@ -1,6 +1,6 @@
 // src/components/ReactionStatsBar.js
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/router';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
 import { playTickle } from '../utils/tickleSound';
@@ -10,13 +10,13 @@ const emojis = ['🔥', '💖', '😭', '🎯'];
 
 const ReactionStatsBar = ({ song }) => {
   const { user } = useUser();
+  const router = useRouter();
   const [stats, setStats] = useState({});
   const [tickleBalance, setTickleBalance] = useState(null);
   const [hasReacted, setHasReacted] = useState({});
   const [loading, setLoading] = useState(true);
   const [isJammed, setIsJammed] = useState(false);
   const [jamLoading, setJamLoading] = useState(false);
-  const navigate = useNavigate();
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -73,7 +73,7 @@ const ReactionStatsBar = ({ song }) => {
     e.stopPropagation();
     if (!user) return toast.error('Login required');
     if ((tickleBalance ?? 0) < 1) return toast.error('Not enough Tickles');
-    if (song.user_id === user.id) return toast.error('You can’t send Tickles to yourself!');
+    if (song.user_id === user.id) return toast.error('You can't send Tickles to yourself!');
 
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !sessionData?.session?.access_token) {
@@ -167,7 +167,7 @@ const ReactionStatsBar = ({ song }) => {
 
   const handleBuyTickles = (e) => {
     e.stopPropagation();
-    navigate('/rewards');
+    router.push('/rewards');
   };
 
   return (
