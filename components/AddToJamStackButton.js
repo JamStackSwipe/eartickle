@@ -1,7 +1,7 @@
-// src/components/AddToJamStackButton.js  This button has been rewritten and is now directly included in ReactsionsStatsBar.js
+// components/AddToJamStackButton.js – Neon migration (fetch API); deprecated? Move to ReactionStatsBar if so
+'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabase';
 
 const AddToJamStackButton = ({ songId, user }) => {
   const [added, setAdded] = useState(false);
@@ -10,36 +10,35 @@ const AddToJamStackButton = ({ songId, user }) => {
   useEffect(() => {
     const checkIfInJamStack = async () => {
       if (!user || !songId) return;
-
-      const { data, error } = await supabase
-        .from('jamstacksongs')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('song_id', songId)
-        .maybeSingle();
-
-      if (data) setAdded(true);
-      if (error) console.error('JamStack check error:', error.message);
+      try {
+        const res = await fetch(`/api/jamstack/check?user_id=${user.id}&song_id=${songId}`);
+        const { data } = await res.json();
+        if (data) setAdded(true);
+      } catch (error) {
+        console.error('JamStack check error:', error.message);
+      }
     };
-
     checkIfInJamStack();
   }, [user, songId]);
 
   const handleAddToJamStack = async () => {
     if (!user || !songId) return;
     setLoading(true);
-
-    const { error } = await supabase.from('jamstacksongs').insert([
-      { user_id: user.id, song_id: songId },
-    ]);
-
-    if (!error) {
-      console.log('✅ Song added to JamStack!');
-      setAdded(true);
-    } else {
+    try {
+      const res = await fetch('/api/jamstack/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, song_id: songId }),
+      });
+      if (res.ok) {
+        console.log('✅ Song added to JamStack!');
+        setAdded(true);
+      } else {
+        console.error('Error adding to JamStack');
+      }
+    } catch (error) {
       console.error('Error adding to JamStack:', error.message);
     }
-
     setLoading(false);
   };
 
