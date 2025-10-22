@@ -1,5 +1,5 @@
 import '../src/index.css'
-import { AuthProvider } from '../src/components/AuthProvider'
+import { AuthProvider } from '../components/AuthProvider'
 
 function MyApp({ Component, pageProps }) {
   return (
