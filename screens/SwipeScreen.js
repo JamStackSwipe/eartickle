@@ -1,27 +1,36 @@
+// screens/SwipeScreen.js – Neon migration (NextAuth + API fetch)
+'use client';
+
 import { useEffect, useState } from 'react';
-import { useUser } from '../components/AuthProvider';
-import { getRecommendedSongs } from '../utils/recommendationEngine';
+import { useSession } from 'next-auth/react';
 import SongCard from '../components/SongCard';
 import { genreFlavorMap } from '../utils/genreList';
 
 const SwipeScreen = () => {
-  const { user } = useUser();
+  const { data: session } = useSession();
   const [songs, setSongs] = useState([]);
-  const [selectedGenre, setSelectedGenre] = useState(null); // Default to null for "All"
+  const [selectedGenre, setSelectedGenre] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      getRecommendedSongs(user.id).then((allSongs) => {
-        console.log('All Songs from Engine:', allSongs.map(s => ({ id: s.id, genre_flavor: s.genre_flavor, score: s.score })));
+    if (session?.user?.id) {
+      fetchRecommendedSongs(session.user.id).then((allSongs) => {
+        console.log('All Songs:', allSongs.map(s => ({ id: s.id, genre_flavor: s.genre_flavor, score: s.score })));
         const filteredSongs = selectedGenre
           ? allSongs.filter(song => song.genre_flavor.toLowerCase() === selectedGenre.toLowerCase())
           : allSongs;
-        console.log('Filtered Songs for', selectedGenre || 'All:', filteredSongs.map(s => ({ id: s.id, genre_flavor: s.genre_flavor, score: s.score })));
+        console.log('Filtered Songs:', filteredSongs.map(s => ({ id: s.id, genre_flavor: s.genre_flavor, score: s.score })));
         setSongs(filteredSongs);
       }).catch(console.error);
     }
-  }, [user, selectedGenre]);
+  }, [session?.user?.id, selectedGenre]);
+
+  const fetchRecommendedSongs = async (userId) => {
+    const res = await fetch(`/api/recommendations?user_id=${userId}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    return data;
+  };
 
   return (
     <div className="p-4 min-h-screen">
@@ -64,7 +73,7 @@ const SwipeScreen = () => {
         </div>
       </div>
       {songs.length > 0 ? (
-        songs.map((song) => <SongCard key={song.id} song={song} user={user} />)
+        songs.map((song) => <SongCard key={song.id} song={song} user={session?.user} />)
       ) : (
         <p className="text-center text-gray-500">No songs to discover in this genre yet.</p>
       )}
@@ -72,7 +81,7 @@ const SwipeScreen = () => {
   );
 };
 
-// Helper function to get glow color (unchanged for now)
+// Helper (unchanged)
 const getGlowColor = (color) => {
   switch (color) {
     case 'amber': return '#f59e0b';
@@ -81,7 +90,7 @@ const getGlowColor = (color) => {
     case 'purple': return '#a855f7';
     case 'cyan': return '#06b6d4';
     case 'red': return '#ef4444';
-    case 'lime': return '#a3e635'; // Ensure this matches comedy_other
+    case 'lime': return '#a3e635';
     default: return '#ffffff';
   }
 };
