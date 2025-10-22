@@ -1,53 +1,31 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '../supabase';
+// screens/SongPage.js – Neon migration (Next.js navigation + API fetch)
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import MySongCard from '../components/MySongCard';
 import toast from 'react-hot-toast';
 import { useUser } from '../components/AuthProvider';
 
 const SongPage = () => {
-  const { songId } = useParams();
-  const navigate = useNavigate();
+  const params = useParams();
+  const router = useRouter();
   const { user } = useUser() || {};
   const [song, setSong] = useState(null);
   const [loading, setLoading] = useState(true);
+  const songId = params.id;
 
   useEffect(() => {
     if (!songId) return;
-
     const fetchSong = async () => {
       try {
-        const { data, error } = await supabase
-          .from('songs')
-          .select(`
-            id,
-            title,
-            artist,
-            user_id,
-            artist_id,
-            cover,
-            audio,
-            genre_flavor,
-            is_draft,
-            views,
-            jams,
-            song_reactions (emoji, user_id)
-          `)
-          .eq('id', songId)
-          .maybeSingle();
-
-        if (error) throw error;
-        if (!data) {
-          toast.error('Song not found');
-          navigate('/');
-          return;
-        }
-
+        const res = await fetch(`/api/songs/${songId}`);
+        const { data, error } = await res.json();
+        if (!res.ok || error) throw new Error(error || 'Song not found');
         const stats = {};
         data.song_reactions?.forEach(({ emoji }) => {
           stats[emoji] = (stats[emoji] || 0) + 1;
         });
-
         setSong({
           ...data,
           stats,
@@ -56,23 +34,20 @@ const SongPage = () => {
           is_own_song: user ? data.user_id === user.id : false,
         });
         setLoading(false);
-
-        await supabase
-          .from('songs')
-          .update({ views: (data.views || 0) + 1 })
-          .eq('id', songId);
+        // Increment view
+        await fetch(`/api/songs/${songId}/view`, { method: 'POST' });
       } catch (error) {
         console.error('Fetch song error:', error);
         toast.error('Failed to load song');
+        router.push('/');
         setLoading(false);
       }
     };
-
     fetchSong();
-  }, [songId, navigate, user]);
+  }, [songId, router, user]);
 
   const handleBack = () => {
-    navigate(user ? '/profile' : '/'); // Back to Profile if logged in, else Home
+    router.push(user ? '/profile' : '/');
   };
 
   if (loading) {
