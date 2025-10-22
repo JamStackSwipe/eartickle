@@ -1,30 +1,15 @@
-
-import { sql } from '@vercel/postgres'
+// pages/api/test.js – Your Neon ping
+import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+
   try {
-    // Test database connection
-    const { rows } = await sql`SELECT NOW() as time`
-    
-    // List all tables
-    const { rows: tables } = await sql`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' 
-      ORDER BY table_name
-    `
-    
-    res.status(200).json({ 
-      success: true, 
-      message: '✅ Database connected!',
-      serverTime: rows[0].time,
-      tables: tables.map(t => t.table_name),
-      environment: 'Vercel + Neon Postgres'
-    })
+    const sql = neon(process.env.DATABASE_URL);
+    const { rows } = await sql`SELECT COUNT(*) as count FROM songs LIMIT 1;`; // Swap 'songs' for one of your 5 tables
+    res.status(200).json({ success: true, testCount: rows[0].count, tables: 'Neon connected!' });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    })
+    console.error('Neon test error:', error);
+    res.status(500).json({ error: error.message });
   }
 }
