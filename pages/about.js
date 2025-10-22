@@ -1,6 +1,6 @@
-import Header from '../src/components/Header'
-import Footer from '../src/components/Footer'
-import About from '../src/screens/AboutScreen'
+import Header from '../components/Header'
+import Footer from '../components/Footer'
+import About from '../screens/AboutScreen'
 
 export default function AboutPage() {
   return (
