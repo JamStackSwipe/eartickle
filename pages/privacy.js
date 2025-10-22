@@ -1,6 +1,6 @@
-import Header from '../src/components/Header'
-import Footer from '../src/components/Footer'
-import Privacy from '../src/screens/Privacy'
+import Header from '../components/Header'
+import Footer from '../components/Footer'
+import Privacy from '../screens/Privacy'
 
 export default function PrivacyPage() {
   return (
