@@ -1,6 +1,6 @@
-import Header from '../src/components/Header'
-import Footer from '../src/components/Footer'
-import SwipeScreen from '../src/screens/SwipeScreen'
+import Header from '../components/Header'
+import Footer from '../components/Footer'
+import SwipeScreen from '../screens/SwipeScreen'
 
 export default function Swipe() {
   return (
