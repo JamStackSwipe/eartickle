@@ -1,22 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { supabase } from '../supabase';
 import { useUser } from './AuthProvider';
 
 const Header = () => {
   const { user } = useUser();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const timeoutRef = useRef(null);
 
   const handleLogoClick = () => {
-    navigate(user ? '/swipe' : '/auth');
+    router.push(user ? '/swipe' : '/login');
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/auth');
+    router.push('/login');
   };
 
   const handleMouseEnter = () => {
@@ -52,11 +53,11 @@ const Header = () => {
         <nav className="flex items-center space-x-4 text-sm relative">
           {/* Desktop Nav */}
           <div className="hidden sm:flex items-center space-x-4">
-            <Link to="/swipe" className="hover:underline text-white">Swipe</Link>
-            <Link to="/stacker" className="hover:underline text-white">🎶 Stacker</Link>
-            <Link to="/charts" className="hover:underline text-white">📈 Charts</Link>
-            <Link to="/rewards" className="hover:underline text-white">🎁 Rewards</Link>
-            <Link to="/upload" className="hover:underline text-white">Upload</Link>
+            <Link href="/swipe" className="hover:underline text-white">Swipe</Link>
+            <Link href="/jamstack" className="hover:underline text-white">🎶 JamStack</Link>
+            <Link href="/charts" className="hover:underline text-white">📈 Charts</Link>
+            <Link href="/rewards" className="hover:underline text-white">🎁 Rewards</Link>
+            <Link href="/upload" className="hover:underline text-white">Upload</Link>
           </div>
 
           {/* Avatar + Dropdown */}
@@ -77,11 +78,11 @@ const Header = () => {
                 onMouseLeave={handleMouseLeave}
                 className="absolute right-0 mt-2 w-48 bg-white text-black rounded shadow-lg text-sm overflow-hidden z-[9999]"
               >
-                <Link to="/profile" className="block px-4 py-2 hover:bg-gray-100">👤 My Profile</Link>
-                <Link to={`/artist/${user.id}`} className="block px-4 py-2 hover:bg-gray-100">🎤 My Artist Page</Link>
-                <Link to="/settings" className="block px-4 py-2 hover:bg-gray-100">⚙️ Settings</Link>
-                <Link to="/privacy" className="block px-4 py-2 hover:bg-gray-100">🔒 Privacy</Link>
-                <Link to="/terms" className="block px-4 py-2 hover:bg-gray-100">📄 Terms</Link>
+                <Link href="/profile" className="block px-4 py-2 hover:bg-gray-100">👤 My Profile</Link>
+                <Link href={`/artist/${user.id}`} className="block px-4 py-2 hover:bg-gray-100">🎤 My Artist Page</Link>
+                <Link href="/settings" className="block px-4 py-2 hover:bg-gray-100">⚙️ Settings</Link>
+                <Link href="/privacy" className="block px-4 py-2 hover:bg-gray-100">🔒 Privacy</Link>
+                <Link href="/terms" className="block px-4 py-2 hover:bg-gray-100">📄 Terms</Link>
                 <button onClick={handleLogout} className="w-full text-left px-4 py-2 hover:bg-gray-100">🚪 Logout</button>
               </div>
             )}
@@ -100,16 +101,16 @@ const Header = () => {
       {mobileMenuOpen && (
         <div className="absolute top-full right-0 w-full bg-black text-white sm:hidden z-50 mt-2 shadow-lg rounded">
           <div className="flex flex-col px-4 py-2 space-y-2 text-sm">
-            <Link to="/swipe" onClick={() => setMobileMenuOpen(false)}>Swipe</Link>
-            <Link to="/upload" onClick={() => setMobileMenuOpen(false)}>Upload</Link>
-            <Link to="/stacker" onClick={() => setMobileMenuOpen(false)}>🎶 Stacker</Link>
-            <Link to="/rewards" onClick={() => setMobileMenuOpen(false)}>🎁 Rewards</Link>
-            <Link to="/charts" onClick={() => setMobileMenuOpen(false)}>📈 Charts</Link>
-            <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>👤 My Profile</Link>
-            <Link to={`/artist/${user.id}`} onClick={() => setMobileMenuOpen(false)}>🎤 My Artist Page</Link>
-            <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>⚙️ Settings</Link>
-            <Link to="/privacy" onClick={() => setMobileMenuOpen(false)}>🔒 Privacy</Link>
-            <Link to="/terms" onClick={() => setMobileMenuOpen(false)}>📄 Terms</Link>
+            <Link href="/swipe" onClick={() => setMobileMenuOpen(false)}>Swipe</Link>
+            <Link href="/upload" onClick={() => setMobileMenuOpen(false)}>Upload</Link>
+            <Link href="/jamstack" onClick={() => setMobileMenuOpen(false)}>🎶 JamStack</Link>
+            <Link href="/rewards" onClick={() => setMobileMenuOpen(false)}>🎁 Rewards</Link>
+            <Link href="/charts" onClick={() => setMobileMenuOpen(false)}>📈 Charts</Link>
+            <Link href="/profile" onClick={() => setMobileMenuOpen(false)}>👤 My Profile</Link>
+            <Link href={`/artist/${user.id}`} onClick={() => setMobileMenuOpen(false)}>🎤 My Artist Page</Link>
+            <Link href="/settings" onClick={() => setMobileMenuOpen(false)}>⚙️ Settings</Link>
+            <Link href="/privacy" onClick={() => setMobileMenuOpen(false)}>🔒 Privacy</Link>
+            <Link href="/terms" onClick={() => setMobileMenuOpen(false)}>📄 Terms</Link>
             <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }}>🚪 Logout</button>
           </div>
         </div>
