@@ -1,6 +1,6 @@
-import Header from '../src/components/Header'
-import Footer from '../src/components/Footer'
-import RewardsScreen from '../src/screens/RewardsScreen'
+import Header from '../components/Header'
+import Footer from '../components/Footer'
+import RewardsScreen from '../screens/RewardsScreen'
 
 export default function Rewards() {
   return (
