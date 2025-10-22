@@ -1,14 +1,15 @@
 // src/components/SongCard.js
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/router';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import ReactionStatsBar from './ReactionStatsBar';
 import BoostTickles from './BoostTickles';
 import { genreFlavorMap } from '../utils/genreList';
 
-const tickleSound = new Audio('/sounds/tickle.mp3');
-
 const SongCard = ({ song, user }) => {
+  const router = useRouter();
+  
   if (song.is_draft || !song.cover || !song.audio) {
     return null;
   }
@@ -139,6 +140,13 @@ const SongCard = ({ song, user }) => {
     }
   };
 
+  const handleArtistClick = (e) => {
+    e.preventDefault();
+    incrementViews().finally(() => {
+      router.push(`/artist/${song.artist_id}`);
+    });
+  };
+
   return (
     <div
       ref={cardRef}
@@ -147,14 +155,9 @@ const SongCard = ({ song, user }) => {
       style={flavor ? { boxShadow: `0 0 15px ${getGlowColor(flavor.color)}` } : {}}
     >
       <div className="relative">
-        <a
-          href={`/artist-${song.artist_id}`}
-          onClick={(e) => {
-            e.preventDefault();
-            incrementViews().finally(() => {
-              window.location.href = `/artist-${song.artist_id}`;
-            });
-          }}
+        
+          href={`/artist/${song.artist_id}`}
+          onClick={handleArtistClick}
         >
           <img
             src={song.cover}
