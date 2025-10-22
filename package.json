@@ -5,7 +5,11 @@
   "homepage": ".",
   "dependencies": {
     "@supabase/supabase-js": "^2.39.6",
-    "micro": "^9.3.4",                  
+    "@vercel/postgres": "^0.5.1",
+    "@vercel/blob": "^0.15.1",
+    "next": "^14.0.4",
+    "next-auth": "^4.24.5",
+    "micro": "^9.3.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.1",
@@ -16,8 +20,9 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "vercel-build": "react-scripts build",
-    "build": "react-scripts build",
+    "dev": "next dev",
+    "build": "next build",
+    "vercel-build": "next build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   }
