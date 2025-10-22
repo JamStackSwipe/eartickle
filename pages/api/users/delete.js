@@ -1,7 +1,7 @@
 // pages/api/users/delete.js (DELETE)
 import { neon } from '@neondatabase/serverless';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]';
+import { authOptions } from './auth/[...nextauth]';
 
 export default async function handler(req, res) {
   if (req.method !== 'DELETE') return res.status(405).json({ error: 'DELETE only' });
