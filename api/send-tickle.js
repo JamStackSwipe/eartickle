@@ -1,10 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
-
-// Use REACT_APP_* for CRA environment variables
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,  // Corrected to use REACT_APP_ prefix for CRA
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+// pages/api/send-tickle.js
+import { sql } from '@vercel/postgres';
+import { supabase } from '../../src/supabase'; // Temporary auth check
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -12,7 +8,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { song_id, emoji } = req.body;
+    const { song_id, emoji, artist_id } = req.body;
 
     // Validate input
     if (!song_id || !emoji) {
@@ -22,13 +18,12 @@ export default async function handler(req, res) {
       });
     }
 
-    // Verify authentication
+    // Verify authentication (using Supabase temporarily)
     const token = req.headers.authorization?.replace('Bearer ', '');
     if (!token) {
       return res.status(401).json({ error: 'Authorization token required' });
     }
 
-    // Get user from token
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) {
       return res.status(401).json({
@@ -37,32 +32,71 @@ export default async function handler(req, res) {
       });
     }
 
-    // Log input parameters for debugging
-    console.log('Calling send_gift_tickles with:', { sender_id: user.id, song_id, amount: 1 });
+    const senderId = user.id;
 
-    // Call RPC with explicit signature and parameter names
-    const { error: rpcError } = await supabase.rpc('send_gift_tickles', {
-      sender_id: user.id,
-      song_id: song_id,
-      amount: 1,
-    });
+    // Get sender's tickle balance
+    const { rows: senderRows } = await sql`
+      SELECT tickle_balance 
+      FROM profiles 
+      WHERE id = ${senderId}
+    `;
 
-    if (rpcError) {
-      console.error('RPC Error Details:', {
-        message: rpcError.message,
-        code: rpcError.code,
-        details: rpcError.details,
-      });
-      return res.status(500).json({
-        error: 'Tickle transfer failed',
-        details: rpcError.message,
-      });
+    if (!senderRows.length || senderRows[0].tickle_balance < 1) {
+      return res.status(400).json({ error: 'Insufficient Tickles' });
     }
+
+    // Get song and artist info
+    const { rows: songRows } = await sql`
+      SELECT user_id 
+      FROM songs 
+      WHERE id = ${song_id}
+    `;
+
+    if (!songRows.length) {
+      return res.status(404).json({ error: 'Song not found' });
+    }
+
+    const receiverId = artist_id || songRows[0].user_id;
+
+    // Can't send tickles to yourself
+    if (senderId === receiverId) {
+      return res.status(400).json({ error: 'Cannot send Tickles to yourself' });
+    }
+
+    // Deduct 1 tickle from sender
+    await sql`
+      UPDATE profiles 
+      SET tickle_balance = tickle_balance - 1
+      WHERE id = ${senderId}
+    `;
+
+    // Add 1 tickle to receiver (artist)
+    await sql`
+      UPDATE profiles 
+      SET tickle_balance = tickle_balance + 1
+      WHERE id = ${receiverId}
+    `;
+
+    // Record the transaction
+    await sql`
+      INSERT INTO tickle_transactions (sender_id, receiver_id, song_id, amount)
+      VALUES (${senderId}, ${receiverId}, ${song_id}, 1)
+    `;
+
+    // Update song score
+    await sql`
+      UPDATE songs 
+      SET score = score + 10
+      WHERE id = ${song_id}
+    `;
+
+    console.log('✅ Tickle sent:', { senderId, receiverId, song_id });
 
     return res.status(200).json({
       success: true,
       message: 'Tickle sent successfully',
     });
+
   } catch (err) {
     console.error('Server Error:', {
       message: err.message,
