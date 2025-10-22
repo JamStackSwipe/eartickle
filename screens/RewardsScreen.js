@@ -1,91 +1,76 @@
-// src/screens/RewardsScreen.js
+// screens/RewardsScreen.js – Neon migration (NextAuth + fetch API)
+'use client';
 
-import React, { useEffect, useState } from 'react';
-import { supabase } from '../supabase';
-import { useUser } from '../components/AuthProvider';
-import { playTickle, playTickleSpecial } from '../utils/tickleSound';
+import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import toast from 'react-hot-toast';
+import { playTickle, playTickleSpecial } from '../utils/tickleSound'; // Fixed path
 
 const RewardsScreen = () => {
-  const { user } = useUser();
+  const { data: session } = useSession();
   const [tickles, setTickles] = useState(0);
   const [rewards, setRewards] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.id) {
+    if (session?.user?.id) {
       fetchTickles();
       fetchRewards();
     }
-  }, [user?.id]);
+  }, [session?.user?.id]);
 
   const fetchTickles = async () => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('tickle_balance')
-      .eq('id', user.id)
-      .single();
-
-    if (!error) {
+    try {
+      const res = await fetch(`/api/profiles/${session.user.id}/balance`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
       setTickles(data.tickle_balance || 0);
-    } else {
-      console.error('❌ Error fetching tickle balance:', error);
+    } catch (error) {
+      console.error('Tickle balance error:', error);
     }
   };
 
   const fetchRewards = async () => {
-    const { data, error } = await supabase
-      .from('rewards')
-      .select(`*, songs ( title )`)
-      .eq('receiver_id', user.id)
-      .not('emoji', 'is', null)
-      .order('created_at', { ascending: false });
-
-    if (!error) {
+    try {
+      const res = await fetch(`/api/rewards?receiver_id=${session.user.id}&sort=created_at desc`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
       setRewards(data);
       if (data.length > 0) {
         const latest = data[0];
         if (latest.amount >= 20) playTickleSpecial();
         else playTickle();
       }
-    } else {
-      console.error('❌ Error fetching rewards:', error);
+    } catch (error) {
+      console.error('Rewards error:', error);
     }
-
     setLoading(false);
   };
 
   const handleBuy = async (amount) => {
-    const session = await supabase.auth.getSession();
-    const token = session.data.session.access_token;
-
-    const res = await fetch('/api/create-stripe-session', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        user_id: user.id,
-        amount,
-      }),
-    });
-
-    const data = await res.json();
-    if (data?.url) window.location.href = data.url;
-    else alert('⚠️ Failed to create Stripe session');
+    try {
+      const res = await fetch('/api/create-stripe-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: session.user.id, amount }),
+      });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else toast.error('Failed to create Stripe session');
+    } catch (error) {
+      toast.error('Buy failed');
+    }
   };
 
-  if (!user) return <p className="text-center mt-10">Please log in to view your Tickles.</p>;
+  if (!session) return <p className="text-center mt-10">Please log in to view your Tickles.</p>;
   if (loading) return <p className="text-center mt-10">Loading Tickles...</p>;
 
   return (
     <div className="max-w-2xl mx-auto mt-10 p-4">
       <h2 className="text-3xl font-bold mb-6 text-center text-purple-600">🎁 Tickles</h2>
-
       <div className="mb-6 text-center">
         <p className="text-lg mb-2">Your current balance:</p>
         <p className="text-4xl font-extrabold text-yellow-500 shadow-sm">{tickles} Tickles</p>
-
         <div className="mt-6 flex justify-center gap-4">
           {[5, 10, 25].map((amount) => (
             <button
@@ -98,11 +83,8 @@ const RewardsScreen = () => {
           ))}
         </div>
       </div>
-
       <hr className="my-8 border-gray-300" />
-
       <h3 className="text-2xl font-semibold mb-4 text-center">Recent Tickles Received</h3>
-
       {rewards.length === 0 ? (
         <p className="text-center text-gray-500">You haven’t been tickled yet 😢</p>
       ) : (
@@ -111,7 +93,6 @@ const RewardsScreen = () => {
             const pts = reward.amount || 0;
             let icon = '🪙';
             let message = 'A tiny tickle!';
-
             if (pts >= 5 && pts < 10) {
               icon = '🎧';
               message = 'You got someone grooving 🎶';
@@ -122,7 +103,6 @@ const RewardsScreen = () => {
               icon = '👑';
               message = 'Your jam tickled ears all the way to the moon 🚀';
             }
-
             return (
               <li key={reward.id} className="p-4 bg-white rounded-xl shadow border border-gray-200">
                 <div className="flex justify-between items-start">
