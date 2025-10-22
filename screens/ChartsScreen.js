@@ -1,4 +1,4 @@
-'use client';
+'use client'; // Client-only to fix Audio SSR
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
@@ -31,7 +31,7 @@ const ChartsScreen = () => {
   // Audio client-side only
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const audio = new Audio('/sounds/chart.mp3'); // Or your chart sound
+      const audio = new Audio('/sounds/chart.mp3'); // Your chart sound
       audio.play().catch(console.warn);
     }
   }, []);
