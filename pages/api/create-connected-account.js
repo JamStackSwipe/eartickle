@@ -1,8 +1,8 @@
-// pages/api/create-connected-account.js – Full Stripe Express account creation + Neon save
+// pages/api/create-connected-account.js – Full Stripe Express + Neon save
 import Stripe from 'stripe';
 import { neon } from '@neondatabase/serverless';
 import { getServerSession } from 'next-auth';
-import { authOptions } from './[...nextauth]';
+import { authOptions } from './auth/[...nextauth]'; // Fixed: ./auth/ for subfolder
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const sql = neon(process.env.DATABASE_URL);
@@ -28,10 +28,10 @@ export default async function handler(req, res) {
     const profile = profileRows[0];
 
     if (profile?.stripe_account_id) {
-      return res.status(200).json({ success: true, accountId: profile.stripe_account_id, message: 'Account already connected' });
+      return res.status(200).json({ success: true, accountId: profile.stripe_account_id, message: 'Already connected' });
     }
 
-    // Create Stripe Express account
+    // Create Stripe Express
     const account = await stripe.accounts.create({
       type: 'express',
       email: session.user.email,
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
       },
     });
 
-    // Create onboarding link
+    // Onboarding link
     const accountLink = await stripe.accountLinks.create({
       account: account.id,
       refresh_url: `${process.env.NEXT_PUBLIC_SITE_URL}/settings?status=refresh`,
