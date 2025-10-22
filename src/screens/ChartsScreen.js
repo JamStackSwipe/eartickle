@@ -1,6 +1,5 @@
 // src/screens/ChartsScreen.js
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../supabase';
 import SongCard from '../components/SongCard';
 import { useUser } from '../components/AuthProvider';
 
@@ -33,15 +32,21 @@ const ChartsScreen = () => {
   useEffect(() => {
     const fetchChartSongs = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('songs')
-        .select('*')
-        .order(filter, { ascending: false })
-        .limit(20);
-
-      if (error) console.error('Error fetching chart songs:', error.message);
-      else setSongs(data);
-
+      
+      try {
+        const response = await fetch(`/api/charts/top?filter=${filter}&limit=20`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch chart songs');
+        }
+        
+        const data = await response.json();
+        setSongs(data);
+      } catch (error) {
+        console.error('Error fetching chart songs:', error.message);
+        setSongs([]);
+      }
+      
       setLoading(false);
     };
 
