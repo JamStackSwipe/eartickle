@@ -1,122 +1,68 @@
-// src/screens/StackerScreen.js
-import React, { useEffect, useState, useRef } from 'react';
-import { useUser } from '../components/AuthProvider';
+'use client'; // Client-only to fix Audio SSR
+
+import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import SongCard from '../components/SongCard';
+import toast from 'react-hot-toast';
 
-const StackerScreen = () => {
-  const { user } = useUser();
-  const [songs, setSongs] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const audioRef = useRef(null);
-
-  const shuffleArray = (arr) => [...arr].sort(() => Math.random() - 0.5);
+const JamStackScreen = () => {
+  const { data: session } = useSession();
+  const [jamStackSongs, setJamStackSongs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchJamStack = async () => {
-      if (!user?.id) return;
+    if (session?.user?.id) {
+      fetchJamStack();
+    }
+  }, [session?.user?.id]);
 
-      try {
-        const response = await fetch('/api/jamstack/get');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch JamStack');
-        }
+  const fetchJamStack = async () => {
+    try {
+      const res = await fetch(`/api/jamstack?user_id=${session.user.id}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setJamStackSongs(data);
+    } catch (error) {
+      toast.error('Failed to load Jam Stack');
+    }
+    setLoading(false);
+  };
 
-        const data = await response.json();
-        const loadedSongs = data.filter((s) => s?.audio_url);
-        setSongs(shuffleArray(loadedSongs));
-        setCurrentIndex(0);
-      } catch (error) {
-        console.error('❌ Error fetching JamStack:', error.message);
-      }
-    };
+  const handleDeleteJam = async (songId) => {
+    try {
+      const res = await fetch(`/api/jamstack/${songId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: session.user.id }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setJamStackSongs((prev) => prev.filter((s) => s.id !== songId));
+      toast.success('Removed from Jam Stack!');
+    } catch (error) {
+      toast.error('Failed to remove');
+    }
+  };
 
-    fetchJamStack();
-  }, [user?.id]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || !songs[currentIndex]?.audio_url) return;
-
-    audio.pause();
-    audio.load();
-    audio.play().catch(() => {});
-
-    const handleEnded = () => {
-      setCurrentIndex((prev) => (prev + 1) % songs.length);
-    };
-
-    audio.addEventListener('ended', handleEnded);
-    return () => audio.removeEventListener('ended', handleEnded);
-  }, [currentIndex, songs]);
-
-  if (!songs.length) {
-    return (
-      <div className="text-white text-center mt-10">
-        No songs in your JamStack yet.
-        <br />
-        Go add some from Swipe or Charts!
-      </div>
-    );
-  }
-
-  const currentSong = songs[currentIndex];
-  const upcoming = [
-    songs[(currentIndex + 1) % songs.length],
-    songs[(currentIndex + 2) % songs.length],
-    songs[(currentIndex + 3) % songs.length],
-  ];
+  if (loading) return <p>Loading Jam Stack...</p>;
+  if (!session) return <p>Login required</p>;
 
   return (
-    <div className="p-4 max-w-xl mx-auto">
-      <SongCard
-        song={currentSong}
-        user={user}
-        audioRef={audioRef}
-        autoPlay
-        key={currentSong.id}
-      />
-
-      <div className="flex justify-center mt-4">
-        <button
-          onClick={() => setCurrentIndex((prev) => (prev + 1) % songs.length)}
-          className="px-4 py-2 text-white rounded hover:shadow-md transition"
-          style={{ backgroundColor: '#3FD6CD', '--tw-bg-opacity': 1 }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#2CB9B0')}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#3FD6CD')}
-        >
-          🎵 Next Song 🎵
-        </button>
-      </div>
-
-      {songs.length > 1 && (
-        <div className="mt-8 bg-black/80 p-4 rounded-xl shadow-inner">
-          <div className="text-sm text-gray-300 text-center mb-2">Up Next</div>
-          <div className="space-y-2">
-            {upcoming.map((song, offset) => (
-              <div
-                key={song?.id || offset}
-                onClick={() => setCurrentIndex((currentIndex + offset + 1) % songs.length)}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-800 cursor-pointer transition"
-              >
-                <img
-                  src={song?.cover_url || '/default-cover.png'}
-                  alt="cover"
-                  className="w-12 h-12 object-cover rounded shadow ring-2 ring-[#00CEC8]"
-                />
-                <div className="text-white text-sm">
-                  <div className="font-medium">{song?.title || 'Untitled'}</div>
-                  {song?.artist && (
-                    <div className="text-xs text-gray-400">by {song.artist}</div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+    <div className="p-4 min-h-screen">
+      <h1 className="text-2xl font-bold mb-4 text-center" style={{ color: '#3FD6CD' }}>My Jam Stack</h1>
+      {jamStackSongs.length === 0 ? (
+        <p className="text-center text-gray-500">No songs in your Jam Stack yet.</p>
+      ) : (
+        jamStackSongs.map((song) => (
+          <SongCard
+            key={song.id}
+            song={song}
+            user={session.user}
+            onDelete={() => handleDeleteJam(song.id)}
+          />
+        ))
       )}
     </div>
   );
 };
 
-export default StackerScreen;
+export default JamStackScreen;
