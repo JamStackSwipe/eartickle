@@ -46,7 +46,7 @@ const JamStackScreen = () => {
   // Audio client-side only
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const audio = new Audio('/sounds/jam.mp3'); // Your sound file
+      const audio = new Audio('/sounds/jam.mp3'); // Your sound
       audio.play().catch(console.warn);
     }
   }, []);
