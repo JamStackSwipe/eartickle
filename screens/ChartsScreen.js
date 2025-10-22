@@ -1,88 +1,57 @@
-// src/screens/ChartsScreen.js
-import React, { useEffect, useState } from 'react';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import SongCard from '../components/SongCard';
-import { useUser } from '../components/AuthProvider';
-
-const FILTER_OPTIONS = [
-  { key: 'views', label: '🔥 Top' },
-  { key: 'loves', label: '❤️ Loved' },
-  { key: 'fires', label: '🔥 Fire' },
-  { key: 'bullseyes', label: '🎯 Bullseye' },
-  { key: 'sads', label: '😢 Sad' },
-  { key: 'jams', label: '📥 Jammed' },
-  { key: 'tickles', label: '🎁 Tickled' }
-];
-
-const emojiMap = {
-  views: '🔥',
-  loves: '❤️',
-  fires: '🔥',
-  bullseyes: '🎯',
-  sads: '😢',
-  jams: '📥',
-  tickles: '🎁'
-};
+import toast from 'react-hot-toast';
 
 const ChartsScreen = () => {
-  const { user } = useUser();
+  const { data: session } = useSession();
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('views');
 
   useEffect(() => {
-    const fetchChartSongs = async () => {
-      setLoading(true);
-      
-      try {
-        const response = await fetch(`/api/charts/top?filter=${filter}&limit=20`);
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch chart songs');
-        }
-        
-        const data = await response.json();
-        setSongs(data);
-      } catch (error) {
-        console.error('Error fetching chart songs:', error.message);
-        setSongs([]);
-      }
-      
-      setLoading(false);
-    };
+    if (session?.user?.id) {
+      fetchCharts();
+    }
+  }, [session?.user?.id]);
 
-    fetchChartSongs();
-  }, [filter]);
+  const fetchCharts = async () => {
+    try {
+      const res = await fetch('/api/charts/top?limit=20');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSongs(data);
+    } catch (error) {
+      toast.error('Failed to load charts');
+    }
+    setLoading(false);
+  };
+
+  // Audio client-side only
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const audio = new Audio('/sounds/chart.mp3'); // Or your chart sound
+      audio.play().catch(console.warn);
+    }
+  }, []);
+
+  if (loading) return <p>Loading charts...</p>;
+  if (!session) return <p>Login required</p>;
 
   return (
-    <div className="p-4 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6 text-zinc-900 text-center">
-        {emojiMap[filter]} {filter.charAt(0).toUpperCase() + filter.slice(1)} Top 20 Chart
-      </h1>
-
-      <div className="flex flex-wrap justify-center gap-2 mb-4">
-        {FILTER_OPTIONS.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`px-3 py-1 text-sm rounded-full font-semibold transition-colors duration-150 ${
-              filter === f.key
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-800 dark:bg-zinc-700 dark:text-white'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="text-center text-white">Loading songs...</div>
+    <div className="p-4 min-h-screen">
+      <h1 className="text-2xl font-bold mb-4 text-center" style={{ color: '#3FD6CD' }}>Top Charts</h1>
+      {songs.length === 0 ? (
+        <p className="text-center text-gray-500">No charts yet.</p>
       ) : (
-        <div className="space-y-6">
-          {songs.map((song, index) => (
-            <SongCard key={song.id} song={song} user={user} rank={index + 1} filter={filter} />
-          ))}
-        </div>
+        songs.map((song, index) => (
+          <SongCard
+            key={song.id}
+            song={{ ...song, rank: index + 1 }}
+            user={session.user}
+          />
+        ))
       )}
     </div>
   );
