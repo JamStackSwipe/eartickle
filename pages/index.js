@@ -1,25 +1,15 @@
+import Header from '../src/components/Header'
+import Footer from '../src/components/Footer'
+import HomePage from '../src/screens/HomePage'
 
 export default function Home() {
   return (
-    <div style={{ 
-      padding: '40px', 
-      textAlign: 'center',
-      fontFamily: 'sans-serif'
-    }}>
-      <h1>🎵 Ear Tickle</h1>
-      <p>Migration Test Page</p>
-      <p>✅ Next.js is working!</p>
-      <p>✅ Database connected</p>
-      <p>✅ Storage connected</p>
-      <a 
-        href="/api/test" 
-        style={{ 
-          color: 'blue', 
-          textDecoration: 'underline' 
-        }}
-      >
-        Test API Connection →
-      </a>
+    <div className="app flex flex-col min-h-screen">
+      <Header />
+      <main className="main-content flex-grow">
+        <HomePage />
+      </main>
+      <Footer />
     </div>
   )
 }
