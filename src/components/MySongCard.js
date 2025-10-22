@@ -1,10 +1,12 @@
+// components/MySongCard.js – Next.js migrated (App Router ready; Supabase → Neon API fetches)
+'use client'; // Client-side for state/effects; if server-only bits, split
+
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/router';
-import { supabase } from '../supabase';
+import { useRouter } from 'next/navigation'; // App Router; swap to 'next/router' for Pages
 import toast from 'react-hot-toast';
 import ReactionStatsBar from './ReactionStatsBar';
 import BoostTickles from './BoostTickles';
-import { genreFlavorMap } from '../utils/genreList';
+import { genreFlavorMap } from '../utils/genreList'; // Assume utils/ in app root
 
 const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle, showStripeButton }) => {
   const router = useRouter();
@@ -25,11 +27,9 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
   const [title, setTitle] = useState(song.title);
   const [editingGenre, setEditingGenre] = useState(false);
   const [newGenre, setNewGenre] = useState(song.genre_flavor || '');
-
   const audioRef = useRef(null);
   const cardRef = useRef(null);
   const [isVisible, setIsVisible] = useState(false);
-
   const flavor = genreFlavorMap[song.genre_flavor] || null;
   const ringClass = flavor ? `ring-4 ring-${flavor.color}-500` : '';
   const glowColor = flavor ? flavor.color : 'white';
@@ -67,110 +67,122 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
 
   useEffect(() => {
     const fetchStatsAndReactions = async () => {
-      const [emojiStats, reactionFlags] = await Promise.all([
-        supabase
-          .from('songs')
-          .select('fires, loves, sads, bullseyes, jams')
-          .eq('id', song.id)
-          .single(),
-        user
-          ? supabase
-              .from('reactions')
-              .select('emoji')
-              .eq('user_id', user.id)
-              .eq('song_id', song.id)
-          : { data: [] },
-      ]);
+      try {
+        const [emojiStatsRes, reactionFlagsRes] = await Promise.all([
+          fetch(`/api/songs/${song.id}/stats`), // Neon query: SELECT fires, loves, etc. FROM songs WHERE id = ?
+          user ? fetch(`/api/reactions?user_id=${user.id}&song_id=${song.id}`) : Promise.resolve({ ok: false }),
+        ]);
 
-      if (emojiStats.data) {
-        setLocalReactions({
-          fires: stats.fires || emojiStats.data.fires || 0,
-          loves: stats.loves || emojiStats.data.loves || 0,
-          sads: stats.sads || emojiStats.data.sads || 0,
-          bullseyes: stats.bullseyes || emojiStats.data.bullseyes || 0,
-        });
-        setJamsCount(stats.jam_saves || emojiStats.data.jams || 0);
-      }
+        let emojiStats = { data: null };
+        if (emojiStatsRes.ok) emojiStats = await emojiStatsRes.json();
 
-      if (reactionFlags.data) {
-        const flags = {};
-        for (const r of reactionFlags.data) {
-          const key = emojiToStatKey(emojiToSymbol(r.emoji));
-          flags[key] = true;
+        let reactionFlags = { data: [] };
+        if (user && reactionFlagsRes.ok) reactionFlags = await reactionFlagsRes.json();
+
+        if (emojiStats.data) {
+          setLocalReactions({
+            fires: stats.fires || emojiStats.data.fires || 0,
+            loves: stats.loves || emojiStats.data.loves || 0,
+            sads: stats.sads || emojiStats.data.sads || 0,
+            bullseyes: stats.bullseyes || emojiStats.data.bullseyes || 0,
+          });
+          setJamsCount(stats.jam_saves || emojiStats.data.jams || 0);
         }
-        setHasReacted(flags);
+
+        if (reactionFlags.data?.length > 0) {
+          const flags = {};
+          for (const r of reactionFlags.data) {
+            const key = emojiToStatKey(emojiToSymbol(r.emoji));
+            flags[key] = true;
+          }
+          setHasReacted(flags);
+        }
+      } catch (error) {
+        console.error('❌ Fetch stats/reactions error:', error);
       }
     };
-
     fetchStatsAndReactions();
   }, [user, song.id, stats]);
 
   const incrementViews = async () => {
-    await supabase.rpc('increment_song_view', { song_id_input: song.id });
+    try {
+      await fetch(`/api/songs/${song.id}/increment-view`, { method: 'POST' }); // Neon RPC equiv: UPDATE songs SET views = views + 1
+    } catch (error) {
+      console.error('❌ View increment failed:', error);
+    }
   };
 
   const handleReaction = async (emoji) => {
     if (!user) return toast.error('Please sign in to react.');
-
     const statKey = emojiToStatKey(emoji);
     if (hasReacted[statKey]) {
       toast('You already reacted with this emoji.');
       return;
     }
-
-    const { error } = await supabase.from('reactions').insert([
-      {
-        user_id: user.id,
-        song_id: song.id,
-        emoji: emojiToDbValue(emoji),
-      },
-    ]);
-
-    if (!error) {
-      toast.success(`You reacted with ${emoji}`);
-      setLocalReactions((prev) => ({
-        ...prev,
-        [statKey]: (prev[statKey] || 0) + 1,
-      }));
-      setHasReacted((prev) => ({
-        ...prev,
-        [statKey]: true,
-      }));
-    } else {
+    try {
+      const res = await fetch('/api/reactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          song_id: song.id,
+          emoji: emojiToDbValue(emoji),
+        }),
+      });
+      if (res.ok) {
+        toast.success(`You reacted with ${emoji}`);
+        setLocalReactions((prev) => ({
+          ...prev,
+          [statKey]: (prev[statKey] || 0) + 1,
+        }));
+        setHasReacted((prev) => ({
+          ...prev,
+          [statKey]: true,
+        }));
+      } else {
+        toast.error('Failed to react.');
+      }
+    } catch (error) {
       toast.error('Failed to react.');
+      console.error('Reaction error:', error);
     }
   };
 
   const handleTitleSave = async () => {
     if (!editableTitle || user?.id !== song.artist_id) return;
-    const { error } = await supabase
-      .from('songs')
-      .update({ title })
-      .eq('id', song.id)
-      .eq('user_id', user.id);
-
-    if (error) {
+    try {
+      const res = await fetch(`/api/songs/${song.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      });
+      if (res.ok) {
+        toast.success('Title updated!');
+        setEditingTitle(false);
+      } else {
+        toast.error('Failed to update title.');
+      }
+    } catch (error) {
       toast.error('Failed to update title.');
-    } else {
-      toast.success('Title updated!');
-      setEditingTitle(false);
     }
   };
 
   const handleDelete = async () => {
     const confirm = window.confirm('Are you sure you want to delete this song?');
     if (!confirm) return;
-
-    const { error } = await supabase
-      .from('songs')
-      .delete()
-      .eq('id', song.id)
-      .eq('user_id', user.id);
-
-    if (!error) {
-      toast.success('Song deleted');
-      if (onDelete) onDelete(song.id);
-    } else {
+    try {
+      const res = await fetch(`/api/songs/${song.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id }),
+      });
+      if (res.ok) {
+        toast.success('Song deleted');
+        if (onDelete) onDelete(song.id);
+      } else {
+        toast.error('Error deleting song');
+      }
+    } catch (error) {
       toast.error('Error deleting song');
     }
   };
@@ -178,32 +190,47 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
   const toggleDraftPublish = async () => {
     if (!user || user.id !== song.artist_id) return;
     const newDraftStatus = !song.is_draft;
-    const { error } = await supabase
-      .from('songs')
-      .update({ is_draft: newDraftStatus })
-      .eq('id', song.id)
-      .eq('user_id', user.id);
-
-    if (error) {
+    try {
+      const res = await fetch(`/api/songs/${song.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_draft: newDraftStatus }),
+      });
+      if (res.ok) {
+        toast.success(`Song ${newDraftStatus ? 'set as draft' : 'published'}!`);
+        if (onPublish && !newDraftStatus) onPublish(song.id);
+      } else {
+        toast.error(`Failed to ${newDraftStatus ? 'set as draft' : 'publish'}`);
+      }
+    } catch (error) {
       toast.error(`Failed to ${newDraftStatus ? 'set as draft' : 'publish'}`);
-    } else {
-      toast.success(`Song ${newDraftStatus ? 'set as draft' : 'published'}!`);
-      if (onPublish && !newDraftStatus) onPublish(song.id);
     }
   };
 
   const handleSaveGenre = async () => {
     if (newGenre !== song.genre_flavor && user?.id === song.artist_id) {
-      const { error } = await supabase.from('songs').update({ genre_flavor: newGenre }).eq('id', song.id);
-      if (error) toast.error('Failed to update genre.');
-      else { toast.success('Genre updated!'); setEditingGenre(false); }
+      try {
+        const res = await fetch(`/api/songs/${song.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ genre_flavor: newGenre }),
+        });
+        if (res.ok) {
+          toast.success('Genre updated!');
+          setEditingGenre(false);
+        } else {
+          toast.error('Failed to update genre.');
+        }
+      } catch (error) {
+        toast.error('Failed to update genre.');
+      }
     }
   };
 
   const handleArtistClick = (e) => {
     e.preventDefault();
     incrementViews().finally(() => {
-      router.push(`/artist/${song.artist_id}`);
+      router.push(`/artist/${song.artist_id}`); // Next.js SPA nav; fixes window.location reloads
     });
   };
 
@@ -211,14 +238,11 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
     <div
       ref={cardRef}
       data-song-id={song.id}
-      className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${flavor ? 'hover:animate-genre-pulse' : ''}`}
+      className={`bg-zinc-900 text-white w-full max-w-md mx-auto mb-10 p-4 rounded-xl shadow-md transition-all ${flavor ? 'hover:animate-genre-pulse' : ''} ${ringClass}`}
       style={flavor ? { boxShadow: `0 0 15px ${getGlowColor(flavor.color)}` } : {}}
     >
       <div className="relative">
-        
-          href={`/artist/${song.artist_id}`}
-          onClick={handleArtistClick}
-        >
+        <a href={`/artist/${song.artist_id}`} onClick={handleArtistClick} className="block">
           <img
             src={song.cover}
             alt={song.title}
@@ -253,7 +277,6 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
           </button>
         )}
       </div>
-
       {editableTitle && user?.id === song.artist_id && editingTitle ? (
         <div className="mb-2">
           <input
@@ -289,40 +312,47 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
         </h2>
       )}
       <p className="bg-gray-800 text-white">by {song.artist}</p>
-
       {user?.id === song.artist_id && (
         <div className="mb-2">
           {editingGenre ? (
             <div>
               <select value={newGenre} onChange={(e) => setNewGenre(e.target.value)} className="p-1 border rounded">
-                {Object.keys(genreFlavorMap).map(genre => (
-                  <option key={genre} value={genre}>{genreFlavorMap[genre].label}</option>
+                {Object.keys(genreFlavorMap).map((genre) => (
+                  <option key={genre} value={genre}>
+                    {genreFlavorMap[genre].label}
+                  </option>
                 ))}
               </select>
-              <button onClick={handleSaveGenre} className="ml-2 p-1 bg-blue-500 text-white rounded">Save</button>
-              <button onClick={() => setEditingGenre(false)} className="ml-1 p-1 bg-gray-500 text-white rounded">Cancel</button>
+              <button onClick={handleSaveGenre} className="ml-2 p-1 bg-blue-500 text-white rounded">
+                Save
+              </button>
+              <button
+                onClick={() => setEditingGenre(false)}
+                className="ml-1 p-1 bg-gray-500 text-white rounded"
+              >
+                Cancel
+              </button>
             </div>
           ) : (
-            <button onClick={() => setEditingGenre(true)} className="p-1 bg-green-500 text-white rounded">Edit Genre</button>
+            <button onClick={() => setEditingGenre(true)} className="p-1 bg-green-500 text-white rounded">
+              Edit Genre
+            </button>
           )}
         </div>
       )}
-
       {user && (
         <div className="mt-3 flex justify-center">
           <BoostTickles songId={song.id} userId={user.id} artistId={song.artist_id} />
         </div>
       )}
-
       <audio ref={audioRef} src={song.audio} controls className="w-full mb-3 mt-2" />
-
       <ReactionStatsBar song={{ ...song, user_id: song.artist_id }} />
       {/* Note on 2025-06-06: "Add to Jam Stack" functionality was moved to ReactionStatsBar.js for better mobile layout. */}
     </div>
   );
 };
 
-// Helper Functions
+// Helper Functions (keep outside for reuse; or hoist if tree-shaking)
 const emojiToStatKey = (emoji) => {
   switch (emoji) {
     case '🔥': return 'fires';
