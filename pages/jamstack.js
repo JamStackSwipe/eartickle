@@ -1,6 +1,6 @@
-import Header from '../src/components/Header'
-import Footer from '../src/components/Footer'
-import JamStackScreen from '../src/screens/JamStackScreen'
+import Header from '../components/Header'
+import Footer from '../components/Footer'
+import JamStackScreen from '../screens/JamStackScreen'
 
 export default function JamStack() {
   return (
