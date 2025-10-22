@@ -1,10 +1,10 @@
+// pages/api/debug-env.js
 export default function handler(req, res) {
-  const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-  const supabaseKey = process.env.REACT_APP_SUPABASE_KEY;
-
   res.status(200).json({
-    supabaseUrl: supabaseUrl || 'undefined',
-    supabaseKey: supabaseKey ? 'Set (hidden for security)' : 'undefined',
-    timestamp: new Date().toISOString() // To confirm fresh response
+    postgres: process.env.POSTGRES_URL ? 'Connected ✅' : 'Not configured ❌',
+    blob: process.env.BLOB_READ_WRITE_TOKEN ? 'Connected ✅' : 'Not configured ❌',
+    stripe: process.env.STRIPE_SECRET_KEY ? 'Connected ✅' : 'Not configured ❌',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString()
   });
 }
