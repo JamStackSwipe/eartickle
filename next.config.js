@@ -1,3 +1,4 @@
+// Force fresh build - no cache
 module.exports = {
   reactStrictMode: true,
   images: {
