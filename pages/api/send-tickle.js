@@ -1,7 +1,7 @@
 // pages/api/send-tickle.js – Neon migration + NextAuth (fixed import path)
 import { neon } from '@neondatabase/serverless';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from './auth/[...nextauth]'; // Fixed: ./auth for subfolder
+import { authOptions } from './auth/[...nextauth]';
 
 const sql = neon(process.env.DATABASE_URL);
 
