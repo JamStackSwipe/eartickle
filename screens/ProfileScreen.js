@@ -225,11 +225,13 @@ const ProfileScreen = () => {
                 autoFocus
               />
               <div className="flex gap-2 mt-3">
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() =>
+               <button
+  onClick={() => {
+    setEditingTitle(false);
+    setTitle(song.title);
+  }}
+  className="text-sm text-gray-400 mt-1 ml-2"
+  aria-label="Cancel edit"
+>
+  Cancel
+</button>
