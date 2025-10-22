@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 const HomePage = () => {
   return (
@@ -10,7 +10,7 @@ const HomePage = () => {
         <p className="text-lg text-gray-300 mb-6">
           Discover your next favorite artist — and help them rise.
         </p>
-        <Link to="/auth" className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-full">
+        <Link href="/login" className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-full">
           Get Started
         </Link>
       </section>
@@ -46,7 +46,7 @@ const HomePage = () => {
       <section className="py-20 px-6 bg-gradient-to-b from-black to-gray-900 text-center">
         <h2 className="text-2xl font-bold mb-4">No ads. Just good music and real connections.</h2>
         <p className="text-gray-400 mb-8">EarTickle is where music meets momentum.</p>
-        <Link to="/auth" className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-full">
+        <Link href="/login" className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-8 rounded-full">
           Join the Movement
         </Link>
       </section>
@@ -55,9 +55,9 @@ const HomePage = () => {
       <footer className="text-center text-sm text-gray-500 py-6 bg-black border-t border-gray-800">
         <div className="mb-2">© {new Date().getFullYear()} EarTickle™</div>
         <div className="space-x-4">
-          <Link to="/privacy" className="hover:underline">Privacy</Link>
-          <Link to="/terms" className="hover:underline">Terms</Link>
-          <Link to="/about" className="hover:underline">About</Link>
+          <Link href="/privacy" className="hover:underline">Privacy</Link>
+          <Link href="/terms" className="hover:underline">Terms</Link>
+          <Link href="/about" className="hover:underline">About</Link>
           <a href="https://github.com/JamStackSwipe/eartickle" target="_blank" rel="noopener noreferrer" className="hover:underline">GitHub</a>
         </div>
       </footer>
