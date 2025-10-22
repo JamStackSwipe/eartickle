@@ -1,15 +1,13 @@
-// /api/create-stripe-session.js
-const Stripe = require('stripe');
-const { createClient } = require('@supabase/supabase-js');
+// pages/api/create-stripe-session.js
+import Stripe from 'stripe';
+import { sql } from '@vercel/postgres';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
 
-module.exports = async (req, res) => {
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
   const { user_id, amount } = req.body;
 
@@ -18,6 +16,7 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{
@@ -34,19 +33,15 @@ module.exports = async (req, res) => {
       metadata: { user_id, amount }
     });
 
-    await supabase.from('tickle_purchases').insert([
-      {
-        buyer_id: user_id,
-        amount,
-        stripe_session_id: session.id,
-        completed: false
-      }
-    ]);
+    // Record the purchase attempt
+    await sql`
+      INSERT INTO tickle_transactions (sender_id, receiver_id, amount, stripe_payment_id)
+      VALUES (${user_id}, ${user_id}, ${amount}, ${session.id})
+    `;
 
     res.status(200).json({ url: session.url });
-
   } catch (error) {
     console.error('❌ Stripe session error:', error.message);
     res.status(500).json({ error: 'Failed to create session' });
   }
-};
+}
