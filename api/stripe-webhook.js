@@ -1,17 +1,17 @@
+// pages/api/stripe-webhook.js
 import Stripe from 'stripe';
 import { buffer } from 'micro';
-import { createClient } from '@supabase/supabase-js';
+import { sql } from '@vercel/postgres';
 
-export const config = { api: { bodyParser: false } };
+export const config = { 
+  api: { 
+    bodyParser: false 
+  } 
+};
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2023-10-16',
 });
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // ✅ Needs service role to insert/update
-);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -23,7 +23,11 @@ export default async function handler(req, res) {
 
   try {
     const rawBody = await buffer(req);
-    event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    event = stripe.webhooks.constructEvent(
+      rawBody, 
+      sig, 
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
   } catch (err) {
     console.error('❌ Webhook signature failed:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -31,7 +35,7 @@ export default async function handler(req, res) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const { user_id, amount } = session.metadata || {};
+    const { user_id, amount, songId, artistId, senderId } = session.metadata || {};
     const parsedAmount = parseInt(amount, 10);
 
     console.log('✅ Stripe Webhook: Payment complete');
@@ -44,32 +48,38 @@ export default async function handler(req, res) {
       return res.status(400).send('Invalid metadata');
     }
 
-    // ✅ Check for duplicate session ID
-    const { data: existing } = await supabase
-      .from('tickle_purchases')
-      .select('id')
-      .eq('stripe_session_id', session.id)
-      .maybeSingle();
+    try {
+      // Check for duplicate session ID
+      const { rows: existing } = await sql`
+        SELECT id 
+        FROM tickle_transactions 
+        WHERE stripe_payment_id = ${session.id}
+      `;
 
-    if (existing) {
-      console.warn('⚠️ Duplicate Stripe session detected. Skipping insert.');
-      return res.status(200).json({ received: true, duplicate: true });
+      if (existing.length > 0) {
+        console.warn('⚠️ Duplicate Stripe session detected. Skipping insert.');
+        return res.status(200).json({ received: true, duplicate: true });
+      }
+
+      // Add tickles to user's balance
+      await sql`
+        UPDATE profiles 
+        SET tickle_balance = tickle_balance + ${parsedAmount}
+        WHERE id = ${user_id}
+      `;
+
+      // Record the purchase transaction
+      await sql`
+        INSERT INTO tickle_transactions (sender_id, receiver_id, amount, stripe_payment_id)
+        VALUES (${user_id}, ${user_id}, ${parsedAmount}, ${session.id})
+      `;
+
+      console.log('✅ Tickle purchase recorded and balance updated.');
+
+    } catch (error) {
+      console.error('❌ Failed to process tickle purchase:', error.message);
+      return res.status(500).send('Database operation failed');
     }
-
-    // ✅ Insert new tickle purchase
-    const { error } = await supabase.from('tickle_purchases').insert([{
-      buyer_id: user_id,
-      amount: parsedAmount,
-      completed: true,
-      stripe_session_id: session.id,
-    }]);
-
-    if (error) {
-      console.error('❌ Failed to insert tickle purchase:', error.message);
-      return res.status(500).send('Database insert failed');
-    }
-
-    console.log('✅ Tickle purchase recorded.');
   }
 
   return res.status(200).json({ received: true });
