@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../supabase';
+// screens/SettingsScreen.js – Neon migration (NextAuth + fetch API)
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import ConnectStripeButton from '../components/ConnectStripeButton';
 import toast from 'react-hot-toast';
 
@@ -14,7 +16,8 @@ const genreFlavors = [
 ];
 
 const SettingsScreen = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
+  const { data: session } = useSession();
   const [userId, setUserId] = useState(null);
   const [userEmail, setUserEmail] = useState(null);
   const [selectedGenres, setSelectedGenres] = useState([]);
@@ -22,63 +25,46 @@ const SettingsScreen = () => {
   const [songs, setSongs] = useState([]);
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const { data, error } = await supabase.auth.getUser();
-        if (error) throw error;
-        if (data?.user) {
-          const { id, email } = data.user;
-          setUserId(id);
-          setUserEmail(email);
-          fetchPreferences(id);
-          fetchSentTickles(id);
-          fetchSongs(id);
-        }
-      } catch (error) {
-        console.error('❌ Error fetching user:', error);
-        toast.error('Failed to load user data');
-      }
-    };
-    fetchUser();
-  }, []);
+    if (session?.user) {
+      const { id, email } = session.user;
+      setUserId(id);
+      setUserEmail(email);
+      fetchPreferences(id);
+      fetchSentTickles(id);
+      fetchSongs(id);
+    }
+  }, [session]);
 
   const fetchPreferences = async (uid) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('preferred_genres')
-        .eq('id', uid)
-        .maybeSingle();
-      if (error) throw error;
-      if (data?.preferred_genres) setSelectedGenres(data.preferred_genres);
+      const res = await fetch(`/api/profiles/${uid}/preferences`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSelectedGenres(data.preferred_genres || []);
     } catch (error) {
-      console.error('❌ Error fetching preferences:', error);
+      console.error('Preferences error:', error);
     }
   };
 
   const fetchSentTickles = async (uid) => {
     try {
-      const { data, error } = await supabase
-        .from('tickles')
-        .select('song_id')
-        .eq('user_id', uid);
-      if (error) throw error;
+      const res = await fetch(`/api/tickles?user_id=${uid}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
       setSentTickles(data || []);
     } catch (error) {
-      console.error('❌ Error fetching sent tickles:', error);
+      console.error('Sent tickles error:', error);
     }
   };
 
   const fetchSongs = async (uid) => {
     try {
-      const { data, error } = await supabase
-        .from('songs')
-        .select('id')
-        .eq('user_id', uid);
-      if (error) throw error;
+      const res = await fetch(`/api/songs?user_id=${uid}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
       setSongs(data || []);
     } catch (error) {
-      console.error('❌ Error fetching songs:', error);
+      console.error('Songs error:', error);
     }
   };
 
@@ -92,43 +78,43 @@ const SettingsScreen = () => {
 
   const saveGenres = async () => {
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ preferred_genres: selectedGenres })
-        .eq('id', userId);
-      if (error) throw error;
+      const res = await fetch(`/api/profiles/${userId}/preferences`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preferred_genres: selectedGenres }),
+      });
+      if (!res.ok) throw new Error(await res.text());
       toast.success('Genre Flavors saved!');
     } catch (error) {
-      console.error('❌ Error saving genres:', error);
       toast.error('Failed to save genres');
     }
   };
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      const res = await fetch('/api/auth/logout', { method: 'POST' });
+      if (!res.ok) throw new Error(await res.text());
       toast.success('Logged out successfully');
-      navigate('/');
+      router.push('/');
     } catch (error) {
-      console.error('❌ Logout error:', error);
-      toast.error('Failed to log out: ' + error.message);
+      toast.error('Failed to log out');
     }
   };
 
   const handleDeleteAccount = async () => {
     const confirmed = window.confirm('Are you sure you want to permanently delete your account?');
     if (!confirmed) return;
-
     try {
-      const { error } = await supabase.rpc('delete_user');
-      if (error) throw error;
-      await supabase.auth.signOut();
+      const res = await fetch('/api/users/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId }),
+      });
+      if (!res.ok) throw new Error(await res.text());
       toast.success('Account deleted successfully');
-      navigate('/');
+      router.push('/');
     } catch (error) {
-      console.error('❌ Delete account error:', error);
-      toast.error('Error deleting account: ' + error.message);
+      toast.error('Error deleting account');
     }
   };
 
@@ -138,21 +124,23 @@ const SettingsScreen = () => {
       return;
     }
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
-        redirectTo: `${window.location.origin}/profile`,
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: userEmail }),
       });
-      if (error) throw error;
+      if (!res.ok) throw new Error(await res.text());
       toast.success('Password reset link sent to your email');
     } catch (error) {
-      console.error('❌ Password reset error:', error);
-      toast.error('Error sending password reset: ' + error.message);
+      toast.error('Error sending password reset');
     }
   };
+
+  if (!session) return <div>Login required</div>;
 
   return (
     <div className="p-6 max-w-2xl mx-auto bg-gradient-to-b from-gray-100 to-gray-200 min-h-screen">
       <h1 className="text-3xl font-bold text-[#3FD6CD] mb-6 text-center">Settings</h1>
-
       <div className="bg-white rounded-2xl shadow-lg p-6 space-y-6">
         {userId && (
           <div className="bg-gray-50 text-sm p-4 rounded-lg text-gray-800">
@@ -160,7 +148,6 @@ const SettingsScreen = () => {
             <code className="block break-all mt-1">{userId}</code>
           </div>
         )}
-
         <div className="space-y-3">
           <button
             onClick={handlePasswordReset}
@@ -187,9 +174,7 @@ const SettingsScreen = () => {
             🚪 Logout
           </button>
         </div>
-
         <hr className="my-6 border-t border-[#3FD6CD]" />
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">🎵 Favorite Genre Flavors</label>
           {genreFlavors.length === 0 ? (
@@ -223,9 +208,7 @@ const SettingsScreen = () => {
             </>
           )}
         </div>
-
         <hr className="my-6 border-t border-[#3FD6CD]" />
-
         {songs?.length > 0 && (
           <div>
             <h2 className="text-lg font-semibold text-[#3FD6CD] mb-3">💸 Artist Payments</h2>
@@ -235,7 +218,6 @@ const SettingsScreen = () => {
             <ConnectStripeButton userId={userId} email={userEmail} />
           </div>
         )}
-
         <div>
           <p className="text-sm text-gray-600 mb-2">Want to share your artist profile?</p>
           <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg p-2">
