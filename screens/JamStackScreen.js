@@ -1,4 +1,5 @@
-'use client'; // Client-only to fix Audio SSR
+// screens/JamStackScreen.js – Full file with SSR Audio fix ('use client' + useEffect)
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
@@ -45,6 +46,14 @@ const JamStackScreen = () => {
 
   if (loading) return <p>Loading Jam Stack...</p>;
   if (!session) return <p>Login required</p>;
+
+  useEffect(() => {
+    // Audio client-side only
+    if (typeof window !== 'undefined') {
+      const audio = new Audio('/sounds/jam.mp3'); // Or your sound
+      audio.play().catch(console.warn);
+    }
+  }, []);
 
   return (
     <div className="p-4 min-h-screen">
