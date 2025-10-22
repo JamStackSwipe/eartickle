@@ -2,7 +2,7 @@
 import Stripe from 'stripe';
 import { neon } from '@neondatabase/serverless';
 import { getServerSession } from 'next-auth';
-import { authOptions } from './auth/[...nextauth]'; // Your NextAuth config
+import { authOptions } from './[...nextauth]';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const sql = neon(process.env.DATABASE_URL);
