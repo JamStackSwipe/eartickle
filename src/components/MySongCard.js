@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/router';
 import { supabase } from '../supabase';
 import toast from 'react-hot-toast';
 import ReactionStatsBar from './ReactionStatsBar';
@@ -6,6 +7,7 @@ import BoostTickles from './BoostTickles';
 import { genreFlavorMap } from '../utils/genreList';
 
 const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle, showStripeButton }) => {
+  const router = useRouter();
   const [localReactions, setLocalReactions] = useState({
     fires: stats.fires || song.fires || 0,
     loves: stats.loves || song.loves || 0,
@@ -186,7 +188,7 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
       toast.error(`Failed to ${newDraftStatus ? 'set as draft' : 'publish'}`);
     } else {
       toast.success(`Song ${newDraftStatus ? 'set as draft' : 'published'}!`);
-      if (onPublish && !newDraftStatus) onPublish(song.id); // Trigger publish callback
+      if (onPublish && !newDraftStatus) onPublish(song.id);
     }
   };
 
@@ -198,6 +200,13 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
     }
   };
 
+  const handleArtistClick = (e) => {
+    e.preventDefault();
+    incrementViews().finally(() => {
+      router.push(`/artist/${song.artist_id}`);
+    });
+  };
+
   return (
     <div
       ref={cardRef}
@@ -206,14 +215,9 @@ const MySongCard = ({ song, user, stats = {}, onDelete, onPublish, editableTitle
       style={flavor ? { boxShadow: `0 0 15px ${getGlowColor(flavor.color)}` } : {}}
     >
       <div className="relative">
-        <a
+        
           href={`/artist/${song.artist_id}`}
-          onClick={(e) => {
-            e.preventDefault();
-            incrementViews().finally(() => {
-              window.location.href = `/artist-${song.artist_id}`;
-            });
-          }}
+          onClick={handleArtistClick}
         >
           <img
             src={song.cover}
