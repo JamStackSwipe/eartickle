@@ -1,4 +1,4 @@
-// screens/ProfileScreen.js – Neon migration (NextAuth + fetch API)
+// screens/ProfileScreen.js – Neon migration (NextAuth + fetch API) – Fixed incomplete Cancel button
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -18,9 +18,7 @@ const socialIcons = {
 };
 
 const ProfileScreen = () => {
-  const { data: session } = useSession();
-  const { user, loading: authLoading } = useUser(); // From migrated AuthProvider
-  const fileInputRef = useRef();
+  const { data: session, status } = useSession();
   const [profile, setProfile] = useState({});
   const [songs, setSongs] = useState([]);
   const [jamStackSongs, setJamStackSongs] = useState([]);
@@ -28,9 +26,17 @@ const ProfileScreen = () => {
   const [editing, setEditing] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [showSocial, setShowSocial] = useState(false);
+  const [originalName, setOriginalName] = useState(''); // For cancel reset
+  const [originalBio, setOriginalBio] = useState(''); // For cancel reset
+  const fileInputRef = useRef();
+
+  const user = session?.user;
+  const authLoading = status === 'loading';
 
   useEffect(() => {
     if (user && !authLoading) {
+      setOriginalName(profile.display_name || '');
+      setOriginalBio(profile.bio || '');
       fetchProfile();
       fetchUploads();
       fetchJamStack();
@@ -110,6 +116,15 @@ const ProfileScreen = () => {
     } catch (error) {
       toast.error('Failed to save profile');
     }
+  };
+
+  const handleCancelEdit = () => {
+    if (editing === 'name') {
+      setProfile((prev) => ({ ...prev, display_name: originalName }));
+    } else if (editing === 'bio') {
+      setProfile((prev) => ({ ...prev, bio: originalBio }));
+    }
+    setEditing(null);
   };
 
   const handleAvatarChange = async (e) => {
@@ -225,13 +240,155 @@ const ProfileScreen = () => {
                 autoFocus
               />
               <div className="flex gap-2 mt-3">
-               <button
-  onClick={() => {
-    setEditingTitle(false);
-    setTitle(song.title);
-  }}
-  className="text-sm text-gray-400 mt-1 ml-2"
-  aria-label="Cancel edit"
->
-  Cancel
-</button>
+                <button
+                  onClick={handleSave}
+                  className="px-4 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  className="px-4 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2">
+              <h1 className="text-2xl font-bold text-gray-800">{profile.display_name || 'Unnamed Artist'}</h1>
+              <button
+                onClick={() => {
+                  setOriginalName(profile.display_name || '');
+                  setEditing('name');
+                }}
+                className="text-gray-500 hover:text-blue-500 transition"
+                aria-label="Edit display name"
+              >
+                ✏️
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="text-center max-w-md mx-auto mt-4 px-4">
+          {editing === 'bio' ? (
+            <div className="flex flex-col items-center">
+              <textarea
+                value={profile.bio || ''}
+                onChange={(e) => handleChange('bio', e.target.value)}
+                placeholder="Tell your story..."
+                rows={4}
+                className="w-full border rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-700 resize-none"
+                autoFocus
+              />
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={handleSave}
+                  className="px-4 py-1 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  className="px-4 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300 transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2 text-gray-600">
+              <p className="text-sm italic">{profile.bio || 'No bio yet. Click ✏️ to add one.'}</p>
+              <button
+                onClick={() => {
+                  setOriginalBio(profile.bio || '');
+                  setEditing('bio');
+                }}
+                className="text-gray-500 hover:text-blue-500 transition"
+                aria-label="Edit bio"
+              >
+                ✏️
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="text-center mt-6">
+          <button
+            onClick={() => setShowSocial(!showSocial)}
+            className="px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition"
+          >
+            {showSocial ? 'Hide Social Links' : 'Edit Social Links'}
+          </button>
+          {showSocial && (
+            <div className="mt-4 bg-white rounded-lg shadow p-4 max-w-md mx-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {Object.keys(socialIcons).map((field) => (
+                  <div key={field} className="flex flex-col text-sm">
+                    <label htmlFor={field} className="mb-1 text-gray-700 flex items-center gap-1 capitalize">
+                      <span>{socialIcons[field]}</span> {field}
+                    </label>
+                    <input
+                      id={field}
+                      value={profile[field] || ''}
+                      onChange={(e) => handleChange(field, e.target.value)}
+                      placeholder={`Your ${field} URL`}
+                      className="border border-gray-300 p-2 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-700"
+                    />
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={handleSave}
+                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-full text-sm hover:bg-blue-600 transition"
+              >
+                Save Social Links
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Uploads Section */}
+      {songs.length > 0 ? (
+        <div>
+          <h2 className="text-xl font-bold mb-4 text-center" style={{ color: '#3FD6CD' }}>📤 My Uploads</h2>
+          {songs.map((song) => (
+            <MySongCard
+              key={song.id}
+              song={{ ...song, artist: profile.display_name }}
+              user={user}
+              stats={tickleStats[song.id] || {}}
+              onDelete={() => handleDelete(song.id)}
+              onPublish={song.is_draft ? () => handlePublish(song.id) : undefined}
+              editableTitle
+              showStripeButton={!profile.stripe_account_id && !song.is_draft}
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="text-center text-gray-500">No uploads yet.</p>
+      )}
+      {/* Jam Stack Section */}
+      {jamStackSongs.length > 0 ? (
+        <div>
+          <hr className="my-6 border-t border-blue-500" />
+          <h2 className="text-xl font-bold mb-4 text-center" style={{ color: '#3FD6CD' }}>🎵 My Jam Stack</h2>
+          <hr className="mb-6 border-t border-blue-500" />
+          {jamStackSongs.map((song) => (
+            <MySongCard
+              key={song.id}
+              song={{ ...song, artist: song.artist || profile.display_name }}
+              user={user}
+              stats={tickleStats[song.id] || {}}
+              onDelete={() => handleDeleteJam(song.id)}
+            />
+          ))}
+        </div>
+      ) : (
+        <p className="text-center text-gray-500">No songs in your Jam Stack yet.</p>
+      )}
+      <Footer />
+    </div>
+  );
+};
+
+export default ProfileScreen;
