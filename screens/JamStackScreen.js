@@ -1,4 +1,5 @@
-'use client'; // Client-only to fix Audio SSR
+// screens/JamStackScreen.js – Full file with SSR Audio fix
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
@@ -46,7 +47,7 @@ const JamStackScreen = () => {
   // Audio client-side only
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const audio = new Audio('/sounds/jam.mp3'); // Your sound
+      const audio = new Audio('/sounds/jam.mp3');
       audio.play().catch(console.warn);
     }
   }, []);
