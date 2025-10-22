@@ -3,7 +3,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation'; // Replaces useNavigate
-import { supabase } from '../supabase'; // Temp; migrate fetches to /api/song/[id]/reactions etc.
 import { useUser } from './AuthProvider'; // Or useSession from next-auth
 import { playTickle } from '../utils/tickleSound';
 import toast from 'react-hot-toast';
