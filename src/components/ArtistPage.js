@@ -10,8 +10,11 @@ const ArtistPage = ({ id }) => {
 
   useEffect(() => {
     const fetchArtistData = async () => {
+      if (!id) return; // Wait for ID to be available
+      
       try {
         console.log('ArtistPage: Fetching artist with ID:', id);
+        
         // Fetch the artist profile
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -59,7 +62,6 @@ const ArtistPage = ({ id }) => {
         />
         <h1 className="artist-name">{artist.display_name}</h1>
         <p className="artist-bio">{artist.bio || 'No bio available.'}</p>
-
         {artist.website || artist.spotify || artist.youtube || artist.instagram || artist.soundcloud || artist.tiktok || artist.bandlab ? (
           <div className="artist-links">
             {artist.website && <a href={artist.website} target="_blank" rel="noopener noreferrer">Website</a>}
@@ -71,14 +73,12 @@ const ArtistPage = ({ id }) => {
             {artist.bandlab && <a href={artist.bandlab} target="_blank" rel="noopener noreferrer">BandLab</a>}
           </div>
         ) : null}
-
         {artist.booking_email && (
           <a href={`mailto:${artist.booking_email}`} className="booking-link">
             Book this artist
           </a>
         )}
       </div>
-
       <div className="artist-songs">
         <h2>Songs by {artist.display_name}</h2>
         {songs.length === 0 ? (
